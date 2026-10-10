@@ -1,0 +1,8 @@
+.build/
+.swiftpm/
+build/
+dist/
+Vendor/node_modules/
+.DS_Store
+xcuserdata/
+*.xcuserstate

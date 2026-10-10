@@ -1,0 +1,35 @@
+import Foundation
+
+public enum RandomStringTool: ToolModule {
+  public struct Options: ToolOptions {
+    public var length: Int = 24
+    public var count: Int = 5
+    public var alphabet: String = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+    public var excludeSimilar: Bool = true
+    public init() {}
+  }
+  public static let metadata = ToolMetadata(
+    "random-string", "随机字符串", .generators, "使用系统安全随机源，自定义字符集与批量生成。", sample: "", secondary: "",
+    input: .generator, network: false)
+  public static var fields: [OptionField<Options>] {
+    [
+      .init("length", "长度", \.length, range: 1...4096),
+      .init("count", "数量", \.count, range: 1...1000),
+      .init("alphabet", "字符集", \.alphabet),
+      .init("excludeSimilar", "排除易混淆字符", \.excludeSimilar),
+    ]
+  }
+  public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
+    try require(
+      (1...4096).contains(options.length) && (1...1000).contains(options.count)
+        && options.length * options.count <= 100_000, "长度 1–4096，数量 1–1000，总字符不超过 100000。")
+    let alphabet =
+      options.excludeSimilar ? options.alphabet.filter { !"0O1lI".contains($0) } : options.alphabet
+    let values = try (0..<options.count).map { _ in
+      try randomText(length: options.length, alphabet: alphabet)
+    }
+    return ToolOutput(
+      values.joined(separator: "\n"),
+      rows: values.enumerated().map { ResultRow(String($0.offset + 1), $0.element) })
+  }
+}

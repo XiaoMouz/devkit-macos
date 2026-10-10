@@ -1,0 +1,54 @@
+# 开发与维护
+
+## 构建
+
+`project.yml` 是 Xcode 配置源，工程随仓库保存。最低部署版本为 26.0。本次环境为 macOS 27.0.1、Xcode 27、Apple Silicon；最低版本和 Intel 不等于已实机验证。
+
+`Scripts/build.sh Debug|Release` 生成工程、构建应用与工作进程、嵌入 helper 并做临时签名。`Scripts/package.sh` 生成 Release ZIP。脚本不安装证书、不上传产物、不发布版本。
+
+## 新增模块
+
+在 `Sources/DevKitCore/Tools/<id>/` 中声明 `ToolModule`。小模块的 `Options`、字段定义和引擎可以同文件；复杂逻辑按职责继续拆分。`Options` 是模块自己的 `Codable & Sendable` 类型，字段通过可写 KeyPath 连接原生 UI。
+
+`ToolMetadata` 定义 ID、名称、分类、说明、示例、输入布局和是否显式联网。`execute` 接收不可变输入快照，返回文本、条目、二进制附件或受限 HTML 预览，不能读取剪贴板或 UI 状态。
+
+修改后执行 `python3 Scripts/update-registry.py`、`xcodegen generate` 和 `swift test`。JavaScript 的 `Engine.mjs` 与模块 Swift 文件放在同一目录；新增时在 `Package.swift` 排除该脚本，运行 `node Vendor/build.mjs` 更新离线 bundle。公共逻辑放在 `Shared` 或 `Vendor` 共享源中。
+
+专属 UI / App Intents 置于 `DevKit/Tools/<id>/`。WebSocket 使用专属会话视图；其余工具复用转换、双输入、生成或文件布局。
+
+## 执行与取消
+
+主窗口将请求通过标准输入交给包内 `DevKitWorker`，不使用 Shell 字符串。工作进程通过 JSON 返回结构化结果和错误，输入不出现在进程参数中。
+
+父进程在取消或 24 秒截止时终止 helper；helper 另有 25 秒墙钟 alarm 和 15 秒 CPU 限制。这是可终止的工作进程，不是操作系统安全沙箱，也不宣称严格的内存硬上限。DNS 使用固定绝对路径与参数数组，查询自身有 3 秒超时。
+
+每个标签用输入版本校验结果。修改会取消任务并标记旧结果无效，过期任务不能覆盖新结果。仅持久化偏好与工具 ID，不保存内容。
+
+## 依赖与许可证
+
+运行时使用系统 Foundation、CryptoKit、Security、ImageIO、CoreImage、Vision、JavaScriptCore、WebKit 和 zlib。复杂格式使用成熟的本地解析器，不执行输入程序，不通过 CDN 获取代码。
+
+`Vendor/package.json` 与锁文件固定版本。构建脚本收集直接及间接依赖许可证至 `Sources/DevKitCore/Resources/ThirdPartyNotices.txt`；`Vendor/licenses/boolbase-LICENSE` 补充 npm 包缺少的上游文本。
+
+主要组件包括 Prettier 3.9.9、Ajv 8.20.0、YAML 2.9.1、smol-toml 1.9.1、lossless-json 4.3.1、JSONPath Plus 11.2.0、Terser 5.51.2、CSSO 5.0.5 和 SVGO 4.1.0；全部准确版本以锁文件为准。Node.js 仅用于构建，不随应用分发。
+
+修改依赖后同时更新 bundle、许可证，并执行格式、精度、预览和超时测试。
+
+## 发布所需外部条件
+
+正式签名需要开发者自己的证书和 Team ID；公证需要对应账号。发布渠道、收费策略、源代码许可证仍由产品所有者决定。没有凭据时不能宣称已完成 Apple 公证。
+
+
+## 工作区与多窗口
+
+`DevKit/Shared/ToolSession.swift` 是常规工具会话的单一数据源；主标签与独立窗口直接引用它。`DetachedWorkspaceWindows` 管理原生窗口，按会话 ID + 面板类型复用。窗口级命令按当前窗口分发，不将独立窗口的关闭动作路由到主标签。
+
+`DevKitSession` 是同源的 Swift Package 测试目标，只包含会话、桥接及执行服务代码，供 `DevKitSessionTests` 验证异步和生命周期；应用仍由 Xcode target 编译。测试可注入执行器，生产默认使用包内工作进程。关闭标签与最后一个独立窗口时才取消会话任务。
+
+## 清理本项目的旧系统注册
+
+`python3 Scripts/reset-spotlight-registration.py` 注销本项目路径内的旧 DevKit 与预览副本，保留 `~/Applications/DevKit.app`。如明确需要注销安装副本，可加 `--include-installed`。脚本不清空系统注册数据库，不删除 App 文件，记录在 `build/spotlight-registration-cleanup-latest.json`。
+
+应用自身的工具索引通过“设置 → Spotlight → 清空索引并关闭”管理。静态 App Intents 的目录显示由系统管理；应用开关控制动态工具实体与执行权限。
+
+安装新版 App 应替换整个 bundle，并在替换后运行 `codesign --verify --deep --strict`。不要用旧 Debug 目录覆盖合并 Release bundle，残留资源可能导致封印校验失败。

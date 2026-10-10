@@ -1,0 +1,73 @@
+import AppIntents
+import CoreSpotlight
+import DevKitCore
+import SwiftUI
+
+@MainActor @Observable final class SpotlightSettingsStore {
+  static let shared = SpotlightSettingsStore()
+  private(set) var preferences = SpotlightPreferences.load()
+  private(set) var status = ""
+  private(set) var updating = false
+  private var generation = 0
+  func setEnabled(_ value: Bool) { preferences.enabled = value; save() }
+  func setTool(_ id: String, enabled: Bool) { preferences.setEnabled(enabled, for: id); save() }
+  func setAliases(_ text: String, for id: String) throws { try preferences.setAliases(text, for: id); save() }
+  func setQuickKeyReminder(_ value: String) {
+    preferences.quickKeyReminder = String(value.prefix(24))
+    do { try preferences.save() } catch { status = error.localizedDescription }
+  }
+  func clearAndDisable() {
+    preferences.enabled = false
+    for tool in SpotlightCatalog.tools { preferences.setEnabled(false, for: tool.id) }
+    save()
+  }
+  private func save() {
+    do { try preferences.save(); refresh() }
+    catch { status = error.localizedDescription }
+  }
+  func refresh() {
+    generation += 1
+    let current = generation
+    let snapshot = preferences
+    updating = true; status = "正在更新 DevKit 索引…"
+    Task {
+      do {
+        try await SpotlightIndexManager.shared.synchronize(snapshot)
+        if generation == current {
+          updating = false
+          status = snapshot.enabled ? "已同步 \(SpotlightCatalog.tools.filter { snapshot.allows($0.id) }.count) 个工具" : "DevKit 工具索引已清空，快捷执行已关闭"
+        }
+      } catch {
+        if generation == current { updating = false; status = "索引更新失败：\(error.localizedDescription)" }
+      }
+    }
+  }
+}
+
+/// Serialize asynchronous index updates so a slow enable cannot undo a later disable.
+actor SpotlightIndexManager {
+  static let shared = SpotlightIndexManager()
+  private var operation: Task<Void, Error>?
+  func synchronize(_ preferences: SpotlightPreferences) async throws {
+    let previous = operation
+    let next = Task<Void, Error> {
+      _ = await previous?.result
+      let index = CSSearchableIndex.default()
+      // Cleanup is scoped to this app's index, never the user's system-wide Spotlight database.
+      do {
+        if preferences.enabled { try await index.deleteAppEntities(ofType: SpotlightToolAction.self) }
+        else { try await index.deleteAllSearchableItems() }
+      } catch { throw ToolFailure("清理工具索引失败：\(error.localizedDescription)") }
+      let entities = SpotlightCatalog.actions.filter { preferences.allows($0.toolID) }
+        .map { SpotlightToolAction($0, preferences: preferences) }
+      do {
+        if !entities.isEmpty { try await index.indexAppEntities(entities) }
+      } catch { throw ToolFailure("写入工具索引失败：\(error.localizedDescription)") }
+      // DevKit never donated intents. Static legacy actions are retired by isDiscoverable=false
+      // and the updated provider, rather than calling an unrelated donation-history service.
+      DevKitShortcuts.updateAppShortcutParameters()
+    }
+    operation = next
+    try await next.value
+  }
+}
