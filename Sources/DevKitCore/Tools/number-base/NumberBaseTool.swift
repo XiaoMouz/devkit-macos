@@ -18,4 +18,7 @@ public enum NumberBaseTool: ToolModule {
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
     return try ScriptEngine.execute("number-base", input: input, options: options)
   }
+  public static func example(for options: Options) -> ToolInput {
+    ToolInput(text: ["2": "11111111", "8": "377", "10": "255", "16": "ff"][options.from] ?? metadata.sample)
+  }
 }

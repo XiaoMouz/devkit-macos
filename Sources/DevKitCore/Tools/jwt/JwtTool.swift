@@ -54,7 +54,7 @@ public enum JwtTool: ToolModule {
     if let values = payload as? [String: Any] {
       for key in ["iat", "exp", "nbf"] {
         if let n = values[key] as? NSNumber, abs(n.doubleValue) < 253_402_300_800 {
-          rows.append(ResultRow(key, Dates.iso(Date(timeIntervalSince1970: n.doubleValue))))
+          rows.append(ResultRow("\(key) · \(Dates.zoneLabel(.current, at: Date(timeIntervalSince1970: n.doubleValue)))", Dates.display(Date(timeIntervalSince1970: n.doubleValue))))
         }
       }
     }

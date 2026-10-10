@@ -40,7 +40,6 @@ struct ScenarioInputActions<T: ToolModule>: View {
 struct ScenarioInput<T: ToolModule>: View {
   @Bindable var session: ToolSession<T>
   var editingBegan: () -> Void = {}
-  @State private var timestampSource = "timestamp"
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   private var form: ToolPresentation { session.presentation }
   private var fields: [OptionField<T.Options>] {
@@ -53,10 +52,6 @@ struct ScenarioInput<T: ToolModule>: View {
           VStack(alignment: .leading, spacing: 22) {
             formInput
             ToolParameterFields(options: $session.options, fields: fields)
-            Button { session.run() } label: {
-              Label(session.bridge.running ? "取消" : form.action,
-                systemImage: session.bridge.running ? "stop.fill" : "play.fill")
-            }.buttonStyle(.borderedProminent).controlSize(.large)
           }.padding(20).frame(maxWidth: 660, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
@@ -85,7 +80,7 @@ struct ScenarioInput<T: ToolModule>: View {
     }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
       .animation(WorkspaceMotion.layout(reduceMotion: reduceMotion), value: session.operation)
       .animation(WorkspaceMotion.layout(reduceMotion: reduceMotion), value: session.input.file != nil)
-      .animation(WorkspaceMotion.layout(reduceMotion: reduceMotion), value: timestampSource)
+      .animation(WorkspaceMotion.layout(reduceMotion: reduceMotion), value: session.timestampSource)
       .onDrop(of: [.fileURL], isTargeted: nil) { providers in
         guard let provider = providers.first else { return false }
         _ = provider.loadObject(ofClass: URL.self) { url, _ in
@@ -105,30 +100,25 @@ struct ScenarioInput<T: ToolModule>: View {
           .background(Color(.sRGB, red: background.r, green: background.g, blue: background.b), in: RoundedRectangle(cornerRadius: 10))
       }
     case .date:
-      DateValueControl(title: "日期", text: $session.input.text)
+      DateValueControl(title: "日期时间", text: $session.input.text, timeZone: session.inputTimeZone)
     case .timestamp:
-      Picker("输入方式", selection: $timestampSource) {
-        Text("时间戳 → 日期").tag("timestamp")
-        Text("日期 → 时间戳").tag("date")
-      }.pickerStyle(.segmented)
-        .onChange(of: timestampSource) { _, value in
-          if value == "date" {
-            let scale = session.optionValues["unit"] == "milliseconds" ? 1000.0 : 1.0
-            let interval = Double(session.input.text).map { $0 / scale }
-            session.input.text = Dates.iso(interval.map(Date.init(timeIntervalSince1970:)) ?? Date())
-          } else if let date = Dates.parse(session.input.text) {
-            let scale = session.optionValues["unit"] == "milliseconds" ? 1000.0 : 1.0
-            session.input.text = String(Int64((date.timeIntervalSince1970 * scale).rounded()))
-          }
-        }
-      if timestampSource == "date" { DateValueControl(title: "日期", text: $session.input.text) }
+      ToolFormRow(title: "转换方向") {
+        WorkspaceSegments(items: [("时间戳 → 日期", "timestamp"), ("日期 → 时间戳", "date")],
+          selection: Binding(get: { session.timestampSource }, set: { session.changeTimestampSource($0) }))
+          .accessibilityElement(children: .contain).accessibilityLabel("输入方式")
+      }
+      if session.timestampSource == "date" {
+        DateValueControl(title: "日期时间", text: $session.input.text, timeZone: session.inputTimeZone)
+      }
       else {
-        HStack {
-          TextField("Unix 时间戳", text: $session.input.text).textFieldStyle(.roundedBorder)
-          Button {
-            let scale = session.optionValues["unit"] == "milliseconds" ? 1000.0 : 1.0
-            session.input.text = String(Int64((Date().timeIntervalSince1970 * scale).rounded()))
-          } label: { Label("现在", systemImage: "clock") }.buttonStyle(.bordered)
+        ToolFormRow(title: "Unix 时间戳") {
+          HStack {
+            TextField("留空使用当前时间", text: $session.input.text).textFieldStyle(.roundedBorder)
+            Button {
+              session.input.text = Dates.timestamp(Date(), milliseconds: session.optionValues["unit"] == "milliseconds")
+            } label: { Image(systemName: "clock") }
+              .buttonStyle(.glass).buttonBorderShape(.capsule).help("使用当前时间戳").accessibilityLabel("使用当前时间戳")
+          }
         }
       }
     case .pairs: KeyValueEditor(text: $session.input.text)
@@ -136,12 +126,14 @@ struct ScenarioInput<T: ToolModule>: View {
     case .generator: EmptyView()
     default:
       VStack(alignment: .leading, spacing: 8) {
-        TextField(form.placeholder, text: $session.input.text).textFieldStyle(.roundedBorder)
-          .font(.system(size: 16, design: .monospaced)).onSubmit { session.run() }
-          .accessibilityLabel(form.inputTitle)
+        ToolFormRow(title: form.inputTitle) {
+          TextField(form.placeholder, text: $session.input.text).textFieldStyle(.roundedBorder)
+            .font(.system(size: 14, design: .monospaced)).onSubmit { session.run() }
+            .accessibilityLabel(form.inputTitle)
+        }
         if session.metadata.id == "http-status" {
           LazyVGrid(columns: [GridItem(.adaptive(minimum: 52))], alignment: .leading) { ForEach([200, 201, 301, 400, 401, 404, 500], id: \.self) { code in
-            Button(String(code)) { session.input.text = String(code); session.run() }.buttonStyle(.bordered)
+            Button(String(code)) { session.input.text = String(code); session.run() }.buttonStyle(.glass).buttonBorderShape(.capsule)
           } }
         }
       }
@@ -161,23 +153,17 @@ struct ScenarioInput<T: ToolModule>: View {
               .font(.caption).foregroundStyle(.secondary)
             Button { session.chooseFile() } label: {
               Label(form.isImage ? "更换图片…" : "更换文件…", systemImage: form.isImage ? "photo" : "folder")
-            }.buttonStyle(.bordered)
+            }.buttonStyle(.glass).buttonBorderShape(.capsule)
           } else {
             VStack(spacing: 16) {
               Image(systemName: form.isImage ? "photo.badge.plus" : "doc.badge.plus").font(.system(size: 36)).foregroundStyle(.tertiary)
               Text(form.isImage ? "拖入图片，或选择图片" : "拖入文件，或选择文件").foregroundStyle(.secondary)
               Button { session.chooseFile() } label: {
                 Label(form.isImage ? "选择图片…" : "选择文件…", systemImage: form.isImage ? "photo" : "folder")
-              }.buttonStyle(.bordered).controlSize(.large)
+              }.buttonStyle(.glass).buttonBorderShape(.capsule).controlSize(.large)
             }.frame(maxWidth: .infinity).padding(.vertical, 38)
           }
           ToolParameterFields(options: $session.options, fields: fields)
-          if session.metadata.id != "data-url" {
-            Button { session.run() } label: {
-              Label(session.bridge.running ? "取消" : form.action,
-                systemImage: session.bridge.running ? "stop.fill" : "play.fill")
-            }.buttonStyle(.borderedProminent).controlSize(.large).disabled(session.input.file == nil)
-          }
         }.padding(20).frame(maxWidth: .infinity)
           .frame(minHeight: session.metadata.id == "data-url" ? bounds.size.height : 0,
             alignment: session.metadata.id == "data-url" ? .center : .topLeading)

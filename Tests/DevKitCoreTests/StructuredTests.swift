@@ -84,6 +84,6 @@ import Testing
     options.start = "2025-01-01T00:00:00Z"
     options.count = 2
     let result = try await CronTool.execute(.init(text: "*/15 * * * *"), options: options)
-    #expect(result.rows.map(\.value) == ["2025-01-01T00:15:00.000Z", "2025-01-01T00:30:00.000Z"])
+    #expect(result.rows.map(\.value) == ["2025-01-01 00:15:00 · UTC", "2025-01-01 00:30:00 · UTC"])
   }
 }

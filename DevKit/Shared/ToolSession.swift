@@ -59,6 +59,21 @@ import UniformTypeIdentifiers
   var error: String?
   var status = ""
   var copied = false
+  private(set) var timestampSource = "timestamp"
+  var inputTimeZone: TimeZone {
+    let identifier = metadata.id == "date-time"
+      ? optionValues[operation == "zones" ? "sourceZone" : "zone"] : optionValues["timezone"]
+    return identifier.flatMap(TimeZone.init(identifier:)) ?? .current
+  }
+  func changeTimestampSource(_ source: String) {
+    guard metadata.id == "timestamp", source != timestampSource,
+      let options = options as? TimestampTool.Options else { return }
+    do {
+      let date = try TimestampTool.date(from: input.text, options: options)
+      timestampSource = source
+      input.text = source == "date" ? Dates.iso(date) : Dates.timestamp(date, milliseconds: options.unit == "milliseconds")
+    } catch { self.error = error.localizedDescription }
+  }
   var elapsed = 0.0
   private(set) var completedRun = 0
   var layoutPolicy = WorkspaceLayoutPolicy()
@@ -193,6 +208,9 @@ import UniformTypeIdentifiers
   }
   func useExample() {
     input = T.example(for: options)
+    if metadata.id == "timestamp", timestampSource == "date", let settings = options as? TimestampTool.Options,
+      let date = try? TimestampTool.date(from: input.text, options: settings) { input.text = Dates.iso(date) }
+    if presentation.control == .date, let date = Dates.parse(input.text, timeZone: inputTimeZone) { input.text = Dates.iso(date) }
     refreshLayout()
   }
   func paste() {
@@ -204,13 +222,27 @@ import UniformTypeIdentifiers
       return
     }
     if let value = NSPasteboard.general.string(forType: .string) {
-      input = ToolInput(text: value, secondary: input.secondary)
+      if metadata.id == "timestamp", let settings = options as? TimestampTool.Options {
+        do {
+          let date = try TimestampTool.date(from: value, options: settings)
+          if timestampSource == "date" || Double(value.trimmingCharacters(in: .whitespacesAndNewlines)) == nil {
+            timestampSource = "date"
+            input = ToolInput(text: Dates.iso(date))
+          } else { input = ToolInput(text: value) }
+        } catch { self.error = error.localizedDescription; return }
+      } else if presentation.control == .date {
+        guard let date = Dates.parse(value, timeZone: inputTimeZone), Dates.supportedRange.contains(date) else {
+          error = "剪贴板中的日期无效，请使用 2026-10-12 09:00:00 这样的格式。"; return
+        }
+        input = ToolInput(text: Dates.iso(date))
+      } else { input = ToolInput(text: value, secondary: input.secondary) }
       refreshLayout()
     }
   }
   func clearInput() {
     switch presentation.control {
     case .date: input = ToolInput(text: Dates.iso(Date()))
+    case .timestamp: input = ToolInput(text: timestampSource == "date" ? Dates.iso(Date()) : "")
     case .color: input = T.example(for: options)
     case .pairs: input = ToolInput(text: "[]")
     case .template: input = ToolInput(text: "{}")

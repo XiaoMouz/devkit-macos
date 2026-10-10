@@ -230,11 +230,13 @@ struct PaneActions<Content: View>: View {
   var format: String? = nil
   @ViewBuilder let content: () -> Content
   var body: some View {
-    ViewThatFits(in: .horizontal) {
-      row(compact: false).labelStyle(.titleAndIcon)
-      row(compact: true).labelStyle(.iconOnly)
+    GlassEffectContainer(spacing: 8) {
+      ViewThatFits(in: .horizontal) {
+        row(compact: false).labelStyle(.titleAndIcon)
+        row(compact: true).labelStyle(.iconOnly)
+      }
     }
-    .buttonStyle(.borderless).controlSize(.small)
+    .buttonStyle(.glass).buttonBorderShape(.capsule).controlSize(.small)
     .paneActionRow()
     .overlay(alignment: .bottom) { Divider().opacity(0.55) }
   }
@@ -299,7 +301,9 @@ struct WorkspaceEmptyState<Actions: View>: View {
       ToolIconTile(symbol: symbol, tint: tint, size: 44).padding(.bottom, 3).allowsHitTesting(false)
       Text(title).font(.system(size: 14, weight: .medium)).allowsHitTesting(false)
       Text(detail).font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center).allowsHitTesting(false)
-      actions().font(.caption).buttonStyle(.bordered).tint(tint)
+      GlassEffectContainer(spacing: 8) {
+        actions().font(.caption).buttonStyle(.glass).buttonBorderShape(.capsule).tint(tint)
+      }
     }.padding(20).frame(maxWidth: .infinity, maxHeight: .infinity)
   }
 }
@@ -327,31 +331,55 @@ struct WorkspaceSegments<Value: Hashable>: View {
   /// View switchers show symbols only (as Finder's view modes do); titles remain
   /// the accessibility labels.
   var iconOnly = false
-  var body: some View {
+  @ViewBuilder var body: some View {
+    if inToolbar {
+      nativePicker.fixedSize()
+    } else {
+      GlassEffectContainer(spacing: 4) {
+        HStack(spacing: 4) {
+          ForEach(items.indices, id: \.self) { index in
+            Button { selection = items[index].1 } label: {
+              itemLabel(at: index).padding(.horizontal, 3)
+            }
+            .modifier(GlassSelectionStyle(selected: selection == items[index].1))
+            .accessibilityLabel(items[index].0)
+            .accessibilityAddTraits(selection == items[index].1 ? .isSelected : [])
+          }
+        }.buttonBorderShape(.capsule).controlSize(.small).fixedSize()
+          .onMoveCommand { direction in
+            guard let current = items.firstIndex(where: { $0.1 == selection }) else { return }
+            let step = direction == .left ? -1 : direction == .right ? 1 : 0
+            let next = current + step
+            if items.indices.contains(next) { selection = items[next].1 }
+          }
+      }
+    }
+  }
+  private var nativePicker: some View {
     Picker("切换", selection: $selection) {
       ForEach(items.indices, id: \.self) { index in
-        Group {
-          if let symbol = symbols[items[index].1] {
-            if iconOnly {
-              Label(items[index].0, systemImage: symbol).labelStyle(.iconOnly).help(items[index].0)
-            } else {
-              Label(items[index].0, systemImage: symbol).labelStyle(.titleAndIcon)
-            }
-          } else { Text(items[index].0) }
-        }.tag(items[index].1)
+        itemLabel(at: index).tag(items[index].1)
       }
     }
     .labelsHidden().pickerStyle(.segmented)
-    .modifier(SegmentsChrome(inToolbar: inToolbar))
+  }
+  @ViewBuilder private func itemLabel(at index: Int) -> some View {
+    if let symbol = symbols[items[index].1] {
+      if iconOnly {
+        Label(items[index].0, systemImage: symbol).labelStyle(.iconOnly).help(items[index].0)
+      } else {
+        Label(items[index].0, systemImage: symbol).labelStyle(.titleAndIcon)
+      }
+    } else { Text(items[index].0) }
   }
 }
-private struct SegmentsChrome: ViewModifier {
-  let inToolbar: Bool
+private struct GlassSelectionStyle: ViewModifier {
+  let selected: Bool
   func body(content: Content) -> some View {
-    if inToolbar {
-      content.fixedSize()
+    if selected {
+      content.buttonStyle(.glassProminent)
     } else {
-      content.controlSize(.small).fixedSize().glassEffect(.regular, in: .capsule)
+      content.buttonStyle(.glass)
     }
   }
 }

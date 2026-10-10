@@ -183,7 +183,7 @@ struct OverflowParameterButton<T: ToolModule>: View {
             .background(.blue.opacity(0.12), in: Capsule()).foregroundStyle(.blue)
         }
       }
-    }.buttonStyle(.borderless).fixedSize().help(title).accessibilityLabel(title)
+    }.buttonStyle(.glass).buttonBorderShape(.capsule).fixedSize().help(title).accessibilityLabel(title)
       .popover(isPresented: $presented, arrowEdge: .bottom) {
         VStack(alignment: .leading, spacing: 14) {
           HStack {
@@ -199,7 +199,7 @@ struct OverflowParameterButton<T: ToolModule>: View {
           ScrollView {
             ToolParameterFields(options: $session.options, fields: fields).padding(.vertical, 2)
           }.frame(height: popoverHeight)
-        }.buttonStyle(.borderless).padding(18).frame(width: 300)
+        }.buttonStyle(.glass).buttonBorderShape(.capsule).padding(18).frame(width: 300)
       }
   }
 }

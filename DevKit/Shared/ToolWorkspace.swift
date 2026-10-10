@@ -106,9 +106,9 @@ struct ToolWorkspace<T: ToolModule>: View {
           ToolbarSpacer(.fixed, placement: .primaryAction)
           ToolbarItem(placement: .primaryAction) {
             Button { session.run() } label: {
-              // Verbatim: "执行" is also an en.lproj menu key, which turned this into "Run".
+              // Tool actions use the same title as the selected operation, including detached windows.
               Label {
-                Text(verbatim: session.bridge.running ? "取消" : "执行")
+                Text(verbatim: session.bridge.running ? "取消" : form.action)
               } icon: {
                 Image(systemName: session.bridge.running ? "stop.fill" : "play.fill")
               }.labelStyle(.titleAndIcon).padding(.horizontal, 6)
@@ -224,7 +224,7 @@ struct ToolWorkspace<T: ToolModule>: View {
         }
       } else {
         WorkspaceEmptyState(title: session.error == nil ? "结果会显示在这里" : "输入需要检查",
-          detail: session.error ?? "准备好输入后，点击顶部“执行”",
+          detail: session.error ?? "准备好输入后，点击顶部“\(form.action)”",
           symbol: session.error != nil ? "exclamationmark.circle" : form.isImage || session.metadata.id == "qr-code" ? "photo" : "arrow.right",
           tint: session.error == nil ? .purple : .red) {
           EmptyView()
@@ -272,11 +272,9 @@ struct ToolWorkspace<T: ToolModule>: View {
     let views = resultViews(output)
     return Group {
       if output.report != nil, output.html != nil {
-        Picker("结果视图", selection: $display) {
-          Text(session.metadata.id == "json" ? "路径" : "明细").tag("rows")
-          Text("高亮").tag("preview")
-          Text("文本").tag("text")
-        }.pickerStyle(.segmented).labelsHidden().frame(width: 176).help("切换问题路径与高亮对照")
+        WorkspaceSegments(items: [(session.metadata.id == "json" ? "路径" : "明细", "rows"),
+          ("高亮", "preview"), ("文本", "text")], selection: $display)
+          .accessibilityElement(children: .contain).accessibilityLabel("结果视图").help("切换问题路径与高亮对照")
       } else if views.count > 1 {
         Menu {
           Picker("结果视图", selection: $display) {
@@ -285,13 +283,13 @@ struct ToolWorkspace<T: ToolModule>: View {
         } label: {
           let current = views.first { $0.1 == display } ?? views[0]
           Label(current.0, systemImage: current.2)
-        }.menuStyle(.borderlessButton).fixedSize().help("切换结果视图")
+        }.menuStyle(.button).fixedSize().help("切换结果视图")
       }
       if session.binaryArtifact == nil || display == "text" {
         Button { session.copyResult() } label: {
           Label(session.copied ? "已复制" : session.imageArtifact != nil ? "复制图片" : "复制",
             systemImage: session.copied ? "checkmark" : "doc.on.doc").contentTransition(.symbolEffect(.replace))
-        }.buttonStyle(.bordered).tint(.blue)
+        }.buttonStyle(.glass).tint(.blue)
           .help(session.imageArtifact != nil ? "复制图片" : "复制完整结果 ⌘⇧C").disabled(!session.current)
       }
       if output.artifacts.isEmpty {
@@ -320,7 +318,7 @@ struct ToolWorkspace<T: ToolModule>: View {
         Text(artifact.mime).font(.caption).foregroundStyle(.secondary)
         Text(ByteCountFormatter.string(fromByteCount: Int64(artifact.data.count), countStyle: .file)).foregroundStyle(.secondary)
         Button { session.save(artifact) } label: { Label("保存文件…", systemImage: "square.and.arrow.down") }
-          .buttonStyle(.borderedProminent).controlSize(.large).disabled(!session.current)
+          .buttonStyle(.glassProminent).controlSize(.large).disabled(!session.current)
       }.frame(maxWidth: .infinity, maxHeight: .infinity)
     } else if display == "preview", let html = output.html { SafePreview(html: html) }
     else if display == "preview", session.imageArtifact != nil {
@@ -353,7 +351,8 @@ struct ToolWorkspace<T: ToolModule>: View {
                 language: output.report == nil ? .automatic : .plain, fontSize: fontSize)
                 .textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
               Button { if Clipboard.copy(row.value) { session.status = "已复制" } } label: { Image(systemName: "doc.on.doc") }
-                .buttonStyle(.plain).disabled(!session.current).accessibilityLabel("复制 " + row.label)
+                .buttonStyle(.glass).buttonBorderShape(.capsule).controlSize(.small)
+                .disabled(!session.current).accessibilityLabel("复制 " + row.label)
             }.padding(14)
               .background(output.report == nil ? Color.clear : rowTint(row, report: output.report).opacity(0.045))
             Divider()

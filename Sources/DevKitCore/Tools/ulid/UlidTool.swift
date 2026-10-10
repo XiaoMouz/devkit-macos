@@ -29,7 +29,7 @@ public enum UlidTool: ToolModule {
       var time: UInt64 = 0
       for c in chars.prefix(10) { time = time * 32 + UInt64(alphabet.firstIndex(of: c)!) }
       try require(time < (1 << 48), "ULID 超过 128 位范围。")
-      return ToolOutput(Dates.iso(Date(timeIntervalSince1970: Double(time) / 1000)))
+      return ToolOutput(Dates.display(Date(timeIntervalSince1970: Double(time) / 1000), milliseconds: true), note: "时区：" + Dates.zoneLabel(.current, at: Date(timeIntervalSince1970: Double(time) / 1000)))
     }
     try require((1...1000).contains(options.count), "数量必须为 1–1000。")
     let values = try (0..<options.count).map { _ -> String in

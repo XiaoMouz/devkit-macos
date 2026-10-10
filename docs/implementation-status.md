@@ -24,7 +24,7 @@ Spotlight 现有 2 个可发现通用入口与 2 个内部结果/复制动作；
 | [css-unit](../Sources/DevKitCore/Tools/css-unit/CssUnitTool.swift) | CSS 单位 | px/rem/em/vw/vh；显式根字号、父字号与视口。 |
 | [curl-convert](../Sources/DevKitCore/Tools/curl-convert/CurlConvertTool.swift) | cURL 转换 | 静态解析常见参数为 fetch/JSON；拒绝 Shell 运算和 @文件。 |
 | [data-url](../Sources/DevKitCore/Tools/data-url/DataUrlTool.swift) | Data URL | 图片编码为 Data URL；解码保留原始图片字节与格式，支持预览、复制和导出。自动识别 MIME 并校验图片；文本 Data URL 上限 5 MiB；不接受 SVG 或非图片载荷。 |
-| [date-time](../Sources/DevKitCore/Tools/date-time/DateTimeTool.swift) | 日期与时区 | 要求输入显式时区偏移；日历加天、时间差、时区对照；不接受歧义本地时间。 |
+| [date-time](../Sources/DevKitCore/Tools/date-time/DateTimeTool.swift) | 日期与时区 | 原生日期时间选择、输入/目标时区选择；日历加天和实际时间差，结果按所选时区显示。 |
 | [dns](../Sources/DevKitCore/Tools/dns/DnsTool.swift) | DNS 查询 | 系统 dig，八类记录，自定义解析器 IP/端口，3 秒单次超时。 |
 | [favicon](../Sources/DevKitCore/Tools/favicon/FaviconTool.swift) | 网站图标 | PNG 尺寸集与 ICO，逐文件导出；无一键 ZIP 导出。 |
 | [file-checksum](../Sources/DevKitCore/Tools/file-checksum/FileChecksumTool.swift) | 文件校验 | 单文件 32 MiB 内摘要和比较；当前通过有界文件读入，不支持大文件流式进度。 |
@@ -55,7 +55,7 @@ Spotlight 现有 2 个可发现通用入口与 2 个内部结果/复制动作；
 | [text-lines](../Sources/DevKitCore/Tools/text-lines/TextLinesTool.swift) | 文本行处理 | 排序、去重、去空行、编号、前后缀；保留原输入。 |
 | [text-replace](../Sources/DevKitCore/Tools/text-replace/TextReplaceTool.swift) | 查找替换 | 普通或 ECMAScript 正则；结果与原文分离。 |
 | [text-stats](../Sources/DevKitCore/Tools/text-stats/TextStatsTool.swift) | 文本统计 | 字素/码点/UTF-16/字节/行；词数按空白分隔。 |
-| [timestamp](../Sources/DevKitCore/Tools/timestamp/TimestampTool.swift) | 时间戳 | 秒/毫秒显式，ISO 8601，当前时间；输入必须有限且在范围内。 |
+| [timestamp](../Sources/DevKitCore/Tools/timestamp/TimestampTool.swift) | 时间戳 | 秒/毫秒与普通日期互转、时区选择、当前时间；保留毫秒精度并检查日期范围。 |
 | [ulid](../Sources/DevKitCore/Tools/ulid/UlidTool.swift) | ULID | 生成和时间解析；同毫秒独立随机，不提供单调工厂。 |
 | [unit-convert](../Sources/DevKitCore/Tools/unit-convert/UnitConvertTool.swift) | 单位转换 | 文件大小、时长、速率；SI/IEC 区分。 |
 | [url-codec](../Sources/DevKitCore/Tools/url-codec/UrlCodecTool.swift) | URL 编解码 | 支持组件、完整 URL、WHATWG 表单字符集；解码要求 UTF-8。 |

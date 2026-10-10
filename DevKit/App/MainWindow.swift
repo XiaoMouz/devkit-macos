@@ -126,9 +126,7 @@ struct MainWindow: View {
   }
   private func runTitle(_ tab: ToolTab) -> String {
     if tab.metadata.id == "websocket" { return tab.bridge.running ? "断开" : "连接" }
-    // The selected operation is already named by the principal control,
-    // so the primary action stays a neutral verb instead of repeating it.
-    return tab.bridge.running ? "取消" : "执行"
+    return tab.bridge.running ? "取消" : tab.bridge.actionTitle
   }
   private static let favoritePrefix = "favorite:"
   private static func toolID(_ tag: String) -> String {

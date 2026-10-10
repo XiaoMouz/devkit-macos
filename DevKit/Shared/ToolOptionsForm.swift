@@ -16,52 +16,13 @@ struct ToolOptionsForm<Options: ToolOptions>: View {
             modified()
           } label: {
             Label("重置", systemImage: "arrow.counterclockwise")
-          }.font(.caption).buttonStyle(.plain).foregroundStyle(.secondary).help("恢复默认配置")
+          }.font(.caption).buttonStyle(.glass).buttonBorderShape(.capsule).foregroundStyle(.secondary).help("恢复默认配置")
         }
-        ForEach(fields) { field in
-          VStack(alignment: .leading, spacing: 7) {
-            switch field.kind {
-            case .toggle:
-              Toggle(
-                field.label,
-                isOn: Binding(
-                  get: { field.read(options) == "true" },
-                  set: {
-                    field.write(&options, $0 ? "true" : "false")
-                    modified()
-                  })
-              ).toggleStyle(.switch).controlSize(.small)
-            case .choice(let choices):
-              Text(field.label).font(.callout).foregroundStyle(.secondary)
-              Picker(field.label, selection: binding(field)) {
-                ForEach(choices, id: \.self) { Text(ToolOptionLabels.title($0)).tag($0) }
-              }.labelsHidden().frame(maxWidth: .infinity, alignment: .leading)
-            case .secret:
-              Text(field.label).font(.callout).foregroundStyle(.secondary)
-              SecureField(field.label, text: binding(field)).textFieldStyle(.roundedBorder)
-            case .integer(let range):
-              Text(field.label).font(.callout).foregroundStyle(.secondary)
-              TextField(field.label, text: binding(field)).textFieldStyle(.roundedBorder)
-                .help("\(range.lowerBound)–\(range.upperBound)")
-            default:
-              Text(field.label).font(.callout).foregroundStyle(.secondary)
-              TextField(field.label, text: binding(field), axis: .vertical)
-                .lineLimit(1...5).textFieldStyle(.roundedBorder)
-            }
-          }.frame(maxWidth: .infinity, alignment: .leading)
-          if field.id != fields.last?.id { Divider().opacity(0.6) }
-        }
+        ToolParameterFields(options: Binding(get: { options }, set: { options = $0; modified() }), fields: fields)
       }.padding(18)
     }
   }
-  private func binding(_ field: OptionField<Options>) -> Binding<String> {
-    Binding(
-      get: { field.read(options) },
-      set: {
-        field.write(&options, $0)
-        modified()
-      })
-  }
+
 }
 
 enum ToolOptionLabels {

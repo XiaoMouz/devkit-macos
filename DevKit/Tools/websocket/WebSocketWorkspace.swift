@@ -122,12 +122,12 @@ struct WebSocketWorkspace: View {
         TextField("wss:// 或 ws:// 地址", text: $model.url).textFieldStyle(.roundedBorder).disabled(
           model.connected || model.connecting)
         Button { model.send() } label: { Label("发送消息", systemImage: "paperplane") }
-          .buttonStyle(.bordered).disabled(!model.connected)
+          .buttonStyle(.glass).buttonBorderShape(.capsule).disabled(!model.connected)
         Menu {
           Button("复制全部消息") { copy() }
           Button("清空消息") { model.clear() }
         } label: { Label("更多", systemImage: "ellipsis") }.labelStyle(.iconOnly).menuStyle(.button)
-          .buttonStyle(.bordered).fixedSize().help("更多操作")
+          .buttonStyle(.glass).buttonBorderShape(.capsule).fixedSize().help("更多操作")
       }.padding(.bottom, 8)
       GeometryReader { bounds in
         let split = bounds.size.width >= 720

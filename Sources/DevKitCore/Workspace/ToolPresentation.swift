@@ -39,7 +39,9 @@ public struct ToolPresentation: Sendable {
       if id == "image-metadata" { exportName = "metadata.json"; exportMIME = "application/json" }
       action = ["image-convert":"转换格式", "image-resize":"调整尺寸", "image-compress":"压缩图片", "image-metadata":"读取信息", "favicon":"生成图标"][id]!
       if id == "image-metadata", values["strip"] == "true" { action = "移除元数据" }
-    case "file-checksum": control = .file; inputTitle = "待校验文件"; action = "计算摘要"
+    case "file-checksum":
+      control = .file; inputTitle = "待校验文件"
+      action = (values["expected"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "计算摘要" : "校验文件"
     case "base64":
       inputTitle = operation == "decode" ? "Base64" : "文本"
       action = operation == "decode" ? "解码" : "编码"
@@ -74,7 +76,7 @@ public struct ToolPresentation: Sendable {
     case "websocket": control = .request; inputTitle = "连接与消息"; action = "连接"
     case "cookie": inputTitle = values["mode"] == "cookie" ? "Cookie 请求头" : "Set-Cookie 响应头"; action = "解析 Cookie"
     case "curl-convert": inputTitle = "cURL 命令"; placeholder = "粘贴 cURL 命令…"; action = "转换请求"
-    case "jwt": inputTitle = "JWT 令牌"; placeholder = "粘贴 Header.Payload.Signature…"; action = "解析令牌"
+    case "jwt": inputTitle = "JWT 令牌"; placeholder = "粘贴 Header.Payload.Signature…"; action = values["verify"] == "true" ? "验证签名" : "解析令牌"
     case "regex": inputTitle = "测试文本"; action = operation == "replace" ? "预览替换" : "匹配"
     case "text-diff": inputTitle = "原始文本"; action = "对比文本"; outputTitle = "文本差异"
     case "text-case": inputTitle = "名称或文本"; action = "转换命名"

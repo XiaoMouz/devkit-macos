@@ -25,6 +25,23 @@ private actor Gate {
     }
     Issue.record("Session did not reach the expected state within one second")
   }
+  @Test func timestampModesPreservePrecisionAndRejectOutOfRangeInput() throws {
+    let session = ToolSession<TimestampTool>(id: UUID(), bridge: WorkspaceBridge())
+    session.options.timezone = "Asia/Shanghai"
+    session.input.text = "1700000000.123"
+    session.changeTimestampSource("date")
+    #expect(session.timestampSource == "date")
+    #expect(session.input.text == "2023-11-14T22:13:20.123Z")
+    session.options.unit = "milliseconds"
+    session.changeTimestampSource("timestamp")
+    #expect(session.input.text == "1700000000123")
+    session.useExample()
+    #expect(session.input.text == "1700000000000")
+    session.input.text = "1e100"
+    session.changeTimestampSource("date")
+    #expect(session.timestampSource == "timestamp")
+    #expect(session.error != nil)
+  }
   @Test func dataURLSwitchingModesClearsIncompatibleInputAndOutput() async throws {
     let bridge = WorkspaceBridge()
     let session = ToolSession<DataUrlTool>(id: UUID(), bridge: bridge) { _ in

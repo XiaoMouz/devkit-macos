@@ -43,12 +43,12 @@ public enum PemCertificateTool: ToolModule {
           let number = entry[kSecPropertyKeyValue as String] as? NSNumber
         {
           rows.append(
-            ResultRow(label, Dates.iso(Date(timeIntervalSinceReferenceDate: number.doubleValue))))
+            ResultRow(label, Dates.display(Date(timeIntervalSinceReferenceDate: number.doubleValue))))
         }
       }
     }
     return ToolOutput(
       rows.map { "\($0.label): \($0.value)" }.joined(separator: "\n"), rows: rows,
-      note: "仅解析首张证书；未进行信任链或吊销状态验证。")
+      note: "时间按当前时区 \(TimeZone.current.identifier) 显示。仅解析首张证书；未进行信任链或吊销状态验证。")
   }
 }

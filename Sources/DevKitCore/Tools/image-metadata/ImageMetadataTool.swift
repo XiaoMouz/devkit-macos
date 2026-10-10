@@ -29,7 +29,7 @@ public enum ImageMetadataTool: ToolModule {
   }
   private static func jsonValue(_ value: Any) -> Any {
     switch value {
-    case let date as Date: return Dates.iso(date)
+    case let date as Date: return Dates.display(date)
     case let data as Data: return data.base64EncodedString()
     case let dictionary as [String: Any]: return dictionary.mapValues(jsonValue)
     case let array as [Any]: return array.map(jsonValue)
