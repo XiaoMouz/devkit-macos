@@ -33,8 +33,10 @@ struct SpotlightSettingsView: View {
               HStack {
                 Label(tool.name, systemImage: tool.symbol).font(.system(size: 12))
                 Spacer()
-                Circle().fill(store.preferences.allows(tool.id) ? Color.primary : Color.secondary.opacity(0.2))
-                  .frame(width: 5, height: 5).accessibilityLabel(store.preferences.allows(tool.id) ? "已开启" : "已关闭")
+                Image(systemName: store.preferences.allows(tool.id) ? "checkmark.circle.fill" : "circle")
+                  .font(.system(size: 11))
+                  .foregroundStyle(store.preferences.allows(tool.id) ? AnyShapeStyle(Color.green) : AnyShapeStyle(HierarchicalShapeStyle.tertiary))
+                  .accessibilityLabel(store.preferences.allows(tool.id) ? "已开启" : "已关闭")
               }.tag(tool.id).padding(.vertical, 6)
             }
           }.listStyle(.sidebar)

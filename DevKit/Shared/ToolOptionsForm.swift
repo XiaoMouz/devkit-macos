@@ -9,12 +9,14 @@ struct ToolOptionsForm<Options: ToolOptions>: View {
     ScrollView {
       VStack(alignment: .leading, spacing: 18) {
         HStack {
-          Text("工具配置").font(.system(size: 12, weight: .semibold))
+          Label("工具配置", systemImage: "slider.horizontal.3").font(.system(size: 12, weight: .semibold))
           Spacer()
-          Button("重置") {
+          Button {
             options = Options()
             modified()
-          }.font(.caption).buttonStyle(.plain).foregroundStyle(.secondary)
+          } label: {
+            Label("重置", systemImage: "arrow.counterclockwise")
+          }.font(.caption).buttonStyle(.plain).foregroundStyle(.secondary).help("恢复默认配置")
         }
         ForEach(fields) { field in
           VStack(alignment: .leading, spacing: 7) {
@@ -47,7 +49,7 @@ struct ToolOptionsForm<Options: ToolOptions>: View {
                 .lineLimit(1...5).textFieldStyle(.roundedBorder)
             }
           }.frame(maxWidth: .infinity, alignment: .leading)
-          Divider().opacity(0.6)
+          if field.id != fields.last?.id { Divider().opacity(0.6) }
         }
       }.padding(18)
     }

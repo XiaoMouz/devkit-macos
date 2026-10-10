@@ -50,7 +50,12 @@ struct ToolWorkspace<T: ToolModule>: View {
             Text(error).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
             Button { session.error = nil } label: { Image(systemName: "xmark") }
               .buttonStyle(.plain).accessibilityLabel("关闭错误提示")
-          }.font(.callout).padding(12).background(.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+          }.font(.callout).padding(12)
+            .background(.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay {
+              RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(.orange.opacity(0.25), lineWidth: 1)
+            }
         }
         HStack {
           Text(session.status).lineLimit(1)
@@ -140,9 +145,9 @@ struct ToolWorkspace<T: ToolModule>: View {
           Text("显示前 500,000 字符；复制或导出可获取完整结果").font(.caption).foregroundStyle(.secondary).padding(8)
         }
       } else {
-        VStack(spacing: 12) {
-          Image(systemName: form.isImage || session.metadata.id == "qr-code" ? "photo" : "arrow.right")
-            .font(.system(size: 28)).foregroundStyle(.tertiary)
+        VStack(spacing: 10) {
+          ToolIconTile(symbol: form.isImage || session.metadata.id == "qr-code" ? "photo" : "arrow.right.circle",
+            tint: session.metadata.category.tint, size: 44).padding(.bottom, 4)
           Text(form.outputTitle).font(.headline).foregroundStyle(.secondary)
           Text("点击“\(form.action)”查看结果").font(.caption).foregroundStyle(.tertiary)
         }.frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -160,7 +165,7 @@ struct ToolWorkspace<T: ToolModule>: View {
       Spacer(minLength: 4)
       if session.binaryArtifact == nil || display == "text" {
       Button { session.copyResult() } label: {
-        Image(systemName: session.copied ? "checkmark" : "doc.on.doc")
+        Image(systemName: session.copied ? "checkmark" : "doc.on.doc").contentTransition(.symbolEffect(.replace))
       }.help(session.imageArtifact != nil ? "复制图片" : "复制完整结果").accessibilityLabel(session.imageArtifact != nil ? "复制图片" : "复制结果")
         .disabled(!session.current)
       }

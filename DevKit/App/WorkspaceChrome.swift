@@ -4,14 +4,21 @@ import SwiftUI
 enum WorkspaceChromeMetrics {
   static let sidebarWidth: CGFloat = 188
   static let headerHeight: CGFloat = 44
+  static let inspectorWidth: CGFloat = 248
+  /// Floating panels sit inside the window's rounded corners, concentric with them.
+  static let panelInset: CGFloat = 8
+  static let panelRadius: CGFloat = 16
 }
 
 /// Navigation keeps regular glass at every setting so its text remains legible.
+/// A corner radius turns the band into a floating panel with a visible glass rim.
 struct WorkspaceGlass: NSViewRepresentable {
+  var cornerRadius: CGFloat = 0
   @AppStorage("glassMode") private var mode = GlassMode.system.rawValue
   @AppStorage("glassTransparency") private var transparency = 0.55
   func makeNSView(context: Context) -> GlassBandView { GlassBandView() }
   func updateNSView(_ view: GlassBandView, context: Context) {
+    view.cornerRadius = cornerRadius
     view.configure(mode: GlassMode(rawValue: mode) ?? .system, transparency: transparency)
   }
   static func dismantleNSView(_ view: GlassBandView, coordinator: ()) { view.stopObserving() }
@@ -23,6 +30,11 @@ final class GlassBandView: NSView {
   private var mode = GlassMode.system
   private var customTransparency = 0.55
   private var refreshTimer: Timer?
+  private var rimConstraints: [NSLayoutConstraint] = []
+  /// 0 keeps the band edge-to-edge with its rim outside the window's rounding.
+  var cornerRadius: CGFloat = 0 {
+    didSet { if cornerRadius != oldValue { applyShape() } }
+  }
   private(set) var presentation = GlassPresentation(mode: .system, customTransparency: 0.55,
     systemTint: nil, reduceTransparency: false)
 
@@ -39,15 +51,27 @@ final class GlassBandView: NSView {
     for view in [backdrop, glass, surface] {
       view.translatesAutoresizingMaskIntoConstraints = false
       addSubview(view)
-      // Keep the glass rim outside the window's own rounding.
-      let inset: CGFloat = view is NSGlassEffectView ? 16 : 0
-      NSLayoutConstraint.activate([
-        view.leadingAnchor.constraint(equalTo: leadingAnchor, constant: -inset),
-        view.trailingAnchor.constraint(equalTo: trailingAnchor, constant: inset),
-        view.topAnchor.constraint(equalTo: topAnchor, constant: -inset),
-        view.bottomAnchor.constraint(equalTo: bottomAnchor, constant: inset),
-      ])
+      let constraints = [
+        view.leadingAnchor.constraint(equalTo: leadingAnchor),
+        view.trailingAnchor.constraint(equalTo: trailingAnchor),
+        view.topAnchor.constraint(equalTo: topAnchor),
+        view.bottomAnchor.constraint(equalTo: bottomAnchor),
+      ]
+      NSLayoutConstraint.activate(constraints)
+      if view is NSGlassEffectView { rimConstraints = constraints }
     }
+    applyShape()
+  }
+  private func applyShape() {
+    // An edge-to-edge band keeps the glass rim outside the window's own rounding;
+    // a floating panel shows its rim and clips every layer to the same rounded shape.
+    let inset: CGFloat = cornerRadius > 0 ? 0 : 16
+    for (index, constraint) in rimConstraints.enumerated() {
+      constraint.constant = index % 2 == 0 ? -inset : inset
+    }
+    glass.cornerRadius = cornerRadius
+    layer?.cornerRadius = cornerRadius
+    layer?.cornerCurve = .continuous
   }
   required init?(coder: NSCoder) { nil }
 
