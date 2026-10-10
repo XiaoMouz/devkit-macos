@@ -15,7 +15,7 @@ struct ToolPrimaryControl<T: ToolModule>: View {
     if let field = primaryToolField(T.self), case .choice(let choices) = field.kind {
       let binding = Binding(get: { field.read(session.options) }, set: { field.write(&session.options, $0) })
       if choices.count <= 3 {
-        WorkspaceSegments(items: choices.map { (ToolOptionLabels.title($0), $0) }, selection: binding)
+        WorkspaceSegments(items: choices.map { (ToolOptionLabels.title($0), $0) }, selection: binding, glass: false)
       } else {
         Picker(field.label, selection: binding) {
           ForEach(choices, id: \.self) { Text(ToolOptionLabels.title($0)).tag($0) }

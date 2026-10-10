@@ -9,19 +9,24 @@ struct DevKitApp: App {
   var body: some Scene {
     WindowGroup {
       MainWindow()
-        .containerBackground(.clear, for: .window)
         .onChange(of: appearance, initial: true) { _, value in AppAppearance.apply(value) }
     }
     .defaultSize(width: 1280, height: 820)
     .windowResizability(.contentMinSize)
-    .windowStyle(.hiddenTitleBar)
-    .commands { DevKitCommands() }
+    .windowToolbarStyle(.unified)
+    .commands {
+      SidebarCommands()
+      InspectorCommands()
+      DevKitCommands()
+    }
     Settings { SettingsView() }
   }
 }
 
 @MainActor final class DevKitApplicationDelegate: NSObject, NSApplicationDelegate {
   func applicationWillFinishLaunching(_ notification: Notification) {
+    // Tools switch from the sidebar; window tabs would duplicate that navigation.
+    NSWindow.allowsAutomaticWindowTabbing = false
     AppAppearance.apply(UserDefaults.standard.string(forKey: "appearance") ?? "system")
   }
   func applicationDidFinishLaunching(_ notification: Notification) {

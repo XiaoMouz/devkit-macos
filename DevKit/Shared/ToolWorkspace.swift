@@ -9,6 +9,7 @@ struct ToolWorkspace<T: ToolModule>: View {
   @State private var display = "text"
   @State private var selectedArtifact = 0
   @AppStorage("editorFontSize") private var fontSize = 13.0
+  @Environment(\.workspaceActive) private var workspaceActive
   private var form: ToolPresentation { session.presentation }
   private var paired: Bool { session.inputStyle == .pair && !session.metadata.network }
   private var mode: WorkspaceLayoutMode { session.layoutPolicy.mode(width: availableWidth) }
@@ -34,8 +35,8 @@ struct ToolWorkspace<T: ToolModule>: View {
             Spacer()
             Button(session.bridge.running ? "取消" : form.action) { session.run() }.buttonStyle(.glassProminent)
           }
+          workspaceTools
         }
-        workspaceTools
         WorkspacePaneDeck(roles: roles, visible: visible,
           titles: [.input: form.inputTitle, .secondary: form.secondaryTitle, .output: form.outputTitle]) { role in
           switch role {
@@ -57,8 +58,10 @@ struct ToolWorkspace<T: ToolModule>: View {
                 .strokeBorder(.orange.opacity(0.25), lineWidth: 1)
             }
         }
-        HStack {
+        HStack(spacing: 8) {
+          if session.bridge.running { ProgressView().controlSize(.mini) }
           Text(session.status).lineLimit(1)
+          if session.output != nil && !session.current { Text("· 待更新") }
           Spacer()
           if session.elapsed > 0 { Text(String(format: "%.0f ms", session.elapsed * 1000)).monospacedDigit() }
         }.font(.caption).foregroundStyle(.secondary).frame(height: 16)
@@ -68,6 +71,16 @@ struct ToolWorkspace<T: ToolModule>: View {
           if detachedPane == nil { session.bridge.workspaceWidth = availableWidth }
         }
     }.background(Color(nsColor: .textBackgroundColor))
+      .toolbar {
+        // In the main window, view switching joins the window toolbar instead of
+        // stacking a second control row above the editors.
+        if workspaceActive && detachedPane == nil {
+          ToolbarItemGroup(placement: .primaryAction) {
+            paneSwitch
+            windowMenu
+          }
+        }
+      }
       .onAppear { display = session.recommendedDisplay }
       .onChange(of: session.operation) { _, _ in focusedPane = .input }
       .onChange(of: session.bridge.paneRequest) { _, _ in
@@ -81,29 +94,32 @@ struct ToolWorkspace<T: ToolModule>: View {
         if detachedPane == nil && (paired || mode == .focused) { focusedPane = .output }
       }
   }
+  /// Shown inside detached windows, which have no shared window toolbar.
   private var workspaceTools: some View {
     HStack(spacing: 12) {
-      if detachedPane == nil {
-        WorkspaceSegments(items: paneChoices, selection: Binding(get: {
-          mode == .split && (!paired || focusedPane != .output) ? "comparison" : focusedPane.rawValue
-        }, set: { value in
-          if value == "comparison" { session.chooseLayout(.split); focusedPane = .input }
-          else { session.chooseLayout(.focused); focusedPane = WorkspacePane(rawValue: value) ?? .input }
-        }))
-      } else { Text(detachedPane?.title ?? "工作区") }
+      Text(detachedPane?.title ?? "工作区")
       Spacer(minLength: 4)
-      if session.bridge.running { ProgressView().controlSize(.mini) }
-      if session.output != nil && !session.current { Text("待更新").foregroundStyle(.secondary) }
-      Menu {
-        Button("在新窗口打开输入") { detach(.input) }
-        if paired { Button("在新窗口打开第二输入") { detach(.secondary) } }
-        Button("在新窗口打开结果") { detach(.output) }
-        Button("打开对照窗口") { detach(.comparison) }
-        Divider()
-        Button("自动适应布局") { session.chooseLayout(.automatic) }
-      } label: { Image(systemName: "rectangle.on.rectangle") }
-        .menuStyle(.button).buttonStyle(.glass).fixedSize().accessibilityLabel("窗口与布局")
+      windowMenu.labelStyle(.iconOnly).menuStyle(.button).buttonStyle(.glass).fixedSize()
     }.font(.system(size: 12)).controlSize(.small).frame(height: 30)
+  }
+  private var paneSwitch: some View {
+    WorkspaceSegments(items: paneChoices, selection: Binding(get: {
+      mode == .split && (!paired || focusedPane != .output) ? "comparison" : focusedPane.rawValue
+    }, set: { value in
+      if value == "comparison" { session.chooseLayout(.split); focusedPane = .input }
+      else { session.chooseLayout(.focused); focusedPane = WorkspacePane(rawValue: value) ?? .input }
+    }), glass: false)
+  }
+  private var windowMenu: some View {
+    Menu {
+      Button("在新窗口打开输入") { detach(.input) }
+      if paired { Button("在新窗口打开第二输入") { detach(.secondary) } }
+      Button("在新窗口打开结果") { detach(.output) }
+      Button("打开对照窗口") { detach(.comparison) }
+      Divider()
+      Button("自动适应布局") { session.chooseLayout(.automatic) }
+    } label: { Label("窗口与布局", systemImage: "rectangle.on.rectangle") }
+      .help("在新窗口打开或调整布局")
   }
   private var paneChoices: [(String, String)] {
     var items = [(session.inputStyle == .generator ? "参数" : "输入", "input")]

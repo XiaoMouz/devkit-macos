@@ -9,6 +9,17 @@ struct ScenarioInput<T: ToolModule>: View {
   private var fields: [OptionField<T.Options>] {
     session.visibleFields.filter { $0.id != primaryToolField(T.self)?.id }
   }
+  private var usesEditor: Bool {
+    !form.isForm && session.input.file == nil && session.inputStyle != .file && form.control != .request
+  }
+  /// A few switches fit the action row, so input and result editors start at the
+  /// same height and stay aligned in the comparison view.
+  private var inlineToggles: Bool {
+    usesEditor && !fields.isEmpty && fields.count <= 3 && fields.allSatisfy {
+      if case .toggle = $0.kind { return true }
+      return false
+    }
+  }
   var body: some View {
     VStack(spacing: 0) {
       inputActions
@@ -27,7 +38,7 @@ struct ScenarioInput<T: ToolModule>: View {
       } else if form.control == .request {
         requestInput
       } else {
-        if !fields.isEmpty {
+        if !fields.isEmpty && !inlineToggles {
           ScrollView { ToolParameterFields(options: $session.options, fields: fields).padding(16) }
             .frame(height: min(CGFloat(fields.count) * 64 + 16, 250))
           Divider()
@@ -62,6 +73,14 @@ struct ScenarioInput<T: ToolModule>: View {
         if form.isImage { Button("粘贴图片") { session.paste() } }
         if !form.isForm || [.pairs, .template].contains(form.control) {
           Button(form.isImage ? "选择图片…" : session.inputStyle == .file ? "选择文件…" : "导入…") { session.chooseFile() }
+        }
+        if inlineToggles {
+          Divider().frame(height: 14).padding(.horizontal, 2)
+          ForEach(fields) { field in
+            Toggle(field.label, isOn: Binding(get: { field.read(session.options) == "true" },
+              set: { field.write(&session.options, String($0)) }))
+              .toggleStyle(.checkbox)
+          }
         }
         Spacer()
         Button { session.clearInput() } label: { Image(systemName: "trash") }

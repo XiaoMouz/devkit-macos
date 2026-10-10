@@ -95,15 +95,10 @@ extension View {
   func workspaceCard() -> some View { modifier(WorkspaceCard()) }
 }
 
-extension View {
-  /// Lifts secondary content (navigation, inspector) off the content plane onto a
-  /// rounded Liquid Glass panel that follows the user's glass and accessibility settings.
-  func floatingPanel() -> some View {
-    let shape = RoundedRectangle(cornerRadius: WorkspaceChromeMetrics.panelRadius, style: .continuous)
-    return background { WorkspaceGlass(cornerRadius: WorkspaceChromeMetrics.panelRadius) }
-      .clipShape(shape)
-      .overlay { shape.strokeBorder(.primary.opacity(0.06), lineWidth: 1).allowsHitTesting(false) }
-  }
+extension EnvironmentValues {
+  /// False for tools kept alive in the background, so only the visible tool
+  /// contributes items to the shared window toolbar.
+  @Entry var workspaceActive = true
 }
 
 struct WorkspaceSegments<Value: Hashable>: View {

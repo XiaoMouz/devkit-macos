@@ -62,14 +62,13 @@
 安装新版 App 应替换整个 bundle，并在替换后运行 `codesign --verify --deep --strict`。不要用旧 Debug 目录覆盖合并 Release bundle，残留资源可能导致封印校验失败。
 
 
-## Liquid Glass 偏好适配
+## 窗口结构与 Liquid Glass
 
-`GlassPreferences.swift` 隔离系统读取与透明度策略，`WorkspaceGlass` 只调整窗口外壳背景。macOS 27 的数值滑块已在本机确认写入全局 `NSGlassTintAmount`（0 为透明、1 为最浓色调）；这不是公开的 AppKit 偏好契约，所以只读该值，缺失时退回原生材质，不猜测或写入系统设置。系统模式的可见窗口每秒刷新一次，并在应用激活、辅助功能变化时刷新；自定义模式停止系统轮询。跨版本发布前应在目标系统验证这条适配路径。
+主窗口直接使用系统容器，不再自绘窗口外壳：`NavigationSplitView` 提供悬浮的玻璃侧栏，`.searchable(placement: .sidebar)` 提供侧栏搜索，统一样式的窗口工具栏承载标题、主操作和视图切换，`.inspector` 承载右侧配置。红绿灯、侧栏收放按钮、工具栏玻璃分组、滚动边缘效果和收放动画都由系统负责，并跟随系统的 Liquid Glass、减少透明度和减少动态效果设置。
 
-`glassMode` 保存模式，`glassTransparency` 继续保存既有通透度，磨砂强度滑块通过 `1 - glassTransparency` 绑定。导航区域始终使用一个完整的 `NSGlassEffectView.Style.regular`，并保留语义侧栏材质的最低覆盖；滑块只增加补充磨砂。使用随有效外观解析的中性原生 tint 保护亮背景上的文字。正常范围内不使用 `.clear`，不把玻璃层淡出到透明，也不添加纯色覆盖；仅在系统“减少透明度”开启时使用不透明辅助功能背景。
+工具会话在后台保持挂载，以保留输入和结果。每个工具视图通过 `\.workspaceActive` 环境值判断自己是否可见，只有可见工具向窗口工具栏提供“输入 / 结果 / 对照”切换和窗口菜单；独立窗口没有共享工具栏，仍在内容顶部显示这些控件。
 
-材质选择依据 [Apple Materials](https://developer.apple.com/design/human-interface-guidelines/materials)：Regular 会调整背景亮度和模糊程度以维持文字可读性，Clear 主要面向富媒体上的亮色大控件。运行 `Scripts/test-appearance.sh` 验证实际原生视图在滑块两端及中间值都保留 Regular 材质，覆盖偏好刷新、减少透明度和外观切换。
-
+应用不读取或写入任何 Liquid Glass 的私有偏好，也不提供自定义透明度；设置中只保留浅色 / 深色主题。`Scripts/test-appearance.sh` 验证主题在多个窗口和原生文本编辑器中的传播。
 
 ## Spotlight 的开发签名要求
 

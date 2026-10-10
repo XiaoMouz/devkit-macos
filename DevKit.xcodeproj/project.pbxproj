@@ -34,7 +34,6 @@
 		6D47F193A8F3C126111F91CF /* NumberBaseIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D1A9F97CC93CB3FEADCD493 /* NumberBaseIntent.swift */; };
 		6FE120AF12F3EA268542AFAD /* HTTPStatusIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = F95F7E2797029FC4C4A580C4 /* HTTPStatusIntent.swift */; };
 		718FEF3C205C1016A1DC55DF /* SpotlightRuntimeStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11D4EC543C8291FEF8AF2833 /* SpotlightRuntimeStatus.swift */; };
-		72F9DA5C9ED416185767E9F6 /* WorkspaceChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF05E3A64472EAA81DC2B975 /* WorkspaceChrome.swift */; };
 		79B064BA41CCA4B78572FD23 /* UUIDIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15062207977D420DB874FFDE /* UUIDIntent.swift */; };
 		7C3E2EBA964E1F7EA353A0EF /* NanoIDIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6E6E4CD9FBE639EE7CC4A08 /* NanoIDIntent.swift */; };
 		81102DF1B6A99E255B41010F /* RasterPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22CD1103A4DF5C759F0ACFE4 /* RasterPreview.swift */; };
@@ -58,7 +57,6 @@
 		D4C9DCC3BDBEF687623886D1 /* WorkerMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF7D1DD84449FEA9A40500B2 /* WorkerMain.swift */; };
 		D6F3EB94D9675144A63605BD /* ToolWorkspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9FBCAA91D65B3F4253E869C /* ToolWorkspace.swift */; };
 		E796E28548147EB52B0195E6 /* TimestampIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 628786DF75321944F702040F /* TimestampIntent.swift */; };
-		EBCC33AD3678BFA575B874C4 /* GlassPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E36E4CC65DD939CBFF42201 /* GlassPreferences.swift */; };
 		ECACBFFDEE44D1118E0869D8 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 82696B50D4813D3D67596DF0 /* Localizable.strings */; };
 		ED8FDE7997BD78A5D71EAD62 /* JsonFormatIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 372D4620EDA6EFAA7E31BC78 /* JsonFormatIntent.swift */; };
 		EED34DDEA5668C0EDB6BDBC4 /* DevKitCore in Frameworks */ = {isa = PBXBuildFile; productRef = C8FF5CC08F4C490542797101 /* DevKitCore */; };
@@ -78,7 +76,6 @@
 
 /* Begin PBXFileReference section */
 		0A2E05C4D1C025205B239311 /* URLEncodeIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLEncodeIntent.swift; sourceTree = "<group>"; };
-		0E36E4CC65DD939CBFF42201 /* GlassPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassPreferences.swift; sourceTree = "<group>"; };
 		11749324B75E83D1506EFF2C /* WindowCommandScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowCommandScope.swift; sourceTree = "<group>"; };
 		11D4EC543C8291FEF8AF2833 /* SpotlightRuntimeStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotlightRuntimeStatus.swift; sourceTree = "<group>"; };
 		15062207977D420DB874FFDE /* UUIDIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UUIDIntent.swift; sourceTree = "<group>"; };
@@ -128,7 +125,6 @@
 		A9FBCAA91D65B3F4253E869C /* ToolWorkspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolWorkspace.swift; sourceTree = "<group>"; };
 		B1CA8134DA3AC641106BAC9B /* WorkspaceColumns.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceColumns.swift; sourceTree = "<group>"; };
 		BDC99B3BEC0A0849561AF9ED /* ToolChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolChrome.swift; sourceTree = "<group>"; };
-		BF05E3A64472EAA81DC2B975 /* WorkspaceChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceChrome.swift; sourceTree = "<group>"; };
 		C073BE278198051E34CF79AE /* ResultSnippet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultSnippet.swift; sourceTree = "<group>"; };
 		C6E6E4CD9FBE639EE7CC4A08 /* NanoIDIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NanoIDIntent.swift; sourceTree = "<group>"; };
 		E3F328A6ED97BBD577BB46F6 /* MainWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindow.swift; sourceTree = "<group>"; };
@@ -440,13 +436,11 @@
 				352F425ADC2B73D531C33BAF /* AppAppearance.swift */,
 				2257D582B7D6A1565F7EE2CD /* DetachedWorkspaceWindows.swift */,
 				7169039307C6842EA79FAD88 /* DevKitApp.swift */,
-				0E36E4CC65DD939CBFF42201 /* GlassPreferences.swift */,
 				E3F328A6ED97BBD577BB46F6 /* MainWindow.swift */,
 				8EAF1D260745BEE53747C93C /* SettingsView.swift */,
 				55EBC6D95993A7A6270B9597 /* SpotlightSettingsView.swift */,
 				11749324B75E83D1506EFF2C /* WindowCommandScope.swift */,
 				E85E7BF74B99D08F149B7F45 /* WindowWorkspace.swift */,
-				BF05E3A64472EAA81DC2B975 /* WorkspaceChrome.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -776,7 +770,6 @@
 				3B1A45F630A2B70A3C19415C /* DetachedWorkspaceWindows.swift in Sources */,
 				3708DF3571CE5B595C7C4CBE /* DevKitApp.swift in Sources */,
 				6138A68A4AD5013FF9164C9E /* DevKitShortcuts.swift in Sources */,
-				EBCC33AD3678BFA575B874C4 /* GlassPreferences.swift in Sources */,
 				6FE120AF12F3EA268542AFAD /* HTTPStatusIntent.swift in Sources */,
 				4EE5183FF5CF54E0B7032C94 /* JWTDecodeIntent.swift in Sources */,
 				ED8FDE7997BD78A5D71EAD62 /* JsonFormatIntent.swift in Sources */,
@@ -816,7 +809,6 @@
 				CC71A83DDD26DEE58F80904E /* WindowWorkspace.swift in Sources */,
 				52EC760C9CE1F8EC58A3D510 /* WorkerRunner.swift in Sources */,
 				4707AE9D792E79949622DCCB /* WorkspaceBridge.swift in Sources */,
-				72F9DA5C9ED416185767E9F6 /* WorkspaceChrome.swift in Sources */,
 				2C1EB54DAA6D59A7E99164E2 /* WorkspaceColumns.swift in Sources */,
 				1B49102D26A936C2452C4AFE /* WorkspaceStyle.swift in Sources */,
 			);

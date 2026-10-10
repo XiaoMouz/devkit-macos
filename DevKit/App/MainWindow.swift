@@ -4,7 +4,6 @@ import SwiftUI
 struct MainWindow: View {
   @State private var workspace = WindowWorkspace()
   @State private var query = ""
-  @State private var sidebarVisible = true
   @State private var section = "tools"
   @State private var expandedCategories: Set<ToolCategory> = [.encoding]
   @AppStorage("showToolConfiguration") private var configurationVisible = true
@@ -23,195 +22,148 @@ struct MainWindow: View {
       (query.isEmpty || "\($0.name) \($0.id) \($0.summary) \($0.category.rawValue)".localizedStandardContains(query))
     }
   }
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  private typealias Metrics = WorkspaceChromeMetrics
+  @State private var columns = NavigationSplitViewVisibility.all
+  // System containers own the Liquid Glass chrome: the split view floats the
+  // sidebar, the unified toolbar groups its items, and the inspector slides in.
   var body: some View {
-    // The editor is the base layer. Navigation, inspector and toolbar controls
-    // leave the content plane and float above it as inset Liquid Glass.
-    HStack(spacing: 0) {
-      if sidebarVisible {
-        sidebar.padding(.top, Metrics.headerHeight - Metrics.panelInset)
-          .frame(width: Metrics.sidebarWidth)
-          .frame(maxHeight: .infinity)
-          .floatingPanel()
-          .padding([.leading, .top, .bottom], Metrics.panelInset)
-          .transition(.move(edge: .leading).combined(with: .opacity))
-      }
-      VStack(spacing: 0) {
-        toolbar
-        HStack(spacing: 0) {
-          GeometryReader { bounds in
-            ZStack {
-              if workspace.navigation.selectedID == nil { home }
-              ForEach(cachedTools) { tab in
-                tab.view
-                  .frame(width: bounds.size.width, height: bounds.size.height)
-                  .opacity(tab.id == workspace.navigation.selectedID ? 1 : 0)
-                  .allowsHitTesting(tab.id == workspace.navigation.selectedID)
-                  .accessibilityHidden(tab.id != workspace.navigation.selectedID)
-                  .id(tab.id)
-              }
-            }.frame(width: bounds.size.width, height: bounds.size.height).clipped()
-          }
-          if configurationVisible, let active, active.hasConfiguration {
-            active.configuration.id(active.id)
-              .frame(width: Metrics.inspectorWidth)
-              .frame(maxHeight: .infinity, alignment: .top)
-              .floatingPanel()
-              .padding([.trailing, .bottom], Metrics.panelInset)
-              .accessibilityElement(children: .contain).accessibilityLabel("工具配置")
-              .transition(.move(edge: .trailing).combined(with: .opacity))
-          }
-        }
-      }
+    NavigationSplitView(columnVisibility: $columns) {
+      sidebar.navigationSplitViewColumnWidth(min: 210, ideal: 236, max: 320)
+    } detail: {
+      detail
     }
-    .overlay(alignment: .topLeading) {
-      WorkspaceSidebarControl(sidebarVisible: sidebarVisible) { animate { sidebarVisible.toggle() } }
-        .frame(width: 140, height: Metrics.headerHeight)
-    }
+    .searchable(text: $query, placement: .sidebar, prompt: "搜索工具")
+    .searchFocused($searchFocused)
+    .onSubmit(of: .search) { if let first = matches.first { open(first.id) } }
     .frame(minWidth: 900, minHeight: 580)
-    .ignoresSafeArea(.container, edges: .top)
-    .background { Color(nsColor: .textBackgroundColor).ignoresSafeArea() }
-    .background(WorkspaceWindowChrome())
     .focusedSceneValue(\.workspaceActions, commandActions)
     .background(WindowCommandScope(actions: commandActions))
     .onAppear { if cachedTools.isEmpty { open("base64") } }
   }
-  private func animate(_ change: () -> Void) {
-    withAnimation(reduceMotion ? nil : .smooth(duration: 0.28), change)
-  }
-  /// Toolbar items float as grouped glass capsules over the content plane.
-  private var toolbar: some View {
-    HStack(spacing: 10) {
-      if let active {
-        HStack(spacing: 8) {
-          ToolIconTile(symbol: active.metadata.symbol, tint: active.metadata.category.tint, size: 22)
-          Text(active.metadata.name).font(.system(size: 14, weight: .semibold))
-            .lineLimit(1).help(active.metadata.summary)
-          Button { toggleFavorite(active.metadata.id) } label: {
-            Image(systemName: favoriteIDs.contains(active.metadata.id) ? "star.fill" : "star")
-              .font(.system(size: 12))
-              .foregroundStyle(favoriteIDs.contains(active.metadata.id) ? AnyShapeStyle(Color.yellow) : AnyShapeStyle(HierarchicalShapeStyle.secondary))
-              .contentTransition(.symbolEffect(.replace))
-              .frame(width: 22, height: 22).contentShape(Rectangle())
-          }.buttonStyle(.borderless).help("收藏当前工具").accessibilityLabel("收藏当前工具")
-        }.padding(.leading, 6).padding(.trailing, 8).frame(height: 32)
-          .glassEffect(.regular, in: .capsule).layoutPriority(1)
-        active.primaryControl.id(active.id)
-        Spacer(minLength: 10)
-        GlassEffectContainer(spacing: 8) {
-          HStack(spacing: 8) {
-            Button { active.bridge.execute() } label: {
-              Label(runTitle(active), systemImage: active.bridge.running ? "stop.fill" : "play.fill")
-                .font(.system(size: 12, weight: .medium))
-            }.buttonStyle(.glassProminent).help("执行 ⌘↩︎").accessibilityLabel(runTitle(active))
-            if active.hasConfiguration {
-              Button { animate { configurationVisible.toggle() } } label: {
-                Image(systemName: "sidebar.right").font(.system(size: 12))
-                  .symbolVariant(configurationVisible ? .fill : .none)
-              }.buttonStyle(.glass)
-                .accessibilityValue(configurationVisible ? "已展开" : "已收起").help("收放工具配置").accessibilityLabel("收放工具配置")
-            }
-          }
+  private var detail: some View {
+    GeometryReader { bounds in
+      ZStack {
+        if workspace.navigation.selectedID == nil { home }
+        ForEach(cachedTools) { tab in
+          let shown = tab.id == workspace.navigation.selectedID
+          tab.view
+            .environment(\.workspaceActive, shown)
+            .frame(width: bounds.size.width, height: bounds.size.height)
+            .opacity(shown ? 1 : 0)
+            .allowsHitTesting(shown)
+            .accessibilityHidden(!shown)
+            .id(tab.id)
         }
-      } else {
-        Label("工具总览", systemImage: "square.grid.2x2").font(.system(size: 14, weight: .semibold))
-          .padding(.horizontal, 12).frame(height: 32).glassEffect(.regular, in: .capsule)
-        Spacer()
+      }.frame(width: bounds.size.width, height: bounds.size.height).clipped()
+    }
+    .background(Color(nsColor: .textBackgroundColor))
+    .navigationTitle(active?.metadata.name ?? "工具总览")
+    .navigationSubtitle(active?.metadata.summary ?? "\(ToolRegistry.all.count) 个工具")
+    .toolbar { toolbarContent }
+    .inspector(isPresented: inspectorVisible) {
+      if let active { active.configuration.id(active.id).inspectorColumnWidth(min: 220, ideal: 260, max: 360) }
+    }
+  }
+  private var inspectorVisible: Binding<Bool> {
+    Binding(get: { configurationVisible && active?.hasConfiguration == true },
+      set: { configurationVisible = $0 })
+  }
+  @ToolbarContentBuilder private var toolbarContent: some ToolbarContent {
+    if let active {
+      ToolbarItem(placement: .principal) { active.primaryControl.id(active.id) }
+      ToolbarItemGroup(placement: .primaryAction) {
+        Button { toggleFavorite(active.metadata.id) } label: {
+          Label("收藏", systemImage: favoriteIDs.contains(active.metadata.id) ? "star.fill" : "star")
+            .contentTransition(.symbolEffect(.replace))
+        }.help(favoriteIDs.contains(active.metadata.id) ? "取消收藏" : "收藏当前工具")
+        Button { active.bridge.execute() } label: {
+          Label(runTitle(active), systemImage: active.bridge.running ? "stop.fill" : "play.fill")
+            .labelStyle(.titleAndIcon)
+        }.buttonStyle(.borderedProminent)
+          .help(active.bridge.running ? "取消" : "\(active.bridge.actionTitle) ⌘↩︎")
+        if active.hasConfiguration {
+          Button { configurationVisible.toggle() } label: {
+            Label("检查器", systemImage: "sidebar.right")
+          }.help("显示或隐藏配置")
+        }
       }
     }
-    .padding(.leading, sidebarVisible ? 12 : 140).padding(.trailing, Metrics.panelInset + 4)
-    .frame(height: Metrics.headerHeight)
   }
   private func runTitle(_ tab: ToolTab) -> String {
     if tab.metadata.id == "websocket" { return tab.bridge.running ? "断开" : "连接" }
-    return tab.bridge.running ? "取消" : tab.bridge.actionTitle
+    // The selected operation is already named by the principal control,
+    // so the primary action stays a neutral verb instead of repeating it.
+    return tab.bridge.running ? "取消" : "执行"
   }
   private var sidebar: some View {
-    VStack(spacing: 0) {
-      HStack(spacing: 5) {
-        WorkspaceSegments(items: [("工具", "tools"), ("收藏", "favorites")], selection: $section,
-          symbols: ["tools": "square.grid.2x2", "favorites": "star"], glass: false)
-        Spacer()
-      }.padding(.horizontal, 12).padding(.top, 2).padding(.bottom, 7)
-      HStack(spacing: 8) {
-        Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-        TextField("搜索工具", text: $query).textFieldStyle(.plain).focused($searchFocused)
-          .onSubmit { if let first = matches.first { open(first.id) } }
-        if !query.isEmpty {
-          Button { query = "" } label: { Image(systemName: "xmark.circle.fill") }
-            .buttonStyle(.plain).foregroundStyle(.tertiary).help("清除搜索")
-        }
-      }.font(.system(size: 12)).padding(.horizontal, 10).frame(height: 28)
-        .background(.primary.opacity(searchFocused ? 0.08 : 0.05),
-          in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .padding(.horizontal, 12).padding(.vertical, 4)
-      ScrollViewReader { scroll in
-        ScrollView {
-          LazyVStack(alignment: .leading, spacing: 4) {
-            if section == "favorites" || !query.isEmpty {
-              ForEach(matches) { toolRow($0) }
-            } else {
-              ForEach(ToolCategory.allCases, id: \.self) { category in
-                DisclosureGroup(isExpanded: Binding(get: { expandedCategories.contains(category) }, set: {
-                  if $0 { expandedCategories.insert(category) } else { expandedCategories.remove(category) }
-                })) {
-                  ForEach(matches.filter { $0.category == category }) { toolRow($0) }
-                } label: {
-                  HStack(spacing: 6) {
-                    Image(systemName: category.symbol).font(.system(size: 10, weight: .medium))
-                      .foregroundStyle(category.tint).frame(width: 14)
-                    Text(category.rawValue).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
-                    Spacer(minLength: 6)
-                    CountBadge(count: matches.filter { $0.category == category }.count)
-                  }.contentShape(Rectangle())
-                }.padding(.vertical, 5)
+    ScrollViewReader { scroll in
+      List(selection: Binding(get: { workspace.navigation.selectedToolID },
+        set: { if let id = $0 { open(id) } })) {
+        if section == "favorites" || !query.isEmpty {
+          ForEach(matches) { toolRow($0) }
+        } else {
+          ForEach(ToolCategory.allCases, id: \.self) { category in
+            Section(isExpanded: Binding(get: { expandedCategories.contains(category) }, set: {
+              if $0 { expandedCategories.insert(category) } else { expandedCategories.remove(category) }
+            })) {
+              ForEach(matches.filter { $0.category == category }) { toolRow($0) }
+            } header: {
+              HStack(spacing: 6) {
+                Image(systemName: category.symbol).foregroundStyle(category.tint)
+                Text(category.rawValue)
+                Spacer(minLength: 6)
+                Text("\(matches.filter { $0.category == category }.count)").monospacedDigit()
+                  .foregroundStyle(.tertiary)
               }
             }
-            if matches.isEmpty {
-              VStack(spacing: 8) {
-                Image(systemName: section == "favorites" && query.isEmpty ? "star" : "magnifyingglass")
-                  .font(.system(size: 20)).foregroundStyle(.tertiary)
-                Text(section == "favorites" && query.isEmpty ? "点击工具标题旁的星标添加收藏" : "没有匹配的工具")
-                  .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
-              }.frame(maxWidth: .infinity).padding(.vertical, 24).padding(.horizontal, 10)
-            }
-          }.padding(.horizontal, 10).padding(.vertical, 8)
-        }
-        .onChange(of: workspace.navigation.selectedID) { _, _ in
-          if let metadata = active?.metadata {
-            expandedCategories.insert(metadata.category)
-            Task { @MainActor in await Task.yield(); scroll.scrollTo(metadata.id, anchor: .center) }
           }
         }
       }
-      HStack {
-        Button { workspace.showOverview() } label: { Image(systemName: "square.grid.2x2") }
-          .buttonStyle(.borderless).help("工具总览").accessibilityLabel("工具总览")
-        Text("\(matches.count) 个工具").font(.system(size: 11)).foregroundStyle(.secondary)
-        Spacer()
-        SettingsLink { Image(systemName: "gearshape") }.buttonStyle(.borderless).help("设置").accessibilityLabel("设置")
-      }.foregroundStyle(.secondary).padding(.horizontal, 16).padding(.vertical, 12)
+      .listStyle(.sidebar)
+      .overlay {
+        if matches.isEmpty {
+          ContentUnavailableView(section == "favorites" && query.isEmpty ? "还没有收藏" : "没有匹配的工具",
+            systemImage: section == "favorites" && query.isEmpty ? "star" : "magnifyingglass",
+            description: Text(section == "favorites" && query.isEmpty ? "在工具栏点击星标添加收藏" : "换个关键词试试"))
+        }
+      }
+      .safeAreaInset(edge: .top, spacing: 0) {
+        Picker("显示", selection: $section) {
+          Label("工具", systemImage: "square.grid.2x2").tag("tools")
+          Label("收藏", systemImage: "star").tag("favorites")
+        }.pickerStyle(.segmented).labelsHidden().padding(.horizontal, 12).padding(.vertical, 6)
+      }
+      .safeAreaInset(edge: .bottom, spacing: 0) {
+        HStack {
+          Button { workspace.showOverview() } label: { Label("工具总览", systemImage: "square.grid.2x2") }
+            .labelStyle(.iconOnly).help("工具总览")
+          Text("\(matches.count) 个工具").font(.caption).foregroundStyle(.secondary)
+          Spacer()
+          SettingsLink { Label("设置", systemImage: "gearshape") }.labelStyle(.iconOnly).help("设置")
+        }.buttonStyle(.borderless).padding(.horizontal, 14).padding(.vertical, 10)
+      }
+      .onChange(of: workspace.navigation.selectedID) { _, _ in
+        if let metadata = active?.metadata {
+          expandedCategories.insert(metadata.category)
+          Task { @MainActor in await Task.yield(); scroll.scrollTo(metadata.id, anchor: .center) }
+        }
+      }
     }
   }
   private func toolRow(_ item: ToolMetadata) -> some View {
-    let selected = workspace.navigation.selectedToolID == item.id
-    return Button { open(item.id) } label: {
-      HStack(spacing: 10) {
-        ToolIconTile(symbol: item.symbol, tint: item.category.tint, emphasized: selected)
-        VStack(alignment: .leading, spacing: 3) {
-          Text(item.name).font(.system(size: 12, weight: selected ? .semibold : .medium)).lineLimit(1)
-          Text(item.summary).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1)
-        }
-        Spacer(minLength: 0)
-      }.padding(.horizontal, 8).padding(.vertical, 7).frame(maxWidth: .infinity, alignment: .leading)
-    }.buttonStyle(HoverSurfaceButtonStyle(selected: selected)).id(item.id).help(item.summary)
-      .accessibilityAddTraits(selected ? .isSelected : [])
-      .contextMenu { Button(favoriteIDs.contains(item.id) ? "取消收藏" : "收藏") { toggleFavorite(item.id) } }
+    Label {
+      VStack(alignment: .leading, spacing: 2) {
+        Text(item.name).lineLimit(1)
+        Text(item.summary).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+      }
+    } icon: {
+      ToolIconTile(symbol: item.symbol, tint: item.category.tint, size: 22)
+    }
+    .tag(item.id).id(item.id).help(item.summary)
+    .contextMenu { Button(favoriteIDs.contains(item.id) ? "取消收藏" : "收藏") { toggleFavorite(item.id) } }
   }
   private var commandActions: WorkspaceActions {
     WorkspaceActions(run: { active?.bridge.execute() }, copy: { active?.bridge.copy() }, search: {
-      sidebarVisible = true; section = "tools"; searchFocused = true
+      columns = .all; section = "tools"; searchFocused = true
     }, selectPane: active?.metadata.id == "websocket"
       ? nil : { active?.bridge.selectPane($0) })
   }
