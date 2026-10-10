@@ -95,6 +95,14 @@ extension View {
   func workspaceCard() -> some View { modifier(WorkspaceCard()) }
 }
 
+extension View {
+  /// Every pane's action row shares one height and inset, so the editors below
+  /// start on the same line in the comparison view.
+  func paneActionRow() -> some View {
+    padding(.horizontal, 16).frame(height: 40)
+  }
+}
+
 extension EnvironmentValues {
   /// False for tools kept alive in the background, so only the visible tool
   /// contributes items to the shared window toolbar.

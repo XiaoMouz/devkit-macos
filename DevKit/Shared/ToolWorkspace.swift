@@ -10,6 +10,7 @@ struct ToolWorkspace<T: ToolModule>: View {
   @State private var selectedArtifact = 0
   @AppStorage("editorFontSize") private var fontSize = 13.0
   @Environment(\.workspaceActive) private var workspaceActive
+  @AppStorage(FavoriteTools.key) private var favorites = FavoriteTools.defaults
   private var form: ToolPresentation { session.presentation }
   private var paired: Bool { session.inputStyle == .pair && !session.metadata.network }
   private var mode: WorkspaceLayoutMode { session.layoutPolicy.mode(width: availableWidth) }
@@ -78,6 +79,12 @@ struct ToolWorkspace<T: ToolModule>: View {
           ToolbarItemGroup(placement: .primaryAction) {
             paneSwitch
             windowMenu
+            favoriteButton
+            Button { session.run() } label: {
+              Label(session.bridge.running ? "取消" : "执行",
+                systemImage: session.bridge.running ? "stop.fill" : "play.fill").labelStyle(.titleAndIcon)
+            }.buttonStyle(.borderedProminent)
+              .help(session.bridge.running ? "取消" : "\(form.action) ⌘↩︎")
           }
         }
       }
@@ -101,6 +108,12 @@ struct ToolWorkspace<T: ToolModule>: View {
       Spacer(minLength: 4)
       windowMenu.labelStyle(.iconOnly).menuStyle(.button).buttonStyle(.glass).fixedSize()
     }.font(.system(size: 12)).controlSize(.small).frame(height: 30)
+  }
+  private var favoriteButton: some View {
+    let favorite = FavoriteTools.ids(favorites).contains(session.metadata.id)
+    return Button { favorites = FavoriteTools.toggling(session.metadata.id, in: favorites) } label: {
+      Label("收藏", systemImage: favorite ? "star.fill" : "star").contentTransition(.symbolEffect(.replace))
+    }.help(favorite ? "取消收藏" : "收藏当前工具")
   }
   private var paneSwitch: some View {
     WorkspaceSegments(items: paneChoices, selection: Binding(get: {
@@ -137,7 +150,7 @@ struct ToolWorkspace<T: ToolModule>: View {
         Button("导入…") { session.chooseFile(secondary: true) }
         Spacer()
         Button { session.input.secondary = "" } label: { Image(systemName: "trash") }.accessibilityLabel("清空第二输入")
-      }.buttonStyle(.glass).controlSize(.small).padding(10)
+      }.buttonStyle(.glass).controlSize(.small).paneActionRow()
       CodeEditor(text: $session.input.secondary, label: form.secondaryTitle, contentSettled: session.refreshLayout,
         editingBegan: { focusedPane = .secondary })
     }.onDrop(of: [.fileURL], isTargeted: nil) { providers in
@@ -196,7 +209,7 @@ struct ToolWorkspace<T: ToolModule>: View {
           }
         }.disabled(!session.current)
       }
-    }.font(.system(size: 12)).buttonStyle(.glass).controlSize(.small).padding(.horizontal, 10).padding(.vertical, 9)
+    }.font(.system(size: 12)).buttonStyle(.glass).controlSize(.small).paneActionRow()
   }
   @ViewBuilder private func resultBody(_ output: ToolOutput) -> some View {
     if display == "files", let artifact = session.binaryArtifact {

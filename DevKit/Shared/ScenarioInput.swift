@@ -89,7 +89,7 @@ struct ScenarioInput<T: ToolModule>: View {
         Spacer()
         Button("重置") { session.options = T.Options() }
       }
-    }.font(.system(size: 12)).buttonStyle(.glass).controlSize(.small).padding(.horizontal, 14).padding(.vertical, 9)
+    }.font(.system(size: 12)).buttonStyle(.glass).controlSize(.small).paneActionRow()
   }
   @ViewBuilder private var formInput: some View {
     switch form.control {

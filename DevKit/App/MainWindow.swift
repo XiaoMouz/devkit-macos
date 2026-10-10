@@ -7,11 +7,11 @@ struct MainWindow: View {
   @State private var section = "tools"
   @State private var expandedCategories: Set<ToolCategory> = [.encoding]
   @AppStorage("showToolConfiguration") private var configurationVisible = true
-  @AppStorage("favorites") private var favorites = "base64,json,uuid,timestamp,color,hash"
+  @AppStorage(FavoriteTools.key) private var favorites = FavoriteTools.defaults
   @FocusState private var searchFocused: Bool
   private var cachedTools: [ToolTab] { workspace.tabs }
   private var active: ToolTab? { workspace.active }
-  private var favoriteIDs: [String] { Array(Set(favorites.split(separator: ",").map { ["json-diff", "json-path", "json-schema", "json-to-model"].contains(String($0)) ? "json" : String($0) })) }
+  private var favoriteIDs: [String] { FavoriteTools.ids(favorites) }
   private var allTools: [ToolMetadata] { ToolRegistry.all.map { $0.metadata } }
   private var favoriteTools: [ToolMetadata] {
     favoriteIDs.compactMap { id in allTools.first { $0.id == id } }
@@ -35,6 +35,9 @@ struct MainWindow: View {
     .searchFocused($searchFocused)
     .onSubmit(of: .search) { if let first = matches.first { open(first.id) } }
     .frame(minWidth: 900, minHeight: 580)
+    // The editor surface is the window's base layer, so the floating sidebar and the
+    // toolbar's glass read against it instead of a lighter window background.
+    .containerBackground(Color(nsColor: .textBackgroundColor), for: .window)
     .focusedSceneValue(\.workspaceActions, commandActions)
     .background(WindowCommandScope(actions: commandActions))
     .onAppear { if cachedTools.isEmpty { open("base64") } }
@@ -70,6 +73,10 @@ struct MainWindow: View {
   @ToolbarContentBuilder private var toolbarContent: some ToolbarContent {
     if let active {
       ToolbarItem(placement: .principal) { active.primaryControl.id(active.id) }
+    }
+    // Tool workspaces add their own trailing group so the primary action stays last;
+    // only the WebSocket client, which has no tool workspace, is served from here.
+    if let active, active.metadata.id == "websocket" {
       ToolbarItemGroup(placement: .primaryAction) {
         Button { toggleFavorite(active.metadata.id) } label: {
           Label("收藏", systemImage: favoriteIDs.contains(active.metadata.id) ? "star.fill" : "star")
@@ -127,9 +134,11 @@ struct MainWindow: View {
         }
       }
       .safeAreaInset(edge: .top, spacing: 0) {
+        // Verbatim titles: "工具" is also a menu-bar key in en.lproj, and translating
+        // only one segment would mix languages inside a single control.
         Picker("显示", selection: $section) {
-          Label("工具", systemImage: "square.grid.2x2").tag("tools")
-          Label("收藏", systemImage: "star").tag("favorites")
+          Label { Text(verbatim: "工具") } icon: { Image(systemName: "square.grid.2x2") }.tag("tools")
+          Label { Text(verbatim: "收藏") } icon: { Image(systemName: "star") }.tag("favorites")
         }.pickerStyle(.segmented).labelsHidden().padding(.horizontal, 12).padding(.vertical, 6)
       }
       .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -219,9 +228,22 @@ struct MainWindow: View {
   private func open(_ id: String) {
     workspace.open(id)
   }
-  private func toggleFavorite(_ id: String) {
-    var ids = favoriteIDs
-    if ids.contains(id) { ids.removeAll { $0 == id } } else { ids.append(id) }
-    favorites = ids.joined(separator: ",")
+  private func toggleFavorite(_ id: String) { favorites = FavoriteTools.toggling(id, in: favorites) }
+}
+
+/// Favourites persist as a comma-separated list; retired JSON tool IDs map to `json`.
+enum FavoriteTools {
+  static let key = "favorites"
+  static let defaults = "base64,json,uuid,timestamp,color,hash"
+  static func ids(_ raw: String) -> [String] {
+    var seen = Set<String>()
+    return raw.split(separator: ",").map {
+      ["json-diff", "json-path", "json-schema", "json-to-model"].contains(String($0)) ? "json" : String($0)
+    }.filter { seen.insert($0).inserted }
+  }
+  static func toggling(_ id: String, in raw: String) -> String {
+    var list = ids(raw)
+    if list.contains(id) { list.removeAll { $0 == id } } else { list.append(id) }
+    return list.joined(separator: ",")
   }
 }
