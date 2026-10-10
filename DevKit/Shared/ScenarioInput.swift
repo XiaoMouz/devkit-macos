@@ -40,6 +40,7 @@ struct ScenarioInputActions<T: ToolModule>: View {
 struct ScenarioInput<T: ToolModule>: View {
   @Bindable var session: ToolSession<T>
   var editingBegan: () -> Void = {}
+  var editorState: EditorViewState? = nil
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   private var form: ToolPresentation { session.presentation }
   private var fields: [OptionField<T.Options>] {
@@ -62,7 +63,7 @@ struct ScenarioInput<T: ToolModule>: View {
       } else {
         CodeEditor(text: $session.input.text, label: form.inputTitle,
           language: .forTool(session.metadata.id, values: session.optionValues),
-          contentSettled: session.refreshLayout, editingBegan: editingBegan)
+          contentSettled: session.refreshLayout, editingBegan: editingBegan, state: editorState)
           .overlay {
             if session.input.text.isEmpty {
               WorkspaceEmptyState(title: "从一段内容开始", detail: form.placeholder,
@@ -117,7 +118,7 @@ struct ScenarioInput<T: ToolModule>: View {
             Button {
               session.input.text = Dates.timestamp(Date(), milliseconds: session.optionValues["unit"] == "milliseconds")
             } label: { Image(systemName: "clock") }
-              .buttonStyle(.glass).buttonBorderShape(.capsule).help("使用当前时间戳").accessibilityLabel("使用当前时间戳")
+              .buttonStyle(.bordered).buttonBorderShape(.capsule).help("使用当前时间戳").accessibilityLabel("使用当前时间戳")
           }
         }
       }
@@ -133,7 +134,7 @@ struct ScenarioInput<T: ToolModule>: View {
         }
         if session.metadata.id == "http-status" {
           LazyVGrid(columns: [GridItem(.adaptive(minimum: 52))], alignment: .leading) { ForEach([200, 201, 301, 400, 401, 404, 500], id: \.self) { code in
-            Button(String(code)) { session.input.text = String(code); session.run() }.buttonStyle(.glass).buttonBorderShape(.capsule)
+            Button(String(code)) { session.input.text = String(code); session.run() }.buttonStyle(.bordered).buttonBorderShape(.capsule)
           } }
         }
       }
@@ -153,14 +154,14 @@ struct ScenarioInput<T: ToolModule>: View {
               .font(.caption).foregroundStyle(.secondary)
             Button { session.chooseFile() } label: {
               Label(form.isImage ? "更换图片…" : "更换文件…", systemImage: form.isImage ? "photo" : "folder")
-            }.buttonStyle(.glass).buttonBorderShape(.capsule)
+            }.buttonStyle(.bordered).buttonBorderShape(.capsule)
           } else {
             VStack(spacing: 16) {
               Image(systemName: form.isImage ? "photo.badge.plus" : "doc.badge.plus").font(.system(size: 36)).foregroundStyle(.tertiary)
               Text(form.isImage ? "拖入图片，或选择图片" : "拖入文件，或选择文件").foregroundStyle(.secondary)
               Button { session.chooseFile() } label: {
                 Label(form.isImage ? "选择图片…" : "选择文件…", systemImage: form.isImage ? "photo" : "folder")
-              }.buttonStyle(.glass).buttonBorderShape(.capsule).controlSize(.large)
+              }.buttonStyle(.bordered).buttonBorderShape(.capsule).controlSize(.large)
             }.frame(maxWidth: .infinity).padding(.vertical, 38)
           }
           ToolParameterFields(options: $session.options, fields: fields)
@@ -178,7 +179,7 @@ struct ScenarioInput<T: ToolModule>: View {
         .frame(height: 155)
       Divider()
       Text("请求体").font(.caption).foregroundStyle(.secondary).padding(.horizontal, 16).padding(.top, 10)
-      CodeEditor(text: $session.input.secondary, label: "请求体", contentSettled: session.refreshLayout, editingBegan: editingBegan)
+      CodeEditor(text: $session.input.secondary, label: "请求体", contentSettled: session.refreshLayout, editingBegan: editingBegan, state: editorState)
     }
   }
 }

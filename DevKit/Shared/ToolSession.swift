@@ -7,6 +7,7 @@ import UniformTypeIdentifiers
 @MainActor @Observable final class ToolSession<T: ToolModule> {
   let id: UUID
   let bridge: WorkspaceBridge
+  let viewState = WorkspaceViewState()
   var input = ToolInput() {
     didSet {
       guard
@@ -119,13 +120,15 @@ import UniformTypeIdentifiers
 
   }
   func refreshLayout() {
+    var next = layoutPolicy
     if presentation.isForm || presentation.isImage || metadata.id == "qr-code" {
-      layoutPolicy.evaluate(texts: [])
-      return
+      next.evaluate(texts: [])
+    } else {
+      next.evaluate(
+        texts: [input.text, input.secondary, current ? output?.text ?? "" : ""],
+        fileBytes: input.file?.count ?? 0)
     }
-    layoutPolicy.evaluate(
-      texts: [input.text, input.secondary, current ? output?.text ?? "" : ""],
-      fileBytes: input.file?.count ?? 0)
+    if next != layoutPolicy { layoutPolicy = next }
   }
   func chooseLayout(_ preference: WorkspaceLayoutPreference) {
     layoutPolicy.preference = preference

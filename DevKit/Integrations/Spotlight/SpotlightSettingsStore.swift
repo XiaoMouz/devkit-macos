@@ -49,17 +49,26 @@ import SwiftUI
 /// Serialize asynchronous index updates so a slow enable cannot undo a later disable.
 actor SpotlightIndexManager {
   static let shared = SpotlightIndexManager()
+  private static let indexStateKey = "spotlightIndexStateV1"
   private var operation: Task<Void, Error>?
   func synchronize(_ preferences: SpotlightPreferences) async throws {
     let previous = operation
     let next = Task<Void, Error> {
       _ = await previous?.result
+      // An already-disabled integration needs no XPC connection, signing lookup,
+      // or App Shortcuts registration on subsequent application launches.
+      if !preferences.enabled && UserDefaults.standard.string(forKey: Self.indexStateKey) == "disabled" { return }
       let index = CSSearchableIndex.default()
+      UserDefaults.standard.set("pending", forKey: Self.indexStateKey)
       // Cleanup is scoped to this app's index, never the user's system-wide Spotlight database.
       do {
         if preferences.enabled { try await index.deleteAppEntities(ofType: SpotlightToolAction.self) }
         else { try await index.deleteAllSearchableItems() }
       } catch { throw ToolFailure("清理工具索引失败：\(error.localizedDescription)") }
+      guard preferences.enabled else {
+        UserDefaults.standard.set("disabled", forKey: Self.indexStateKey)
+        return
+      }
       let entities = SpotlightCatalog.actions.filter { preferences.allows($0.toolID) }
         .map { SpotlightToolAction($0, preferences: preferences) }
       do {
@@ -70,6 +79,7 @@ actor SpotlightIndexManager {
       if SpotlightRuntimeStatus.current.hasDeveloperIdentity {
         DevKitShortcuts.updateAppShortcutParameters()
       }
+      UserDefaults.standard.set("enabled", forKey: Self.indexStateKey)
     }
     operation = next
     try await next.value

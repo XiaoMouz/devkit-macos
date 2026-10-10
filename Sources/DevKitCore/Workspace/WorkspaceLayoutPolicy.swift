@@ -7,7 +7,7 @@ public enum WorkspaceLayoutMode: Sendable { case split, focused }
 
 /// Content decisions are committed at paste/import, editing boundaries, or execution.
 /// Width is resolved per window; a manual preference is never overwritten by content.
-public struct WorkspaceLayoutPolicy: Sendable {
+public struct WorkspaceLayoutPolicy: Sendable, Equatable {
   public static let minimumSplitWidth = 560.0
   public var preference: WorkspaceLayoutPreference = .automatic
   public private(set) var contentMode: WorkspaceLayoutMode = .split

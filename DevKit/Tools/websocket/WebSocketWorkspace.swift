@@ -122,12 +122,12 @@ struct WebSocketWorkspace: View {
         TextField("wss:// 或 ws:// 地址", text: $model.url).textFieldStyle(.roundedBorder).disabled(
           model.connected || model.connecting)
         Button { model.send() } label: { Label("发送消息", systemImage: "paperplane") }
-          .buttonStyle(.glass).buttonBorderShape(.capsule).disabled(!model.connected)
+          .buttonStyle(.bordered).buttonBorderShape(.capsule).disabled(!model.connected)
         Menu {
           Button("复制全部消息") { copy() }
           Button("清空消息") { model.clear() }
         } label: { Label("更多", systemImage: "ellipsis") }.labelStyle(.iconOnly).menuStyle(.button)
-          .buttonStyle(.glass).buttonBorderShape(.capsule).fixedSize().help("更多操作")
+          .buttonStyle(.bordered).buttonBorderShape(.capsule).fixedSize().help("更多操作")
       }.padding(.bottom, 8)
       GeometryReader { bounds in
         let split = bounds.size.width >= 720
@@ -156,8 +156,9 @@ struct WebSocketWorkspace: View {
     .animation(WorkspaceMotion.layout(reduceMotion: reduceMotion), value: model.error != nil)
     .onChange(of: bridge.runRequest) { toggle() }
     .onChange(of: bridge.copyRequest) { copy() }
-    .onChange(of: model.connected || model.connecting) { _, active in bridge.running = active }
-    .onDisappear { model.disconnect() }
+    .onChange(of: model.connected || model.connecting, initial: true) { _, active in
+      if bridge.running != active { bridge.running = active }
+    }
   }
   private var sendPane: some View {
     VStack(spacing: 0) {

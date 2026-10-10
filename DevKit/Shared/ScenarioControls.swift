@@ -41,9 +41,12 @@ struct ToolFormRow<Content: View>: View {
   }
 }
 
-struct TimeZoneControl: View {
+/// Native menu items are created only when the menu opens, not as hundreds of
+/// SwiftUI subgraphs in every date/time tool and every hidden layout candidate.
+struct TimeZoneControl: NSViewRepresentable {
   let title: String
   @Binding var selection: String
+  @Environment(\.isEnabled) private var isEnabled
   private static let entries = Dates.timeZoneIdentifiers.map { identifier in
     let zone = TimeZone(identifier: identifier)!
     let name = zone.localizedName(for: .generic, locale: Locale(identifier: "zh_CN")) ?? identifier
@@ -51,17 +54,64 @@ struct TimeZoneControl: View {
   }
   private static let common = Set([TimeZone.current.identifier, "UTC", "Asia/Shanghai", "Asia/Hong_Kong",
     "Asia/Tokyo", "Asia/Singapore", "Europe/London", "Europe/Paris", "America/New_York", "America/Los_Angeles", "Australia/Sydney"])
-  var body: some View {
-    Picker(title, selection: $selection) {
-      Section("常用时区") {
-        ForEach(Self.entries.filter { Self.common.contains($0.0) }, id: \.0) { entry in Text(entry.1).tag(entry.0) }
+  func makeCoordinator() -> Coordinator { Coordinator(self) }
+  func makeNSView(context: Context) -> NSPopUpButton {
+    let button = NSPopUpButton(frame: .zero, pullsDown: false)
+    button.target = context.coordinator
+    button.action = #selector(Coordinator.changed(_:))
+    button.menu?.autoenablesItems = false
+    button.menu?.delegate = context.coordinator
+    context.coordinator.button = button
+    return button
+  }
+  func updateNSView(_ button: NSPopUpButton, context: Context) {
+    context.coordinator.parent = self
+    button.isEnabled = isEnabled
+    button.setAccessibilityLabel(title)
+    button.toolTip = "从列表选择时区；日期显示会同步使用所选时区。"
+    guard button.selectedItem?.representedObject as? String != selection else { return }
+    if let item = button.itemArray.first(where: { $0.representedObject as? String == selection }) {
+      button.select(item)
+    } else {
+      button.removeAllItems()
+      let zone = TimeZone(identifier: selection)
+      let name = zone?.localizedName(for: .generic, locale: Locale(identifier: "zh_CN")) ?? selection
+      button.addItem(withTitle: name + " · " + selection)
+      button.lastItem?.representedObject = selection
+    }
+  }
+  func sizeThatFits(_ proposal: ProposedViewSize, nsView: NSPopUpButton, context: Context) -> CGSize? {
+    CGSize(width: max(160, proposal.width ?? 240), height: nsView.intrinsicContentSize.height)
+  }
+  @MainActor final class Coordinator: NSObject, NSMenuDelegate {
+    var parent: TimeZoneControl
+    weak var button: NSPopUpButton?
+    init(_ parent: TimeZoneControl) { self.parent = parent }
+    func menuNeedsUpdate(_ menu: NSMenu) {
+      guard menu.items.count <= 1, let button else { return }
+      menu.removeAllItems()
+      for (heading, common) in [("常用时区", true), ("所有时区", false)] {
+        let section = NSMenuItem(title: heading, action: nil, keyEquivalent: "")
+        section.isEnabled = false
+        menu.addItem(section)
+        for entry in TimeZoneControl.entries where TimeZoneControl.common.contains(entry.0) == common {
+          let item = NSMenuItem(title: entry.1, action: #selector(selected(_:)), keyEquivalent: "")
+          item.target = self
+          item.representedObject = entry.0
+          menu.addItem(item)
+        }
       }
-      Section("所有时区") {
-        ForEach(Self.entries.filter { !Self.common.contains($0.0) }, id: \.0) { entry in Text(entry.1).tag(entry.0) }
-      }
-    }.labelsHidden().pickerStyle(.menu).accessibilityLabel(title)
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .help("从列表选择时区；日期显示会同步使用所选时区。")
+      button.select(menu.items.first { $0.representedObject as? String == parent.selection })
+    }
+    @objc func selected(_ item: NSMenuItem) {
+      guard let identifier = item.representedObject as? String, identifier != parent.selection else { return }
+      parent.selection = identifier
+    }
+    @objc func changed(_ sender: NSPopUpButton) {
+      guard let identifier = sender.selectedItem?.representedObject as? String,
+        identifier != parent.selection else { return }
+      parent.selection = identifier
+    }
   }
 }
 
@@ -83,20 +133,26 @@ struct DateValueControl: View {
             .toggleStyle(.checkbox)
         }
         HStack(spacing: 8) {
-          NativeDateTimePicker(date: date, timeZone: timeZone, title: title)
-            .frame(width: 230, height: 26).disabled(allowsCurrent && text.isEmpty)
+          if allowsCurrent && text.isEmpty {
+            Text("执行时取当前时间").font(.system(size: 12, design: .monospaced))
+              .foregroundStyle(.tertiary).frame(width: 230, height: 26, alignment: .leading)
+              .accessibilityLabel(title)
+          } else {
+            NativeDateTimePicker(date: date, timeZone: timeZone, title: title)
+              .frame(width: 230, height: 26)
+          }
           Button { calendarPresented = true } label: { Image(systemName: "calendar") }
-            .buttonStyle(.glass).buttonBorderShape(.capsule).help("打开日历选择日期").accessibilityLabel(title + "选择日期")
+            .buttonStyle(.bordered).buttonBorderShape(.capsule).help("打开日历选择日期").accessibilityLabel(title + "选择日期")
             .popover(isPresented: $calendarPresented) {
               VStack(alignment: .leading, spacing: 12) {
                 DatePicker(title, selection: date, in: Dates.supportedRange, displayedComponents: [.date])
                   .datePickerStyle(.graphical).labelsHidden()
                   .environment(\.timeZone, timeZone).environment(\.locale, Locale(identifier: "zh_CN"))
-                Button("完成") { calendarPresented = false }.buttonStyle(.glass)
+                Button("完成") { calendarPresented = false }.buttonStyle(.bordered)
               }.padding(16).frame(width: 290)
             }
           Button { text = Dates.iso(Date()) } label: { Image(systemName: "clock") }
-            .buttonStyle(.glass).buttonBorderShape(.capsule).help("使用现在的日期时间").accessibilityLabel(title + "设为现在")
+            .buttonStyle(.bordered).buttonBorderShape(.capsule).help("使用现在的日期时间").accessibilityLabel(title + "设为现在")
         }
         if !text.isEmpty && Dates.parse(text, timeZone: timeZone) == nil {
           Text("日期无效，请重新选择日期时间。").font(.caption).foregroundStyle(.red)
@@ -187,7 +243,7 @@ struct KeyValueEditor: View {
       }
       Button { rows.append(Entry(value: kind == .template ? "name" : "")) } label: {
         Label(kind == .headers ? "添加请求头" : "添加字段", systemImage: "plus")
-      }.buttonStyle(.glass).buttonBorderShape(.capsule)
+      }.buttonStyle(.bordered).buttonBorderShape(.capsule)
       if let error { Text(error).font(.caption).foregroundStyle(.orange) }
     }
     .onAppear { read() }

@@ -1,5 +1,7 @@
 import DevKitCore
 import Foundation
+import Observation
+import Synchronization
 import Testing
 
 @testable import DevKitSession
@@ -18,6 +20,21 @@ private actor Gate {
 }
 
 @Suite("Shared workspace session") @MainActor struct SharedSessionTests {
+  @Test func repeatedLayoutEvaluationOnlyPublishesActualChanges() {
+    let session = ToolSession<Base64Tool>(id: UUID(), bridge: WorkspaceBridge())
+    let updates = Mutex(0)
+    withObservationTracking {
+      _ = session.layoutPolicy
+    } onChange: {
+      updates.withLock { $0 += 1 }
+    }
+    for _ in 0..<20 { session.refreshLayout() }
+    #expect(updates.withLock { $0 } == 0)
+    session.input.text = String(repeating: "a", count: 4000)
+    session.refreshLayout()
+    #expect(updates.withLock { $0 } == 1)
+    #expect(session.layoutPolicy.mode(width: 1200) == .focused)
+  }
   private func waitUntil(_ condition: () async -> Bool) async throws {
     for _ in 0..<200 {
       if await condition() { return }

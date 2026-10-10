@@ -54,13 +54,16 @@ import SwiftUI
 private struct DetachedWorkspaceRoot<T: ToolModule>: View {
   @Bindable var session: ToolSession<T>
   let pane: DetachedWorkspacePane
-  private var actions: WorkspaceActions {
-    WorkspaceActions(
-      run: { session.run() }, copy: { session.copyResult() }, search: {}, supportsNavigation: false)
+  @State private var actions: WorkspaceActions
+  init(session: ToolSession<T>, pane: DetachedWorkspacePane) {
+    self.session = session
+    self.pane = pane
+    _actions = State(initialValue: WorkspaceActions(
+      run: { [weak session] in session?.run() }, copy: { [weak session] in session?.copyResult() },
+      search: {}, supportsNavigation: false))
   }
   var body: some View {
     ToolWorkspace(session: session, detachedPane: pane)
-      .focusedSceneValue(\.workspaceActions, actions)
       .background(WindowCommandScope(actions: actions))
   }
 }

@@ -16,7 +16,7 @@ struct ToolOptionsForm<Options: ToolOptions>: View {
             modified()
           } label: {
             Label("重置", systemImage: "arrow.counterclockwise")
-          }.font(.caption).buttonStyle(.glass).buttonBorderShape(.capsule).foregroundStyle(.secondary).help("恢复默认配置")
+          }.font(.caption).buttonStyle(.bordered).buttonBorderShape(.capsule).foregroundStyle(.secondary).help("恢复默认配置")
         }
         ToolParameterFields(options: Binding(get: { options }, set: { options = $0; modified() }), fields: fields)
       }.padding(18)

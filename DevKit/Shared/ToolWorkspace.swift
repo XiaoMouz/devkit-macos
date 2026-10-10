@@ -5,9 +5,24 @@ struct ToolWorkspace<T: ToolModule>: View {
   @Bindable var session: ToolSession<T>
   var detachedPane: DetachedWorkspacePane? = nil
   @State private var availableWidth: CGFloat = 1000
-  @State private var focusedPane: WorkspacePane = .input
-  @State private var display = "text"
-  @State private var selectedArtifact = 0
+  @State private var viewState: WorkspaceViewState
+  private var focusedPane: WorkspacePane {
+    get { viewState.focusedPane }
+    nonmutating set { viewState.focusedPane = newValue }
+  }
+  private var display: String {
+    get { viewState.display }
+    nonmutating set { viewState.display = newValue }
+  }
+  private var selectedArtifact: Int {
+    get { viewState.selectedArtifact }
+    nonmutating set { viewState.selectedArtifact = newValue }
+  }
+  init(session: ToolSession<T>, detachedPane: DetachedWorkspacePane? = nil) {
+    self.session = session
+    self.detachedPane = detachedPane
+    _viewState = State(initialValue: detachedPane == nil ? session.viewState : WorkspaceViewState())
+  }
   @AppStorage("editorFontSize") private var fontSize = 13.0
   @Environment(\.workspaceActive) private var workspaceActive
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -71,7 +86,7 @@ struct ToolWorkspace<T: ToolModule>: View {
           HStack {
             ToolPrimaryControl(session: session, inToolbar: false)
             Spacer()
-            Button(session.bridge.running ? "取消" : form.action) { session.run() }.buttonStyle(.glassProminent)
+            Button(session.bridge.running ? "取消" : form.action) { session.run() }.buttonStyle(.borderedProminent)
           }
           workspaceTools
         }
@@ -81,7 +96,7 @@ struct ToolWorkspace<T: ToolModule>: View {
         WorkspacePaneDeck(roles: roles, visible: visible,
           titles: [.input: form.inputTitle, .secondary: form.secondaryTitle, .output: form.outputTitle], formats: formats, actions: paneActions) { role in
           switch role {
-          case .input: ScenarioInput(session: session, editingBegan: { focusedPane = .input })
+          case .input: ScenarioInput(session: session, editingBegan: { focusedPane = .input }, editorState: viewState.inputEditor)
           case .secondary: secondaryInput
           case .output: resultPane
           }
@@ -89,8 +104,9 @@ struct ToolWorkspace<T: ToolModule>: View {
       }.padding(WorkspaceMetrics.inset)
         .animation(WorkspaceMotion.layout(reduceMotion: reduceMotion), value: session.workspaceParameterPlan.fieldIDs)
         .onChange(of: bounds.size.width, initial: true) { _, width in
-          availableWidth = max(0, width - WorkspaceMetrics.inset * 2)
-          if detachedPane == nil { session.bridge.workspaceWidth = availableWidth }
+          let next = max(0, width - WorkspaceMetrics.inset * 2)
+          if availableWidth != next { availableWidth = next }
+          if detachedPane == nil && session.bridge.workspaceWidth != next { session.bridge.workspaceWidth = next }
         }
     }.background(Color(nsColor: .workspaceBase))
       .toolbar {
@@ -112,12 +128,12 @@ struct ToolWorkspace<T: ToolModule>: View {
               } icon: {
                 Image(systemName: session.bridge.running ? "stop.fill" : "play.fill")
               }.labelStyle(.titleAndIcon).padding(.horizontal, 6)
-            }.buttonStyle(.glassProminent)
+            }.buttonStyle(.borderedProminent)
               .help(session.bridge.running ? "取消" : "\(form.action) ⌘↩︎")
           }
         }
       }
-      .onAppear { display = session.recommendedDisplay }
+      .onAppear { synchronizeResultPresentation() }
       .onChange(of: session.operation) { _, _ in focusedPane = .input }
       .onChange(of: session.bridge.paneRequest) { _, _ in
         guard detachedPane == nil else { return }
@@ -125,17 +141,22 @@ struct ToolWorkspace<T: ToolModule>: View {
         focusedPane = session.bridge.paneIndex == 1 ? .output : .input
       }
       .onChange(of: session.completedRun) { _, _ in
-        display = session.recommendedDisplay
-        selectedArtifact = 0
-        if detachedPane == nil && (paired || mode == .focused) { focusedPane = .output }
+        synchronizeResultPresentation()
       }
+  }
+  private func synchronizeResultPresentation() {
+    guard viewState.completedRun != session.completedRun else { return }
+    viewState.completedRun = session.completedRun
+    display = session.recommendedDisplay
+    selectedArtifact = 0
+    if session.output != nil && detachedPane == nil && (paired || mode == .focused) { focusedPane = .output }
   }
   /// Shown inside detached windows, which have no shared window toolbar.
   private var workspaceTools: some View {
     HStack(spacing: 12) {
       Text(detachedPane?.title ?? "工作区")
       Spacer(minLength: 4)
-      windowMenu.labelStyle(.iconOnly).menuStyle(.button).buttonStyle(.glass).fixedSize()
+      windowMenu.labelStyle(.iconOnly).menuStyle(.button).buttonStyle(.bordered).fixedSize()
     }.font(.system(size: 12)).controlSize(.small).frame(height: 30)
   }
   private var favoriteButton: some View {
@@ -198,7 +219,7 @@ struct ToolWorkspace<T: ToolModule>: View {
   private var secondaryInput: some View {
     VStack(spacing: 0) {
       CodeEditor(text: $session.input.secondary, label: form.secondaryTitle, language: inputLanguage, contentSettled: session.refreshLayout,
-        editingBegan: { focusedPane = .secondary })
+        editingBegan: { focusedPane = .secondary }, state: viewState.secondaryEditor)
     }.onDrop(of: [.fileURL], isTargeted: nil) { providers in
       guard let provider = providers.first else { return false }
       _ = provider.loadObject(ofClass: URL.self) { url, _ in
@@ -273,11 +294,11 @@ struct ToolWorkspace<T: ToolModule>: View {
     return Group {
       if output.report != nil, output.html != nil {
         WorkspaceSegments(items: [(session.metadata.id == "json" ? "路径" : "明细", "rows"),
-          ("高亮", "preview"), ("文本", "text")], selection: $display)
+          ("高亮", "preview"), ("文本", "text")], selection: $viewState.display)
           .accessibilityElement(children: .contain).accessibilityLabel("结果视图").help("切换问题路径与高亮对照")
       } else if views.count > 1 {
         Menu {
-          Picker("结果视图", selection: $display) {
+          Picker("结果视图", selection: $viewState.display) {
             ForEach(views, id: \.1) { view in Label(view.0, systemImage: view.2).tag(view.1) }
           }
         } label: {
@@ -289,7 +310,7 @@ struct ToolWorkspace<T: ToolModule>: View {
         Button { session.copyResult() } label: {
           Label(session.copied ? "已复制" : session.imageArtifact != nil ? "复制图片" : "复制",
             systemImage: session.copied ? "checkmark" : "doc.on.doc").contentTransition(.symbolEffect(.replace))
-        }.buttonStyle(.glass).tint(.blue)
+        }.buttonStyle(.bordered).tint(.blue)
           .help(session.imageArtifact != nil ? "复制图片" : "复制完整结果 ⌘⇧C").disabled(!session.current)
       }
       if output.artifacts.isEmpty {
@@ -318,13 +339,13 @@ struct ToolWorkspace<T: ToolModule>: View {
         Text(artifact.mime).font(.caption).foregroundStyle(.secondary)
         Text(ByteCountFormatter.string(fromByteCount: Int64(artifact.data.count), countStyle: .file)).foregroundStyle(.secondary)
         Button { session.save(artifact) } label: { Label("保存文件…", systemImage: "square.and.arrow.down") }
-          .buttonStyle(.glassProminent).controlSize(.large).disabled(!session.current)
+          .buttonStyle(.borderedProminent).controlSize(.large).disabled(!session.current)
       }.frame(maxWidth: .infinity, maxHeight: .infinity)
     } else if display == "preview", let html = output.html { SafePreview(html: html) }
     else if display == "preview", session.imageArtifact != nil {
       VStack(spacing: 10) {
         if output.artifacts.count > 1 {
-          Picker("预览文件", selection: $selectedArtifact) {
+          Picker("预览文件", selection: $viewState.selectedArtifact) {
             ForEach(output.artifacts.indices, id: \.self) { index in Text(output.artifacts[index].name).tag(index) }
           }.padding(12)
         }
@@ -336,7 +357,7 @@ struct ToolWorkspace<T: ToolModule>: View {
     } else if display == "rows", output.rows.isEmpty, output.report != nil {
       if let html = output.html { SafePreview(html: html) }
       else {
-        CodeEditor(text: .constant(output.text), editable: false, label: "校验详情", language: outputLanguage, status: resultStatus)
+        CodeEditor(text: .constant(output.text), editable: false, label: "校验详情", language: outputLanguage, status: resultStatus, state: viewState.outputEditor)
       }
     } else if display == "rows", !output.rows.isEmpty {
       ScrollView {
@@ -351,7 +372,7 @@ struct ToolWorkspace<T: ToolModule>: View {
                 language: output.report == nil ? .automatic : .plain, fontSize: fontSize)
                 .textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
               Button { if Clipboard.copy(row.value) { session.status = "已复制" } } label: { Image(systemName: "doc.on.doc") }
-                .buttonStyle(.glass).buttonBorderShape(.capsule).controlSize(.small)
+                .buttonStyle(.bordered).buttonBorderShape(.capsule).controlSize(.small)
                 .disabled(!session.current).accessibilityLabel("复制 " + row.label)
             }.padding(14)
               .background(output.report == nil ? Color.clear : rowTint(row, report: output.report).opacity(0.045))
@@ -371,7 +392,7 @@ struct ToolWorkspace<T: ToolModule>: View {
       }
     } else {
       CodeEditor(text: .constant(String(output.text.prefix(500_000))), editable: false, label: form.outputTitle,
-        language: outputLanguage, status: resultStatus)
+        language: outputLanguage, status: resultStatus, state: viewState.outputEditor)
     }
   }
   private func rowTint(_ row: ResultRow, report: ResultReport?) -> Color {

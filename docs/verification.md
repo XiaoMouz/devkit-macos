@@ -137,3 +137,27 @@ A/B 体验定义不变，当前系统端执行尚未通过。下一步必须先�
 - 使用 `DEVKIT_REQUIRE_SPOTLIGHT=1 Scripts/build.sh Release` 成功构建并签名。应用与 worker 的开发者 TeamIdentifier 一致，深度签名校验通过。安装版 worker 的编码、解码、缺少填充且保留尾部换行三项检查通过。
 - 安装后 `linkd` 对 `app.devkit.macos` 的 `autoShortcut` 和 `mediator` 连接均记录 `Accepting`；应用日志记录 `Registered process`，系统收到新的 AppShortcut 参数。该次启动的注册/连接错误为 0，之前的缺少 Team ID 拒绝已排除。
 - 通信与注册阶段已通过；系统 Spotlight 中 A/B 的完整输入、结果和点击复制仍由用户自行验证，不能将本条记录等同于完整交互验收。
+
+## 2026-10-11 工具切换与常驻内存优化
+
+通过 `DevKit.xcodeproj` 的 `DevKit / My Mac` 在 Xcode 中 Run / Debug 构建与交互验证，未生成或启动独立预览 App，未修改签名配置。
+
+- 主窗口只挂载当前工具，后台保留输入、参数、结果和轻量显示状态；编辑器选区、滚动位置和高亮语言通过状态对象保存。WebSocket 连接跟随会话关闭，不因临时切换页面被断开。
+- 菜单快捷键统一通过原生窗口路由，合并焦点通知并在当前视图更新结束后通知菜单；去掉重复的 FocusedValue 发布。布局计算只发布实际变化，原生编辑器更新期间不回写编辑回调。
+- 时区菜单按需创建原生菜单项，保留常用/所有时区与参数回写。Cron 使用当前时间时不创建日期编辑器，取消勾选后才加载原生日期控件。内容区按钮使用轻量原生样式，避免对多个玻璃候选布局反复测量。
+- Spotlight 关闭并已成功清理索引时，后续启动跳过重复 XPC 清理、签名查询与快捷指令注册；开启后保留原索引同步和签名检查。
+
+本机 macOS 27.0.1、Apple Silicon、Xcode Debug 的观察样本：
+
+| 场景 | Xcode Memory |
+| --- | --- |
+| 优化前已经使用多个工具 | 约 275–287 MB |
+| 优化后启动（不同轮次与窗口激活状态） | 约 77–93 MB |
+| Cron 示例、切换时区、打开并关闭独立结果窗口后 | 约 118 MB |
+| 随后在 Base64、时间戳、Cron 间连续切换 8 次 | 约 110 MB |
+
+这是开发机上的交互样本，前后并非严格一致的输入与操作序列，不作为全功能峰值或 Release 基准。启动达到 100 MB 内目标，使用后的常驻占用仍未达到该目标。
+
+Xcode 执行会话测试 13 项全部通过；核心测试 74 项全部通过（含动态参数共 79 次执行）。新增回归验证相同布局不重复触发 Observation 更新。实机验证 Base64 输入/结果切换后保留、Cron 执行快捷键、UTC 时区回写与计算、独立结果窗口的共享结果与快捷键、当前时间/指定日期模式切换，以及连续切换。最后一次堆快照（Cron 页面）未发现驻留的 WorkspaceTextView 实例，先前文本工具的编辑器已释放。
+
+上述实测路径未再出现 `FocusedValue update`、`glassEffect() tried to update`、`Cycle detected through attribute`、`DetachedSignatures` 和 `NSSecureCoding allowed classes` 日志。`Unable to obtain a task name port right for pid 608` 在执行工具时仍偶发；本机该 PID 是系统 WindowServer，尚未定位其系统调用来源，不宣称所有系统诊断均已消除。未设置日志屏蔽或关闭系统安全检查。

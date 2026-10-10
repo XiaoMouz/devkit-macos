@@ -1,4 +1,28 @@
+import DevKitCore
 import SwiftUI
+
+enum WorkspacePane: String, CaseIterable, Identifiable {
+  case input, secondary, output
+  var id: String { rawValue }
+}
+
+/// Keep small presentation choices when a tool's native views are released.
+/// Detached windows own their own presentation state and share only tool data.
+@MainActor @Observable final class WorkspaceViewState {
+  var focusedPane: WorkspacePane = .input
+  var display = "text"
+  var selectedArtifact = 0
+  var completedRun = -1
+  let inputEditor = EditorViewState()
+  let secondaryEditor = EditorViewState()
+  let outputEditor = EditorViewState()
+}
+
+@MainActor @Observable final class EditorViewState {
+  var languageOverride: SyntaxLanguage?
+  @ObservationIgnored var selection = NSRange(location: 0, length: 0)
+  @ObservationIgnored var scrollOrigin = CGPoint.zero
+}
 
 @MainActor @Observable final class WorkspaceBridge {
   var actionTitle = "执行"

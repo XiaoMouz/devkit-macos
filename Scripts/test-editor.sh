@@ -14,7 +14,7 @@ else
 fi
 xcrun swiftc -swift-version 6 -parse-as-library \
   -I "$editor_bin_dir" -I "$editor_bin_dir/Modules" \
-  build/editor-regression.swift DevKit/Shared/WorkspaceStyle.swift \
+  build/editor-regression.swift DevKit/Shared/WorkspaceStyle.swift DevKit/Shared/WorkspaceBridge.swift \
   "${editor_core_objects[@]}" -o "$editor_bin_dir/editor-regression"
 # The executable stays next to SwiftPM's resource bundle. The hidden host window
 # and unique pasteboard keep the user's app session and clipboard untouched.

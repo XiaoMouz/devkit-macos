@@ -4,22 +4,46 @@ import SwiftUI
 /// AppKit text views can become first responder outside SwiftUI's focus graph.
 /// Keep commands scoped to their owning window even in that case.
 @MainActor enum WindowCommandRouter {
+  @Observable final class FocusRevision { var value = 0 }
+  private static let focusRevision = FocusRevision()
+  private static var refreshScheduled = false
   final class Box: NSObject {
     var actions: WorkspaceActions
     init(_ actions: WorkspaceActions) { self.actions = actions }
   }
   static let windows = NSMapTable<NSWindow, Box>.weakToStrongObjects()
-  private static let closeObserver = NotificationCenter.default.addObserver(
-    forName: NSWindow.willCloseNotification, object: nil, queue: .main
-  ) { notification in
-    guard let window = notification.object as? NSWindow else { return }
-    MainActor.assumeIsolated { windows.removeObject(forKey: window) }
+  private static let observers = [NSWindow.didBecomeKeyNotification, NSWindow.didResignKeyNotification,
+    NSWindow.didBecomeMainNotification, NSWindow.didResignMainNotification, NSWindow.willCloseNotification
+  ].map { name in
+    NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { notification in
+      let closingWindow = notification.name == NSWindow.willCloseNotification ? notification.object as? NSWindow : nil
+      MainActor.assumeIsolated {
+        if let window = closingWindow {
+          windows.removeObject(forKey: window)
+        }
+        refreshCommands()
+      }
+    }
+  }
+  private static func refreshCommands() {
+    guard !refreshScheduled else { return }
+    refreshScheduled = true
+    // Window notifications can arrive during SwiftUI's AppKit update. Publish
+    // menu availability after that transaction, once per batch of focus changes.
+    DispatchQueue.main.async {
+      refreshScheduled = false
+      focusRevision.value += 1
+    }
   }
   static func register(_ window: NSWindow, actions: WorkspaceActions) {
-    _ = closeObserver
-    windows.setObject(Box(actions), forKey: window)
+    _ = observers
+    if windows.object(forKey: window)?.actions !== actions {
+      windows.setObject(Box(actions), forKey: window)
+      refreshCommands()
+    }
   }
   static var current: WorkspaceActions? {
+    _ = focusRevision.value
     guard let window = NSApp.keyWindow ?? NSApp.mainWindow else { return nil }
     return windows.object(forKey: window)?.actions
   }

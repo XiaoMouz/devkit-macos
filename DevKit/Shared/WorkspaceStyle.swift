@@ -132,18 +132,18 @@ private struct HoverSurface: View {
 
 extension NSColor {
   /// The window's base layer, beneath the floating sidebar and content panes.
-  static var workspaceBase: NSColor {
+  static let workspaceBase: NSColor = {
     NSColor(name: "workspaceBase") { appearance in
       appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? .textBackgroundColor : .windowBackgroundColor
     }
-  }
+  }()
   /// Elevated content panes: white on the light window grey, and a lighter
   /// surface than the base in dark mode, as elevated dark surfaces are.
-  static var workspaceCard: NSColor {
+  static let workspaceCard: NSColor = {
     NSColor(name: "workspaceCard") { appearance in
       appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? NSColor(white: 0.17, alpha: 1) : .textBackgroundColor
     }
-  }
+  }()
 }
 
 /// Lifts a content pane off the base layer. Content stays on an opaque surface;
@@ -230,13 +230,13 @@ struct PaneActions<Content: View>: View {
   var format: String? = nil
   @ViewBuilder let content: () -> Content
   var body: some View {
-    GlassEffectContainer(spacing: 8) {
-      ViewThatFits(in: .horizontal) {
-        row(compact: false).labelStyle(.titleAndIcon)
-        row(compact: true).labelStyle(.iconOnly)
-      }
+    ViewThatFits(in: .horizontal) {
+      row(compact: false).labelStyle(.titleAndIcon)
+      row(compact: true).labelStyle(.iconOnly)
     }
-    .buttonStyle(.glass).buttonBorderShape(.capsule).controlSize(.small)
+    // Content actions are lightweight controls. Glass belongs to the window
+    // toolbar; measuring two glass candidates here re-enters effect updates.
+    .buttonStyle(.bordered).buttonBorderShape(.capsule).controlSize(.small)
     .paneActionRow()
     .overlay(alignment: .bottom) { Divider().opacity(0.55) }
   }
@@ -301,9 +301,7 @@ struct WorkspaceEmptyState<Actions: View>: View {
       ToolIconTile(symbol: symbol, tint: tint, size: 44).padding(.bottom, 3).allowsHitTesting(false)
       Text(title).font(.system(size: 14, weight: .medium)).allowsHitTesting(false)
       Text(detail).font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center).allowsHitTesting(false)
-      GlassEffectContainer(spacing: 8) {
-        actions().font(.caption).buttonStyle(.glass).buttonBorderShape(.capsule).tint(tint)
-      }
+      actions().font(.caption).buttonStyle(.bordered).buttonBorderShape(.capsule).tint(tint)
     }.padding(20).frame(maxWidth: .infinity, maxHeight: .infinity)
   }
 }
@@ -335,7 +333,7 @@ struct WorkspaceSegments<Value: Hashable>: View {
     if inToolbar {
       nativePicker.fixedSize()
     } else {
-      GlassEffectContainer(spacing: 4) {
+      Group {
         HStack(spacing: 4) {
           ForEach(items.indices, id: \.self) { index in
             Button { selection = items[index].1 } label: {
@@ -377,17 +375,13 @@ private struct GlassSelectionStyle: ViewModifier {
   let selected: Bool
   func body(content: Content) -> some View {
     if selected {
-      content.buttonStyle(.glassProminent)
+      content.buttonStyle(.borderedProminent)
     } else {
-      content.buttonStyle(.glass)
+      content.buttonStyle(.bordered)
     }
   }
 }
 
-enum WorkspacePane: String, CaseIterable, Identifiable {
-  case input, secondary, output
-  var id: String { rawValue }
-}
 enum DetachedWorkspacePane: String {
   case input, secondary, output, comparison
   var title: String {

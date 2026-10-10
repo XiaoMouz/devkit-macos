@@ -10,12 +10,14 @@ struct CodeEditor: View {
   var status: PaneStatus? = nil
   var contentSettled: () -> Void = {}
   var editingBegan: () -> Void = {}
-  @State private var languageOverride: SyntaxLanguage?
-  private var effectiveLanguage: SyntaxLanguage { languageOverride ?? language }
+  var state: EditorViewState? = nil
+  @State private var localState = EditorViewState()
+  private var editorState: EditorViewState { state ?? localState }
+  private var effectiveLanguage: SyntaxLanguage { editorState.languageOverride ?? language }
   var body: some View {
     VStack(spacing: 0) {
       NativeCodeEditor(text: $text, editable: editable, label: label, language: effectiveLanguage,
-        contentSettled: contentSettled, editingBegan: editingBegan).clipped()
+        contentSettled: contentSettled, editingBegan: editingBegan, state: editorState).clipped()
       HStack(spacing: 8) {
         if let status {
           PaneStatusLabel(status: status)
@@ -25,11 +27,11 @@ struct CodeEditor: View {
         if text.utf16.count > SyntaxHighlighter.maximumLength { Text("大文本 · 纯文本显示") }
         else {
           Menu {
-            Button("跟随工具") { languageOverride = nil }
+            Button("跟随工具") { editorState.languageOverride = nil }
             Divider()
             ForEach(SyntaxLanguage.allCases, id: \.self) { item in
-              Button { languageOverride = item } label: {
-                if languageOverride == item { Label(item.title, systemImage: "checkmark") }
+              Button { editorState.languageOverride = item } label: {
+                if editorState.languageOverride == item { Label(item.title, systemImage: "checkmark") }
                 else { Text(item.title) }
               }
             }
@@ -41,7 +43,7 @@ struct CodeEditor: View {
         .padding(.horizontal, 16).frame(height: 28)
         .background(.primary.opacity(0.025))
         .overlay(alignment: .top) { Divider().opacity(0.5) }
-    }.onChange(of: language) { _, _ in languageOverride = nil }
+    }.onChange(of: language) { _, _ in editorState.languageOverride = nil }
   }
 }
 
@@ -52,6 +54,7 @@ private struct NativeCodeEditor: NSViewRepresentable {
   let language: SyntaxLanguage
   let contentSettled: () -> Void
   let editingBegan: () -> Void
+  let state: EditorViewState
   @Environment(\.isEnabled) private var isEnabled
   @Environment(\.workspaceActive) private var workspaceActive
   @AppStorage("editorFontSize") private var fontSize = 13.0
@@ -98,6 +101,10 @@ private struct NativeCodeEditor: NSViewRepresentable {
     configure(view, scroll: scroll)
     view.string = text
     view.rebuildLines()
+    let length = (text as NSString).length
+    let location = min(state.selection.location, length)
+    view.setSelectedRange(NSRange(location: location, length: min(state.selection.length, length - location)))
+    scroll.pendingScrollOrigin = state.scrollOrigin
     context.coordinator.schedule(view)
     return scroll
   }
@@ -121,6 +128,8 @@ private struct NativeCodeEditor: NSViewRepresentable {
   func updateNSView(_ scroll: NSScrollView, context: Context) {
     context.coordinator.parent = self
     guard let view = scroll.documentView as? WorkspaceTextView else { return }
+    context.coordinator.updatingView = true
+    defer { context.coordinator.updatingView = false }
     configure(view, scroll: scroll)
     if view.string != text && !view.hasMarkedText() {
       let range = view.selectedRange()
@@ -132,7 +141,11 @@ private struct NativeCodeEditor: NSViewRepresentable {
   }
   static func dismantleNSView(_ scroll: NSScrollView, coordinator: Coordinator) {
     coordinator.highlightTask?.cancel()
-    (scroll.documentView as? NSTextView)?.delegate = nil
+    if let view = scroll.documentView as? NSTextView {
+      coordinator.parent.state.selection = view.selectedRange()
+      coordinator.parent.state.scrollOrigin = scroll.contentView.bounds.origin
+      view.delegate = nil
+    }
   }
   func makeCoordinator() -> Coordinator { Coordinator(self) }
   func sizeThatFits(_ proposal: ProposedViewSize, nsView: NSScrollView, context: Context) -> CGSize? {
@@ -142,6 +155,7 @@ private struct NativeCodeEditor: NSViewRepresentable {
   @MainActor final class Coordinator: NSObject, NSTextViewDelegate {
     var parent: NativeCodeEditor
     var bulkEdit = false
+    var updatingView = false
     var highlightTask: Task<Void, Never>?
     private var scheduledText: String?
     private var scheduledLanguage: SyntaxLanguage?
@@ -180,6 +194,7 @@ private struct NativeCodeEditor: NSViewRepresentable {
       }
     }
     func textDidChange(_ notification: Notification) {
+      guard !updatingView else { return }
       guard let view = notification.object as? WorkspaceTextView else { return }
       view.rebuildLines()
       parent.text = view.string
@@ -196,14 +211,29 @@ private struct NativeCodeEditor: NSViewRepresentable {
       view.needsDisplay = true
       view.enclosingScrollView?.verticalRulerView?.needsDisplay = true
     }
-    func textDidEndEditing(_ notification: Notification) { parent.contentSettled() }
-    func textDidBeginEditing(_ notification: Notification) { parent.editingBegan() }
+    func textDidEndEditing(_ notification: Notification) {
+      guard !updatingView else { return }
+      parent.contentSettled()
+    }
+    func textDidBeginEditing(_ notification: Notification) {
+      guard !updatingView else { return }
+      parent.editingBegan()
+    }
   }
 }
 
 private final class EditorScrollView: NSScrollView {
   var wrapLines = true
+  var pendingScrollOrigin: CGPoint?
   private var adjustingDocument = false
+  override func layout() {
+    super.layout()
+    if let origin = pendingScrollOrigin, window != nil, contentView.bounds.height > 0 {
+      pendingScrollOrigin = nil
+      contentView.scroll(to: origin)
+      reflectScrolledClipView(contentView)
+    }
+  }
   override func tile() {
     super.tile()
     guard !adjustingDocument, let view = documentView as? NSTextView else { return }

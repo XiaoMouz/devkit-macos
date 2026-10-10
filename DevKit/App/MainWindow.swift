@@ -13,8 +13,7 @@ struct MainWindow: View {
   @AppStorage("showToolConfiguration") private var configurationVisible = true
   @AppStorage(FavoriteTools.key) private var favorites = FavoriteTools.defaults
   /// Incremented to move keyboard focus into the sidebar search field.
-  @State private var searchRequest = 0
-  private var cachedTools: [ToolTab] { workspace.tabs }
+  private var searchRequest: Int { workspace.searchRequest }
   private var active: ToolTab? { workspace.active }
   private var favoriteIDs: [String] { FavoriteTools.ids(favorites) }
   private var allTools: [ToolMetadata] { ToolRegistry.all.map { $0.metadata } }
@@ -47,24 +46,17 @@ struct MainWindow: View {
     // elevated, instead of merging with a window background of the same tone.
     .containerBackground(Color(nsColor: .workspaceBase), for: .window)
     .animation(WorkspaceMotion.layout(reduceMotion: reduceMotion), value: columns)
-    .focusedSceneValue(\.workspaceActions, commandActions)
     .background(WindowCommandScope(actions: commandActions))
-    .onAppear { if cachedTools.isEmpty { open("base64") } }
+    .onChange(of: searchRequest) { _, _ in columns = .all }
   }
   private var detail: some View {
     GeometryReader { bounds in
       ZStack {
-        if workspace.navigation.selectedID == nil { home }
-        ForEach(cachedTools) { tab in
-          let shown = tab.id == workspace.navigation.selectedID
+        if let tab = active {
           tab.view
-            .environment(\.workspaceActive, shown)
             .frame(width: bounds.size.width, height: bounds.size.height)
-            .opacity(shown ? 1 : 0)
-            .allowsHitTesting(shown)
-            .accessibilityHidden(!shown)
             .id(tab.id)
-        }
+        } else { home }
       }.frame(width: bounds.size.width, height: bounds.size.height).clipped()
     }
     .background { Color(nsColor: .workspaceBase).ignoresSafeArea() }
@@ -101,7 +93,7 @@ struct MainWindow: View {
         Button { active.bridge.execute() } label: {
           Label(runTitle(active), systemImage: active.bridge.running ? "stop.fill" : "play.fill")
             .labelStyle(.titleAndIcon).padding(.horizontal, 6)
-        }.buttonStyle(.glassProminent)
+        }.buttonStyle(.borderedProminent)
           .help(active.bridge.running ? "断开" : "连接 ⌘↩︎")
       }
       if active.hasConfiguration {
@@ -222,10 +214,7 @@ struct MainWindow: View {
     .contextMenu { Button(favoriteIDs.contains(item.id) ? "取消收藏" : "收藏") { toggleFavorite(item.id) } }
   }
   private var commandActions: WorkspaceActions {
-    WorkspaceActions(run: { active?.bridge.execute() }, copy: { active?.bridge.copy() }, search: {
-      columns = .all; searchRequest += 1
-    }, selectPane: active?.metadata.id == "websocket"
-      ? nil : { active?.bridge.selectPane($0) })
+    workspace.commands
   }
   private var home: some View {
     ScrollView {
