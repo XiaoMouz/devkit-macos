@@ -1,0 +1,61 @@
+{
+  "fill": {
+    "automatic-gradient": "extended-srgb:0.03000,0.36000,0.92000,1.00000"
+  },
+  "groups": [
+    {
+      "name": "Mint core · polished facets",
+      "layers": [
+        {
+          "name": "Tool module",
+          "image-name": "03-Module.svg"
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.34
+      },
+      "translucency": {
+        "enabled": true,
+        "value": 0.08
+      }
+    },
+    {
+      "name": "Code · porcelain with mint reflection",
+      "layers": [
+        {
+          "name": "Code braces",
+          "image-name": "01-Code.svg"
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.18
+      },
+      "translucency": {
+        "enabled": true,
+        "value": 0.1
+      }
+    },
+    {
+      "name": "Code · thin glass edge",
+      "layers": [
+        {
+          "name": "Contour depth",
+          "image-name": "02-Glass-Depth.svg"
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.08
+      },
+      "translucency": {
+        "enabled": true,
+        "value": 0.38
+      }
+    }
+  ],
+  "supported-platforms": {
+    "squares": "shared"
+  }
+}

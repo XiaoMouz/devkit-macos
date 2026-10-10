@@ -6,6 +6,14 @@
 
 `Scripts/build.sh Debug|Release` 生成工程、构建应用与工作进程、嵌入 helper 并做临时签名。`Scripts/package.sh` 生成 Release ZIP。脚本不安装证书、不上传产物、不发布版本。
 
+## 应用图标
+
+图标的唯一源文件是 `DevKit/Resources/AppIcon.icon`，可用 Xcode 自带的 Icon Composer 编辑。三个 SVG 图层分别负责薄荷绿模块、带反光的括号和玻璃侧边；不再维护 PNG AppIcon 资源集或旧的 Swift 绘图脚本。
+
+使用 XcodeGen 2.46 或更新版本生成工程，`.icon` 会作为 `wrapper.icon` 加入 Resources，目标的 `ASSETCATALOG_COMPILER_APPICON_NAME` 保持为 `AppIcon`。Xcode 构建时负责生成系统所需图标资源，详见 [Apple Icon Composer 接入说明](https://developer.apple.com/documentation/xcode/creating-your-app-icon-using-icon-composer)。
+
+运行 `Scripts/export-icon.sh` 可导出默认、深色、单色、小尺寸和 macOS 26 效果，默认写入已忽略的 `build/icon-previews/`。预览 PNG 无需提交，修改图标后需重新构建应用。
+
 ## 新增模块
 
 在 `Sources/DevKitCore/Tools/<id>/` 中声明 `ToolModule`。小模块的 `Options`、字段定义和引擎可以同文件；复杂逻辑按职责继续拆分。`Options` 是模块自己的 `Codable & Sendable` 类型，字段通过可写 KeyPath 连接原生 UI。

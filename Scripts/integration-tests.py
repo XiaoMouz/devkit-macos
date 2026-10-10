@@ -141,7 +141,9 @@ class WorkerIntegration(unittest.TestCase):
         scanned = run('qr-code', options=options, file=base64.b64decode(generated['data']))
         self.assertEqual(scanned['output']['text'], text)
     def test_image_data_url_round_trip(self):
-        original = (ROOT / 'DevKit/Resources/Assets.xcassets/AppIcon.appiconset/icon_16x16@1x.png').read_bytes()
+        # A standalone 1x1 RGBA PNG keeps this test independent of app artwork.
+        original = base64.b64decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGMwbnjWAAAEnQIa/Oqd7wAAAABJRU5ErkJggg==')
         encoded = run('data-url', options={'operation': 'encode'}, file=original)['output']['text']
         self.assertTrue(encoded.startswith('data:image/png;base64,'))
         decoded = run('data-url', encoded, {'operation': 'decode'})['output']['artifacts'][0]
