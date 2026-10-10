@@ -77,17 +77,23 @@ struct MainWindow: View {
     // Tool workspaces add their own trailing group so the primary action stays last;
     // only the WebSocket client, which has no tool workspace, is served from here.
     if let active, active.metadata.id == "websocket" {
-      ToolbarItemGroup(placement: .primaryAction) {
+      ToolbarItem(placement: .primaryAction) {
         Button { toggleFavorite(active.metadata.id) } label: {
           Label("收藏", systemImage: favoriteIDs.contains(active.metadata.id) ? "star.fill" : "star")
             .contentTransition(.symbolEffect(.replace))
         }.help(favoriteIDs.contains(active.metadata.id) ? "取消收藏" : "收藏当前工具")
+      }
+      ToolbarSpacer(.fixed, placement: .primaryAction)
+      ToolbarItem(placement: .primaryAction) {
         Button { active.bridge.execute() } label: {
           Label(runTitle(active), systemImage: active.bridge.running ? "stop.fill" : "play.fill")
-            .labelStyle(.titleAndIcon)
-        }.buttonStyle(.borderedProminent)
-          .help(active.bridge.running ? "取消" : "\(active.bridge.actionTitle) ⌘↩︎")
-        if active.hasConfiguration {
+            .labelStyle(.titleAndIcon).padding(.horizontal, 6)
+        }.buttonStyle(.glassProminent)
+          .help(active.bridge.running ? "断开" : "连接 ⌘↩︎")
+      }
+      if active.hasConfiguration {
+        ToolbarSpacer(.fixed, placement: .primaryAction)
+        ToolbarItem(placement: .primaryAction) {
           Button { configurationVisible.toggle() } label: {
             Label("检查器", systemImage: "sidebar.right")
           }.help("显示或隐藏配置")

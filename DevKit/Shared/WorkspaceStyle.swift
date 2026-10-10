@@ -24,13 +24,15 @@ struct ToolIconTile: View {
   var tint: Color = .accentColor
   var size: CGFloat = 24
   var emphasized = false
+  @Environment(\.colorScheme) private var colorScheme
   var body: some View {
     Image(systemName: symbol)
       .font(.system(size: size * 0.52, weight: .medium))
       .symbolRenderingMode(.hierarchical)
       .foregroundStyle(tint)
       .frame(width: size, height: size)
-      .background(tint.opacity(emphasized ? 0.2 : 0.12),
+      // Dark surfaces need more tint for the tile to read as a shape at all.
+      .background(tint.opacity((emphasized ? 0.2 : 0.12) + (colorScheme == .dark ? 0.06 : 0)),
         in: RoundedRectangle(cornerRadius: size * 0.3, style: .continuous))
       .accessibilityHidden(true)
   }
@@ -103,6 +105,13 @@ extension View {
   }
 }
 
+/// Run time worth showing: short runs are dominated by worker start-up, so they
+/// are omitted rather than presented as the tool's own cost.
+func elapsedLabel(_ seconds: Double) -> String? {
+  guard seconds >= 0.25 else { return nil }
+  return seconds < 1 ? String(format: "%.0f ms", seconds * 1000) : String(format: "%.1f s", seconds)
+}
+
 extension EnvironmentValues {
   /// False for tools kept alive in the background, so only the visible tool
   /// contributes items to the shared window toolbar.
@@ -113,8 +122,9 @@ struct WorkspaceSegments<Value: Hashable>: View {
   let items: [(String, Value)]
   @Binding var selection: Value
   var symbols: [Value: String] = [:]
-  /// Controls already placed on a glass panel must not add a second glass layer.
-  var glass = true
+  /// In a window toolbar the system supplies the glass and sizing; adding a small
+  /// control size or another glass capsule nests a cramped control inside the item.
+  var inToolbar = false
   var body: some View {
     Picker("切换", selection: $selection) {
       ForEach(items.indices, id: \.self) { index in
@@ -124,8 +134,18 @@ struct WorkspaceSegments<Value: Hashable>: View {
         }.tag(items[index].1)
       }
     }
-    .labelsHidden().pickerStyle(.segmented).controlSize(.small)
-    .fixedSize().glassEffect(glass ? .regular : .identity, in: .capsule)
+    .labelsHidden().pickerStyle(.segmented)
+    .modifier(SegmentsChrome(inToolbar: inToolbar))
+  }
+}
+private struct SegmentsChrome: ViewModifier {
+  let inToolbar: Bool
+  func body(content: Content) -> some View {
+    if inToolbar {
+      content.fixedSize()
+    } else {
+      content.controlSize(.small).fixedSize().glassEffect(.regular, in: .capsule)
+    }
   }
 }
 

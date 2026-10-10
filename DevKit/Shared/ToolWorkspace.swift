@@ -32,7 +32,7 @@ struct ToolWorkspace<T: ToolModule>: View {
       VStack(spacing: 10) {
         if detachedPane != nil {
           HStack {
-            ToolPrimaryControl(session: session)
+            ToolPrimaryControl(session: session, inToolbar: false)
             Spacer()
             Button(session.bridge.running ? "取消" : form.action) { session.run() }.buttonStyle(.glassProminent)
           }
@@ -64,7 +64,7 @@ struct ToolWorkspace<T: ToolModule>: View {
           Text(session.status).lineLimit(1)
           if session.output != nil && !session.current { Text("· 待更新") }
           Spacer()
-          if session.elapsed > 0 { Text(String(format: "%.0f ms", session.elapsed * 1000)).monospacedDigit() }
+          if let elapsed = elapsedLabel(session.elapsed) { Text(elapsed).monospacedDigit() }
         }.font(.caption).foregroundStyle(.secondary).frame(height: 16)
       }.padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 8)
         .onChange(of: bounds.size.width, initial: true) { _, width in
@@ -76,14 +76,19 @@ struct ToolWorkspace<T: ToolModule>: View {
         // In the main window, view switching joins the window toolbar instead of
         // stacking a second control row above the editors.
         if workspaceActive && detachedPane == nil {
-          ToolbarItemGroup(placement: .primaryAction) {
-            paneSwitch
-            windowMenu
-            favoriteButton
+          // Separate items in declaration order: view controls, then the favourite,
+          // then the primary action as its own prominent glass item at the far end.
+          ToolbarItem(placement: .primaryAction) { paneSwitch }
+          ToolbarItem(placement: .primaryAction) { windowMenu }
+          ToolbarSpacer(.fixed, placement: .primaryAction)
+          ToolbarItem(placement: .primaryAction) { favoriteButton }
+          ToolbarSpacer(.fixed, placement: .primaryAction)
+          ToolbarItem(placement: .primaryAction) {
             Button { session.run() } label: {
               Label(session.bridge.running ? "取消" : "执行",
-                systemImage: session.bridge.running ? "stop.fill" : "play.fill").labelStyle(.titleAndIcon)
-            }.buttonStyle(.borderedProminent)
+                systemImage: session.bridge.running ? "stop.fill" : "play.fill")
+                .labelStyle(.titleAndIcon).padding(.horizontal, 6)
+            }.buttonStyle(.glassProminent)
               .help(session.bridge.running ? "取消" : "\(form.action) ⌘↩︎")
           }
         }
@@ -121,7 +126,7 @@ struct ToolWorkspace<T: ToolModule>: View {
     }, set: { value in
       if value == "comparison" { session.chooseLayout(.split); focusedPane = .input }
       else { session.chooseLayout(.focused); focusedPane = WorkspacePane(rawValue: value) ?? .input }
-    }), glass: false)
+    }), inToolbar: true)
   }
   private var windowMenu: some View {
     Menu {
