@@ -23,14 +23,22 @@ struct MainWindow: View {
       (query.isEmpty || "\($0.name) \($0.id) \($0.summary) \($0.category.rawValue)".localizedStandardContains(query))
     }
   }
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  private typealias Metrics = WorkspaceChromeMetrics
   var body: some View {
-    VStack(spacing: 0) {
-      header
-      HStack(spacing: 0) {
-        if sidebarVisible {
-          sidebar.frame(width: WorkspaceChromeMetrics.sidebarWidth)
-            .overlay(alignment: .trailing) { WorkspaceBoundary() }
-        }
+    // The editor is the base layer. Navigation, inspector and toolbar controls
+    // leave the content plane and float above it as inset Liquid Glass.
+    HStack(spacing: 0) {
+      if sidebarVisible {
+        sidebar.padding(.top, Metrics.headerHeight - Metrics.panelInset)
+          .frame(width: Metrics.sidebarWidth)
+          .frame(maxHeight: .infinity)
+          .floatingPanel()
+          .padding([.leading, .top, .bottom], Metrics.panelInset)
+          .transition(.move(edge: .leading).combined(with: .opacity))
+      }
+      VStack(spacing: 0) {
+        toolbar
         HStack(spacing: 0) {
           GeometryReader { bounds in
             ZStack {
@@ -46,56 +54,74 @@ struct MainWindow: View {
             }.frame(width: bounds.size.width, height: bounds.size.height).clipped()
           }
           if configurationVisible, let active, active.hasConfiguration {
-            Divider()
-            active.configuration.id(active.id).frame(width: 240)
-              .background(Color(nsColor: .textBackgroundColor)).accessibilityLabel("工具配置")
+            active.configuration.id(active.id)
+              .frame(width: Metrics.inspectorWidth)
+              .frame(maxHeight: .infinity, alignment: .top)
+              .floatingPanel()
+              .padding([.trailing, .bottom], Metrics.panelInset)
+              .accessibilityElement(children: .contain).accessibilityLabel("工具配置")
+              .transition(.move(edge: .trailing).combined(with: .opacity))
           }
-        }.background(Color(nsColor: .textBackgroundColor))
-          .clipShape(UnevenRoundedRectangle(topLeadingRadius: 12))
+        }
       }
+    }
+    .overlay(alignment: .topLeading) {
+      WorkspaceSidebarControl(sidebarVisible: sidebarVisible) { animate { sidebarVisible.toggle() } }
+        .frame(width: 140, height: Metrics.headerHeight)
     }
     .frame(minWidth: 900, minHeight: 580)
     .ignoresSafeArea(.container, edges: .top)
-    .background { WorkspaceGlass().ignoresSafeArea() }
+    .background { Color(nsColor: .textBackgroundColor).ignoresSafeArea() }
     .background(WorkspaceWindowChrome())
     .focusedSceneValue(\.workspaceActions, commandActions)
     .background(WindowCommandScope(actions: commandActions))
     .onAppear { if cachedTools.isEmpty { open("base64") } }
   }
-  private var header: some View {
-    HStack(spacing: 0) {
-      WorkspaceSidebarControl(sidebarVisible: sidebarVisible) { sidebarVisible.toggle() }
-        .frame(width: sidebarVisible ? WorkspaceChromeMetrics.sidebarWidth : 128)
-        .overlay(alignment: .trailing) { if sidebarVisible { WorkspaceBoundary() } }
-      HStack(spacing: 12) {
-        if let active {
+  private func animate(_ change: () -> Void) {
+    withAnimation(reduceMotion ? nil : .smooth(duration: 0.28), change)
+  }
+  /// Toolbar items float as grouped glass capsules over the content plane.
+  private var toolbar: some View {
+    HStack(spacing: 10) {
+      if let active {
+        HStack(spacing: 8) {
           ToolIconTile(symbol: active.metadata.symbol, tint: active.metadata.category.tint, size: 22)
-          Text(active.metadata.name).font(.system(size: 15, weight: .semibold))
-            .lineLimit(1).help(active.metadata.summary).layoutPriority(1)
+          Text(active.metadata.name).font(.system(size: 14, weight: .semibold))
+            .lineLimit(1).help(active.metadata.summary)
           Button { toggleFavorite(active.metadata.id) } label: {
             Image(systemName: favoriteIDs.contains(active.metadata.id) ? "star.fill" : "star")
               .font(.system(size: 12))
               .foregroundStyle(favoriteIDs.contains(active.metadata.id) ? AnyShapeStyle(Color.yellow) : AnyShapeStyle(HierarchicalShapeStyle.secondary))
               .contentTransition(.symbolEffect(.replace))
-          }.buttonStyle(.glass).controlSize(.small).help("收藏当前工具").accessibilityLabel("收藏当前工具")
-          active.primaryControl.id(active.id)
-          Spacer(minLength: 10)
-          Button { active.bridge.execute() } label: {
-            Label(runTitle(active), systemImage: active.bridge.running ? "stop.fill" : "play")
-              .font(.system(size: 12, weight: .medium))
-          }.buttonStyle(.glass).help("执行 ⌘↩︎").accessibilityLabel(runTitle(active))
-          if active.hasConfiguration {
-            Button { configurationVisible.toggle() } label: {
-              Label("配置", systemImage: "sidebar.right").font(.system(size: 12))
-            }.buttonStyle(.glass).tint(configurationVisible ? Color.primary.opacity(0.12) : nil)
-              .accessibilityValue(configurationVisible ? "已展开" : "已收起").help("收放工具配置").accessibilityLabel("收放工具配置")
+              .frame(width: 22, height: 22).contentShape(Rectangle())
+          }.buttonStyle(.borderless).help("收藏当前工具").accessibilityLabel("收藏当前工具")
+        }.padding(.leading, 6).padding(.trailing, 8).frame(height: 32)
+          .glassEffect(.regular, in: .capsule).layoutPriority(1)
+        active.primaryControl.id(active.id)
+        Spacer(minLength: 10)
+        GlassEffectContainer(spacing: 8) {
+          HStack(spacing: 8) {
+            Button { active.bridge.execute() } label: {
+              Label(runTitle(active), systemImage: active.bridge.running ? "stop.fill" : "play.fill")
+                .font(.system(size: 12, weight: .medium))
+            }.buttonStyle(.glassProminent).help("执行 ⌘↩︎").accessibilityLabel(runTitle(active))
+            if active.hasConfiguration {
+              Button { animate { configurationVisible.toggle() } } label: {
+                Image(systemName: "sidebar.right").font(.system(size: 12))
+                  .symbolVariant(configurationVisible ? .fill : .none)
+              }.buttonStyle(.glass)
+                .accessibilityValue(configurationVisible ? "已展开" : "已收起").help("收放工具配置").accessibilityLabel("收放工具配置")
+            }
           }
-        } else {
-          Text("工具总览").font(.system(size: 15, weight: .semibold))
-          Spacer()
         }
-      }.padding(.horizontal, 16)
-    }.frame(height: WorkspaceChromeMetrics.headerHeight)
+      } else {
+        Label("工具总览", systemImage: "square.grid.2x2").font(.system(size: 14, weight: .semibold))
+          .padding(.horizontal, 12).frame(height: 32).glassEffect(.regular, in: .capsule)
+        Spacer()
+      }
+    }
+    .padding(.leading, sidebarVisible ? 12 : 140).padding(.trailing, Metrics.panelInset + 4)
+    .frame(height: Metrics.headerHeight)
   }
   private func runTitle(_ tab: ToolTab) -> String {
     if tab.metadata.id == "websocket" { return tab.bridge.running ? "断开" : "连接" }
@@ -105,9 +131,9 @@ struct MainWindow: View {
     VStack(spacing: 0) {
       HStack(spacing: 5) {
         WorkspaceSegments(items: [("工具", "tools"), ("收藏", "favorites")], selection: $section,
-          symbols: ["tools": "square.grid.2x2", "favorites": "star"])
+          symbols: ["tools": "square.grid.2x2", "favorites": "star"], glass: false)
         Spacer()
-      }.padding(.horizontal, 12).padding(.top, 10).padding(.bottom, 7)
+      }.padding(.horizontal, 12).padding(.top, 2).padding(.bottom, 7)
       HStack(spacing: 8) {
         Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
         TextField("搜索工具", text: $query).textFieldStyle(.plain).focused($searchFocused)
@@ -161,10 +187,10 @@ struct MainWindow: View {
       }
       HStack {
         Button { workspace.showOverview() } label: { Image(systemName: "square.grid.2x2") }
-          .buttonStyle(.glass).controlSize(.small).help("工具总览")
+          .buttonStyle(.borderless).help("工具总览").accessibilityLabel("工具总览")
         Text("\(matches.count) 个工具").font(.system(size: 11)).foregroundStyle(.secondary)
         Spacer()
-        SettingsLink { Image(systemName: "gearshape") }.buttonStyle(.glass).controlSize(.small).help("设置")
+        SettingsLink { Image(systemName: "gearshape") }.buttonStyle(.borderless).help("设置").accessibilityLabel("设置")
       }.foregroundStyle(.secondary).padding(.horizontal, 16).padding(.vertical, 12)
     }
   }

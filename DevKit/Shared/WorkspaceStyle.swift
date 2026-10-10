@@ -95,11 +95,14 @@ extension View {
   func workspaceCard() -> some View { modifier(WorkspaceCard()) }
 }
 
-/// A quiet, continuous boundary remains visible even with reduced transparency.
-struct WorkspaceBoundary: View {
-  var body: some View {
-    HStack(spacing: 0) { Divider() }.frame(width: 1)
-      .allowsHitTesting(false).accessibilityHidden(true)
+extension View {
+  /// Lifts secondary content (navigation, inspector) off the content plane onto a
+  /// rounded Liquid Glass panel that follows the user's glass and accessibility settings.
+  func floatingPanel() -> some View {
+    let shape = RoundedRectangle(cornerRadius: WorkspaceChromeMetrics.panelRadius, style: .continuous)
+    return background { WorkspaceGlass(cornerRadius: WorkspaceChromeMetrics.panelRadius) }
+      .clipShape(shape)
+      .overlay { shape.strokeBorder(.primary.opacity(0.06), lineWidth: 1).allowsHitTesting(false) }
   }
 }
 
@@ -107,6 +110,8 @@ struct WorkspaceSegments<Value: Hashable>: View {
   let items: [(String, Value)]
   @Binding var selection: Value
   var symbols: [Value: String] = [:]
+  /// Controls already placed on a glass panel must not add a second glass layer.
+  var glass = true
   var body: some View {
     Picker("切换", selection: $selection) {
       ForEach(items.indices, id: \.self) { index in
@@ -117,7 +122,7 @@ struct WorkspaceSegments<Value: Hashable>: View {
       }
     }
     .labelsHidden().pickerStyle(.segmented).controlSize(.small)
-    .fixedSize().glassEffect(.regular, in: .capsule)
+    .fixedSize().glassEffect(glass ? .regular : .identity, in: .capsule)
   }
 }
 
