@@ -66,7 +66,6 @@ struct MainWindow: View {
     }
     .background(Color(nsColor: .workspaceBase))
     .navigationTitle(active?.metadata.name ?? "工具总览")
-    .navigationSubtitle(active?.metadata.summary ?? "\(ToolRegistry.all.count) 个工具")
     .toolbar { toolbarContent }
     .inspector(isPresented: inspectorVisible) {
       if let active { active.configuration.id(active.id).inspectorColumnWidth(min: 220, ideal: 260, max: 360) }
@@ -213,11 +212,9 @@ struct MainWindow: View {
     .padding(.top, 12).padding(.bottom, 4)
   }
   private func toolRow(_ item: ToolMetadata, tag: String? = nil) -> some View {
+    // Names only; the description stays available as the row's tooltip.
     Label {
-      VStack(alignment: .leading, spacing: 2) {
-        Text(item.name).lineLimit(1)
-        Text(item.summary).font(.caption).foregroundStyle(.secondary).lineLimit(1)
-      }
+      Text(item.name).lineLimit(1)
     } icon: {
       ToolIconTile(symbol: item.symbol, tint: item.category.tint, size: 22)
     }
