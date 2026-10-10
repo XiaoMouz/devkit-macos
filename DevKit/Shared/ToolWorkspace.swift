@@ -85,9 +85,12 @@ struct ToolWorkspace<T: ToolModule>: View {
           ToolbarSpacer(.fixed, placement: .primaryAction)
           ToolbarItem(placement: .primaryAction) {
             Button { session.run() } label: {
-              Label(session.bridge.running ? "取消" : "执行",
-                systemImage: session.bridge.running ? "stop.fill" : "play.fill")
-                .labelStyle(.titleAndIcon).padding(.horizontal, 6)
+              // Verbatim: "执行" is also an en.lproj menu key, which turned this into "Run".
+              Label {
+                Text(verbatim: session.bridge.running ? "取消" : "执行")
+              } icon: {
+                Image(systemName: session.bridge.running ? "stop.fill" : "play.fill")
+              }.labelStyle(.titleAndIcon).padding(.horizontal, 6)
             }.buttonStyle(.glassProminent)
               .help(session.bridge.running ? "取消" : "\(form.action) ⌘↩︎")
           }

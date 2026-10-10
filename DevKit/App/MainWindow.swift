@@ -31,6 +31,12 @@ struct MainWindow: View {
   var body: some View {
     NavigationSplitView(columnVisibility: $columns) {
       sidebar.navigationSplitViewColumnWidth(min: 220, ideal: 248, max: 330)
+        // The system toggle is a standalone glass button; over the glass panel it
+        // stacks glass on glass and sits flush with the panel's top edge.
+        .toolbar(removing: .sidebarToggle)
+        .toolbar {
+          ToolbarItem { sidebarToggle }.sharedBackgroundVisibility(.hidden)
+        }
     } detail: {
       detail
     }
@@ -71,6 +77,10 @@ struct MainWindow: View {
       set: { configurationVisible = $0 })
   }
   @ToolbarContentBuilder private var toolbarContent: some ToolbarContent {
+    if columns == .detailOnly {
+      // With the panel hidden, the toggle moves to the leading end of the window toolbar.
+      ToolbarItem(placement: .navigation) { sidebarToggle }
+    }
     if let active {
       ToolbarItem(placement: .principal) { active.primaryControl.id(active.id) }
     }
@@ -100,6 +110,14 @@ struct MainWindow: View {
         }
       }
     }
+  }
+  private var sidebarToggle: some View {
+    let hidden = columns == .detailOnly
+    return Button {
+      withAnimation { columns = hidden ? .all : .detailOnly }
+    } label: {
+      Label(hidden ? "显示侧栏" : "隐藏侧栏", systemImage: "sidebar.left")
+    }.labelStyle(.iconOnly).help(hidden ? "显示侧栏 ⌃⌘S" : "隐藏侧栏 ⌃⌘S")
   }
   private func runTitle(_ tab: ToolTab) -> String {
     if tab.metadata.id == "websocket" { return tab.bridge.running ? "断开" : "连接" }
