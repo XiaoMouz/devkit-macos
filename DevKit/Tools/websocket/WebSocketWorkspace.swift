@@ -137,7 +137,7 @@ struct WebSocketWorkspace: View {
           }
           WorkspacePaneDeck(roles: [.input, .output],
             visible: split ? [.input, .output] : [pane == "send" ? .input : .output],
-            titles: [.input: "发送消息", .output: "会话消息"]) { role in
+            titles: [.input: "发送消息", .output: "会话消息"], actions: { _ in EmptyView() }) { role in
             if role == .input { sendPane } else { messagesPane }
           }
         }.animation(WorkspaceMotion.layout(reduceMotion: reduceMotion), value: split)
@@ -182,7 +182,7 @@ struct WebSocketWorkspace: View {
                 Spacer()
                 Text(message.time, style: .time)
               }.font(.caption).foregroundStyle(.secondary)
-              Text(String(message.text.prefix(5000))).font(.system(.body, design: .monospaced))
+              HighlightedText(text: String(message.text.prefix(5000)))
                 .lineLimit(12)
             }.padding(.vertical, 6)
           }.buttonStyle(.plain).help("点击复制完整消息")

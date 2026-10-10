@@ -10,15 +10,41 @@ struct ToolWorkspace<T: ToolModule>: View {
   @State private var selectedArtifact = 0
   @AppStorage("editorFontSize") private var fontSize = 13.0
   @Environment(\.workspaceActive) private var workspaceActive
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @AppStorage(FavoriteTools.key) private var favorites = FavoriteTools.defaults
   private var form: ToolPresentation { session.presentation }
   private var paired: Bool { session.inputStyle == .pair && !session.metadata.network }
   private var mode: WorkspaceLayoutMode { session.layoutPolicy.mode(width: availableWidth) }
   private var roles: [WorkspacePane] { paired ? [.input, .secondary, .output] : [.input, .output] }
-  private var showsStatus: Bool {
-    session.bridge.running || !session.status.isEmpty || session.output != nil && !session.current
-      || elapsedLabel(session.elapsed) != nil
+  private var inputLanguage: SyntaxLanguage { .forTool(session.metadata.id, values: session.optionValues) }
+  private var outputLanguage: SyntaxLanguage {
+    if session.metadata.id == "http-client", let mime = session.output?.artifacts.first?.mime {
+      return .forMIME(mime)
+    }
+    return .forTool(session.metadata.id, values: session.optionValues, output: true)
+  }
+  private var formats: [WorkspacePane: String] {
+    var labels: [WorkspacePane: String] = [:]
+    if inputLanguage != .automatic && inputLanguage != .plain {
+      labels[.input] = inputLanguage.title
+      if paired { labels[.secondary] = inputLanguage.title }
+    }
+    return labels
+  }
+  private var resultStatus: PaneStatus {
+    if session.bridge.running { return PaneStatus(title: "处理中", symbol: "hourglass", tint: .blue) }
+    if let error = session.error {
+      return PaneStatus(title: "需要检查", symbol: "exclamationmark.circle", tint: .red, detail: error)
+    }
+    if session.status.hasPrefix("已复制") || session.status.hasPrefix("已导出") {
+      return PaneStatus(title: session.status, symbol: "checkmark.circle", tint: .green, detail: session.status)
+    }
+    if !session.status.isEmpty && !["已完成", "内容已修改，重新执行以更新结果", "处理中…"].contains(session.status) {
+      return PaneStatus(title: session.status, symbol: "info.circle", tint: .secondary, detail: session.status)
+    }
+    guard session.output != nil else { return PaneStatus(title: "待生成", symbol: "text.alignleft", tint: .secondary) }
+    return session.current
+      ? PaneStatus(title: "已完成", symbol: "checkmark.circle", tint: .green, elapsed: elapsedLabel(session.elapsed))
+      : PaneStatus(title: "待更新", symbol: "arrow.trianglehead.clockwise", tint: .orange)
   }
   private var visible: [WorkspacePane] {
     if let detachedPane {
@@ -44,39 +70,14 @@ struct ToolWorkspace<T: ToolModule>: View {
           workspaceTools
         }
         WorkspacePaneDeck(roles: roles, visible: visible,
-          titles: [.input: form.inputTitle, .secondary: form.secondaryTitle, .output: form.outputTitle]) { role in
+          titles: [.input: form.inputTitle, .secondary: form.secondaryTitle, .output: form.outputTitle], formats: formats, actions: paneActions) { role in
           switch role {
           case .input: ScenarioInput(session: session, editingBegan: { focusedPane = .input })
           case .secondary: secondaryInput
           case .output: resultPane
           }
         }.frame(maxWidth: .infinity, maxHeight: .infinity).layoutPriority(1)
-        if let error = session.error {
-          HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "exclamationmark.circle.fill").foregroundStyle(.orange)
-            Text(error).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
-            Button { session.error = nil } label: { Image(systemName: "xmark") }
-              .buttonStyle(.plain).accessibilityLabel("关闭错误提示")
-          }.font(.callout).padding(12)
-            .background(.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .overlay {
-              RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .strokeBorder(.orange.opacity(0.25), lineWidth: 1)
-            }
-        }
-        if showsStatus {
-          HStack(spacing: 8) {
-            if session.bridge.running { ProgressView().controlSize(.mini) }
-            Text(session.status).lineLimit(1)
-            if session.output != nil && !session.current { Text("· 待更新") }
-            Spacer()
-            if let elapsed = elapsedLabel(session.elapsed) { Text(elapsed).monospacedDigit() }
-          }.font(.caption).foregroundStyle(.secondary).frame(height: 16)
-            .transition(.opacity)
-        }
       }.padding(WorkspaceMetrics.inset)
-        .animation(WorkspaceMotion.layout(reduceMotion: reduceMotion), value: session.error != nil)
-        .animation(WorkspaceMotion.layout(reduceMotion: reduceMotion), value: showsStatus)
         .onChange(of: bounds.size.width, initial: true) { _, width in
           availableWidth = max(0, width - WorkspaceMetrics.inset * 2)
           if detachedPane == nil { session.bridge.workspaceWidth = availableWidth }
@@ -161,19 +162,32 @@ struct ToolWorkspace<T: ToolModule>: View {
     if availableWidth >= WorkspaceLayoutPolicy.minimumSplitWidth { items.append(("对照", "comparison")) }
     return items
   }
+  @ViewBuilder private func paneActions(_ role: WorkspacePane) -> some View {
+    switch role {
+    case .input: ScenarioInputActions(session: session)
+    case .secondary: secondaryActions
+    case .output:
+      if let output = session.output { resultActions(output) }
+      else { Button {} label: { Label("复制", systemImage: "doc.on.doc") }.disabled(true) }
+    }
+    if role != .output && !visible.contains(.output), session.error != nil {
+      PaneStatusLabel(status: resultStatus).labelStyle(.iconOnly)
+    }
+  }
+  private var secondaryActions: some View {
+    Group {
+      Button {
+        if let text = NSPasteboard.general.string(forType: .string) { session.input.secondary = text; session.refreshLayout() }
+      } label: { Label("粘贴", systemImage: "doc.on.clipboard") }.help("粘贴文本")
+      Button { session.chooseFile(secondary: true) } label: { Label("导入…", systemImage: "square.and.arrow.down") }
+        .help("从文件导入")
+      Button { session.input.secondary = "" } label: { Label("清空\(form.secondaryTitle)", systemImage: "trash") }
+        .labelStyle(.iconOnly).help("清空\(form.secondaryTitle)")
+    }
+  }
   private var secondaryInput: some View {
     VStack(spacing: 0) {
-      PaneActions {
-        Button {
-          if let text = NSPasteboard.general.string(forType: .string) { session.input.secondary = text; session.refreshLayout() }
-        } label: { Label("粘贴", systemImage: "doc.on.clipboard") }.help("粘贴文本")
-        Button { session.chooseFile(secondary: true) } label: { Label("导入…", systemImage: "square.and.arrow.down") }
-          .help("从文件导入")
-        Spacer(minLength: 8)
-        Button { session.input.secondary = "" } label: { Label("清空\(form.secondaryTitle)", systemImage: "trash") }
-          .labelStyle(.iconOnly).help("清空\(form.secondaryTitle)")
-      }
-      CodeEditor(text: $session.input.secondary, label: form.secondaryTitle, contentSettled: session.refreshLayout,
+      CodeEditor(text: $session.input.secondary, label: form.secondaryTitle, language: inputLanguage, contentSettled: session.refreshLayout,
         editingBegan: { focusedPane = .secondary })
     }.onDrop(of: [.fileURL], isTargeted: nil) { providers in
       guard let provider = providers.first else { return false }
@@ -186,7 +200,6 @@ struct ToolWorkspace<T: ToolModule>: View {
   private var resultPane: some View {
     VStack(spacing: 0) {
       if let output = session.output {
-        resultActions(output)
         resultBody(output).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         if let note = output.note {
           Text(note).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
@@ -196,14 +209,33 @@ struct ToolWorkspace<T: ToolModule>: View {
           Text("显示前 500,000 字符；复制或导出可获取完整结果").font(.caption).foregroundStyle(.secondary).padding(8)
         }
       } else {
-        VStack(spacing: 10) {
-          ToolIconTile(symbol: form.isImage || session.metadata.id == "qr-code" ? "photo" : "arrow.right.circle",
-            tint: session.metadata.category.tint, size: 44).padding(.bottom, 4)
-          Text(form.outputTitle).font(.headline).foregroundStyle(.secondary)
-          Text("点击“\(form.action)”查看结果").font(.caption).foregroundStyle(.tertiary)
-        }.frame(maxWidth: .infinity, maxHeight: .infinity)
+        WorkspaceEmptyState(title: session.error == nil ? "结果会显示在这里" : "输入需要检查",
+          detail: session.error ?? "准备好输入后，点击顶部“执行”",
+          symbol: session.error != nil ? "exclamationmark.circle" : form.isImage || session.metadata.id == "qr-code" ? "photo" : "arrow.right",
+          tint: session.error == nil ? .purple : .red) {
+          EmptyView()
+        }
+      }
+      if !resultUsesEditor {
+        HStack(spacing: 8) {
+          PaneStatusLabel(status: resultStatus)
+          Spacer(minLength: 8)
+          if let output = session.output, !output.text.isEmpty {
+            Text("\(output.text.count) 字符").monospacedDigit()
+          }
+        }.font(.system(size: 10)).foregroundStyle(.secondary)
+          .padding(.horizontal, 16).frame(height: 28)
+          .background(.primary.opacity(0.025))
+          .overlay(alignment: .top) { Divider().opacity(0.5) }
       }
     }
+  }
+  private var resultUsesEditor: Bool {
+    guard let output = session.output else { return false }
+    if display == "files" && session.binaryArtifact != nil { return false }
+    if display == "preview" && (output.html != nil || session.imageArtifact != nil) { return false }
+    if display == "rows" && !output.rows.isEmpty { return false }
+    return session.metadata.id != "text-diff"
   }
   private func resultViews(_ output: ToolOutput) -> [(String, String, String)] {
     var views = [(session.metadata.id == "http-client" ? "正文" : "文本", "text", "text.alignleft")]
@@ -216,19 +248,24 @@ struct ToolWorkspace<T: ToolModule>: View {
   }
   private func resultActions(_ output: ToolOutput) -> some View {
     let views = resultViews(output)
-    return PaneActions {
-      // A single view needs no switch; several read better as segments than a pop-up.
+    return Group {
+      // Keep alternate views in a compact menu so the header stays one row.
       if views.count > 1 {
-        Picker("结果视图", selection: $display) {
-          ForEach(views, id: \.1) { view in Label(view.0, systemImage: view.2).tag(view.1) }
-        }.pickerStyle(.segmented).labelsHidden().fixedSize()
+        Menu {
+          Picker("结果视图", selection: $display) {
+            ForEach(views, id: \.1) { view in Label(view.0, systemImage: view.2).tag(view.1) }
+          }
+        } label: {
+          let current = views.first { $0.1 == display } ?? views[0]
+          Label(current.0, systemImage: current.2)
+        }.menuStyle(.borderlessButton).fixedSize().help("切换结果视图")
       }
-      Spacer(minLength: 8)
       if session.binaryArtifact == nil || display == "text" {
         Button { session.copyResult() } label: {
           Label(session.copied ? "已复制" : session.imageArtifact != nil ? "复制图片" : "复制",
             systemImage: session.copied ? "checkmark" : "doc.on.doc").contentTransition(.symbolEffect(.replace))
-        }.help(session.imageArtifact != nil ? "复制图片" : "复制完整结果 ⌘⇧C").disabled(!session.current)
+        }.buttonStyle(.bordered).tint(.blue)
+          .help(session.imageArtifact != nil ? "复制图片" : "复制完整结果 ⌘⇧C").disabled(!session.current)
       }
       if output.artifacts.isEmpty {
         Button { session.save(session.textArtifact) } label: { Label("导出…", systemImage: "square.and.arrow.up") }
@@ -277,7 +314,7 @@ struct ToolWorkspace<T: ToolModule>: View {
           ForEach(Array(output.rows.enumerated()), id: \.offset) { _, row in
             HStack(alignment: .top, spacing: 16) {
               Text(row.label).foregroundStyle(.secondary).frame(minWidth: 70, alignment: .leading)
-              Text(row.value.isEmpty ? "（空值）" : row.value).font(.system(size: fontSize, design: .monospaced))
+              HighlightedText(text: row.value.isEmpty ? "（空值）" : row.value, fontSize: fontSize)
                 .textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
               Button { if Clipboard.copy(row.value) { session.status = "已复制" } } label: { Image(systemName: "doc.on.doc") }
                 .buttonStyle(.plain).disabled(!session.current).accessibilityLabel("复制 " + row.label)
@@ -297,7 +334,8 @@ struct ToolWorkspace<T: ToolModule>: View {
         }.padding(14)
       }
     } else {
-      CodeEditor(text: .constant(String(output.text.prefix(500_000))), editable: false, label: form.outputTitle)
+      CodeEditor(text: .constant(String(output.text.prefix(500_000))), editable: false, label: form.outputTitle,
+        language: outputLanguage, status: resultStatus)
     }
   }
   private func detach(_ pane: DetachedWorkspacePane) { DetachedWorkspaceWindows.shared.open(session, pane: pane) }

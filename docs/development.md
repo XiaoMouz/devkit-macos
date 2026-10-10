@@ -14,6 +14,12 @@
 
 运行 `Scripts/export-icon.sh` 可导出默认、深色、单色、小尺寸和 macOS 26 效果，默认写入已忽略的 `build/icon-previews/`。预览 PNG 无需提交，修改图标后需重新构建应用。
 
+## 编辑器语法资源
+
+`Vendor/syntax.mjs` 注册离线语法并将 highlight.js 的安全标记结果转换为 UTF-16 token 范围；运行 `node Vendor/build.mjs` 更新 `Resources/syntax.js` 和第三方许可证。文本只作为解析数据传入 JavaScriptCore。`SyntaxLanguage` 负责工具模式/MIME 路由，`SyntaxHighlighter` 在后台串行解析，`CodeEditor` 使用临时布局属性着色。新增语法时同步注册、语言枚举和 `SyntaxHighlightingTests`。
+
+运行 `Scripts/test-editor.sh` 可在独立隐藏窗口验证原生编辑器的选区、撤销、复制、组合文本、折行及深浅色；脚本先构建 Swift Package，再编译实际编辑器源码，使用独立粘贴板，不修改当前应用会话。
+
 ## 新增模块
 
 在 `Sources/DevKitCore/Tools/<id>/` 中声明 `ToolModule`。小模块的 `Options`、字段定义和引擎可以同文件；复杂逻辑按职责继续拆分。`Options` 是模块自己的 `Codable & Sendable` 类型，字段通过可写 KeyPath 连接原生 UI。

@@ -223,18 +223,84 @@ extension View {
   }
 }
 
-/// A pane's action row: regular-size bordered buttons with symbol and title, falling
-/// back to symbols alone when a narrow split pane cannot fit the titles. Buttons on
-/// content surfaces use the standard bordered style; glass is for floating controls.
+/// Title and actions share one fixed-height header. Narrow panes use icon buttons.
 struct PaneActions<Content: View>: View {
+  var title: String = ""
+  var role: WorkspacePane = .input
+  var format: String? = nil
   @ViewBuilder let content: () -> Content
   var body: some View {
     ViewThatFits(in: .horizontal) {
-      HStack(spacing: 8) { content() }.labelStyle(.titleAndIcon)
-      HStack(spacing: 8) { content() }.labelStyle(.iconOnly)
+      row(compact: false).labelStyle(.titleAndIcon)
+      row(compact: true).labelStyle(.iconOnly)
     }
-    .buttonStyle(.bordered).buttonBorderShape(.capsule).controlSize(.regular)
+    .buttonStyle(.borderless).controlSize(.small)
     .paneActionRow()
+    .overlay(alignment: .bottom) { Divider().opacity(0.55) }
+  }
+  private func row(compact: Bool) -> some View {
+    HStack(spacing: 8) {
+      let tint: Color = role == .output ? .purple : role == .secondary ? .orange : .blue
+      ToolIconTile(symbol: role == .output ? "arrow.down.right" : "square.and.pencil", tint: tint, size: 22)
+      Text(title).font(.system(size: 12, weight: .semibold)).lineLimit(1).fixedSize()
+      if let format, !compact {
+        Text(format).font(.system(size: 9, design: .monospaced)).foregroundStyle(.secondary)
+          .padding(.horizontal, 5).padding(.vertical, 3)
+          .background(.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 4))
+          .fixedSize()
+      }
+      if role == .output {
+        Image(systemName: "lock").font(.system(size: 10)).foregroundStyle(.secondary)
+          .help("只读").accessibilityLabel("只读")
+      }
+      Spacer(minLength: 8)
+      content().fixedSize()
+    }
+  }
+}
+
+struct PaneStatus {
+  let title: String
+  let symbol: String
+  let tint: Color
+  var detail: String? = nil
+  var elapsed: String? = nil
+}
+
+struct PaneStatusLabel: View {
+  let status: PaneStatus
+  @State private var detailsPresented = false
+  var body: some View {
+    HStack(spacing: 8) {
+      if let detail = status.detail {
+        Button { detailsPresented.toggle() } label: {
+          Label(status.title, systemImage: status.symbol).lineLimit(1)
+        }.buttonStyle(.plain).foregroundStyle(status.tint).help(detail)
+          .popover(isPresented: $detailsPresented) {
+            ScrollView { Text(detail).font(.body).foregroundStyle(.primary).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading).padding(16) }
+              .frame(width: 340, height: 180)
+          }
+      } else {
+        Label(status.title, systemImage: status.symbol).foregroundStyle(status.tint).lineLimit(1)
+      }
+      if let elapsed = status.elapsed { Text(elapsed).monospacedDigit().foregroundStyle(.secondary) }
+    }
+  }
+}
+
+struct WorkspaceEmptyState<Actions: View>: View {
+  let title: String
+  let detail: String
+  let symbol: String
+  var tint: Color = .blue
+  @ViewBuilder var actions: () -> Actions
+  var body: some View {
+    VStack(spacing: 12) {
+      ToolIconTile(symbol: symbol, tint: tint, size: 44).padding(.bottom, 3).allowsHitTesting(false)
+      Text(title).font(.system(size: 14, weight: .medium)).allowsHitTesting(false)
+      Text(detail).font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center).allowsHitTesting(false)
+      actions().font(.caption).buttonStyle(.bordered).tint(tint)
+    }.padding(20).frame(maxWidth: .infinity, maxHeight: .infinity)
   }
 }
 
@@ -307,10 +373,12 @@ enum DetachedWorkspacePane: String {
 }
 
 /// Stable pane identity keeps editor selection and scroll position when switching layout.
-struct WorkspacePaneDeck<Pane: View>: View {
+struct WorkspacePaneDeck<Pane: View, Actions: View>: View {
   let roles: [WorkspacePane]
   let visible: [WorkspacePane]
   var titles: [WorkspacePane: String] = [:]
+  var formats: [WorkspacePane: String] = [:]
+  @ViewBuilder let actions: (WorkspacePane) -> Actions
   @ViewBuilder let pane: (WorkspacePane) -> Pane
   @State private var fraction: CGFloat = 0.5
   @State private var dragStart: CGFloat?
@@ -328,13 +396,7 @@ struct WorkspacePaneDeck<Pane: View>: View {
           let shown = visible.contains(role)
           let second = split && visible.last == role
           VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 8) {
-              Text(titles[role] ?? role.rawValue).font(.system(size: 11, weight: .medium))
-              Spacer()
-              if role == .output {
-                Label("只读", systemImage: "lock").font(.system(size: 10)).labelStyle(.titleAndIcon)
-              }
-            }.foregroundStyle(.secondary).padding(.horizontal, 16).padding(.top, 6).frame(height: 30)
+            PaneActions(title: titles[role] ?? role.rawValue, role: role, format: formats[role]) { actions(role) }
             pane(role).frame(maxWidth: .infinity, maxHeight: .infinity)
           }
             .frame(

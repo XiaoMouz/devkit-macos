@@ -31,6 +31,12 @@ await build({
   ),
   define: { "process.env.NODE_ENV": '"production"' },
 });
+await build({
+  entryPoints: [path.join(import.meta.dirname, "syntax.mjs")],
+  bundle: true, platform: "browser", format: "iife", target: "safari18",
+  minify: true, legalComments: "eof",
+  outfile: path.resolve(import.meta.dirname, "../Sources/DevKitCore/Resources/syntax.js"),
+});
 // Include full dependency licenses, not only minifier-preserved banners.
 let notices =
   "# Third-party notices\n\nDependencies are bundled locally; the app never loads scripts from a CDN.\n";

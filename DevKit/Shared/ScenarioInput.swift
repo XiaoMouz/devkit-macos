@@ -1,6 +1,77 @@
 import DevKitCore
 import SwiftUI
 
+/// Lives in the pane header. Editor options open without taking height from text.
+struct ScenarioInputActions<T: ToolModule>: View {
+  @Bindable var session: ToolSession<T>
+  @State private var optionsPresented = false
+  private var form: ToolPresentation { session.presentation }
+  private var fields: [OptionField<T.Options>] {
+    session.visibleFields.filter { $0.id != primaryToolField(T.self)?.id }
+  }
+  private var hasEditorOptions: Bool {
+    !form.isForm && !form.isImage && form.control != .request && session.inputStyle != .file
+      && session.input.file == nil && !fields.isEmpty
+  }
+  private var optionsHeight: CGFloat {
+    let controls = fields.reduce(CGFloat.zero) { height, field in
+      switch field.kind {
+      case .toggle: return height + 24
+      case .choice, .integer: return height + 30
+      default: return height + 64
+      }
+    }
+    return min(controls + CGFloat(max(0, fields.count - 1)) * 16 + 4, 320)
+  }
+  var body: some View {
+    if form.control != .generator {
+      if !form.isImage && session.inputStyle != .file {
+        if !T.example(for: session.options).text.isEmpty {
+          Button { session.useExample() } label: {
+            Label("示例", systemImage: "lightbulb").foregroundStyle(.orange)
+          }.help("填入示例")
+        }
+        if ![.pairs, .template].contains(form.control) {
+          Button { session.paste() } label: {
+            Label("粘贴", systemImage: "doc.on.clipboard").foregroundStyle(.blue)
+          }.help("粘贴文本")
+        }
+      }
+      if form.isImage {
+        Button { session.paste() } label: { Label("粘贴图片", systemImage: "doc.on.clipboard") }.help("粘贴图片")
+      }
+      if !form.isForm || [.pairs, .template].contains(form.control) {
+        Button { session.chooseFile() } label: {
+          Label(form.isImage ? "选择图片" : session.inputStyle == .file ? "选择文件" : "导入",
+            systemImage: form.isImage ? "photo" : "square.and.arrow.down")
+        }.foregroundStyle(.blue).help("从文件导入")
+      }
+      if hasEditorOptions {
+        Button { optionsPresented.toggle() } label: {
+          Label("选项", systemImage: "slider.horizontal.3")
+        }.help("配置工具参数")
+          .popover(isPresented: $optionsPresented, arrowEdge: .bottom) {
+            VStack(alignment: .leading, spacing: 14) {
+              HStack {
+                Text("工具参数").font(.headline)
+                Spacer()
+                Button("完成") { optionsPresented = false }.buttonStyle(.borderless)
+              }
+              ScrollView {
+                ToolParameterFields(options: $session.options, fields: fields).padding(.vertical, 2)
+              }.frame(height: optionsHeight)
+            }.padding(18).frame(width: 320)
+          }
+      }
+      Button { session.clearInput() } label: { Label("清空输入", systemImage: "trash") }
+        .labelStyle(.iconOnly).help("清空输入")
+    } else {
+      Button { session.options = T.Options() } label: { Label("重置", systemImage: "arrow.counterclockwise") }
+        .help("恢复默认参数")
+    }
+  }
+}
+
 struct ScenarioInput<T: ToolModule>: View {
   @Bindable var session: ToolSession<T>
   var editingBegan: () -> Void = {}
@@ -10,20 +81,8 @@ struct ScenarioInput<T: ToolModule>: View {
   private var fields: [OptionField<T.Options>] {
     session.visibleFields.filter { $0.id != primaryToolField(T.self)?.id }
   }
-  private var usesEditor: Bool {
-    !form.isForm && session.input.file == nil && session.inputStyle != .file && form.control != .request
-  }
-  /// A few switches fit the action row, so input and result editors start at the
-  /// same height and stay aligned in the comparison view.
-  private var inlineToggles: Bool {
-    usesEditor && !fields.isEmpty && fields.count <= 3 && fields.allSatisfy {
-      if case .toggle = $0.kind { return true }
-      return false
-    }
-  }
   var body: some View {
     VStack(spacing: 0) {
-      inputActions
       if form.isForm {
         ScrollView {
           VStack(alignment: .leading, spacing: 22) {
@@ -41,17 +100,20 @@ struct ScenarioInput<T: ToolModule>: View {
       } else if form.control == .request {
         requestInput
       } else {
-        if !fields.isEmpty && !inlineToggles {
-          ScrollView { ToolParameterFields(options: $session.options, fields: fields).padding(16) }
-            .frame(height: min(CGFloat(fields.count) * 64 + 16, 250))
-          Divider()
-        }
         CodeEditor(text: $session.input.text, label: form.inputTitle,
+          language: .forTool(session.metadata.id, values: session.optionValues),
           contentSettled: session.refreshLayout, editingBegan: editingBegan)
-          .overlay(alignment: .topLeading) {
+          .overlay {
             if session.input.text.isEmpty {
-              Text(form.placeholder).font(.system(size: 13)).foregroundStyle(.tertiary)
-                .padding(16).allowsHitTesting(false)
+              WorkspaceEmptyState(title: "从一段内容开始", detail: form.placeholder,
+                symbol: "text.cursor", tint: .blue) {
+                HStack(spacing: 8) {
+                  if !T.example(for: session.options).text.isEmpty {
+                    Button { session.useExample() } label: { Label("填入示例", systemImage: "lightbulb") }
+                  }
+                  Button { session.chooseFile() } label: { Label("导入文件", systemImage: "square.and.arrow.down") }
+                }
+              }.padding(.bottom, 28)
             }
           }
       }
@@ -66,44 +128,6 @@ struct ScenarioInput<T: ToolModule>: View {
         }
         return true
       }
-  }
-  private var inputActions: some View {
-    PaneActions {
-      if form.control != .generator {
-        if !form.isImage && session.inputStyle != .file {
-          if !T.example(for: session.options).text.isEmpty {
-            Button { session.useExample() } label: { Label("示例", systemImage: "lightbulb") }.help("填入示例")
-          }
-          if ![.pairs, .template].contains(form.control) {
-            Button { session.paste() } label: { Label("粘贴", systemImage: "doc.on.clipboard") }.help("粘贴文本")
-          }
-        }
-        if form.isImage {
-          Button { session.paste() } label: { Label("粘贴图片", systemImage: "doc.on.clipboard") }.help("粘贴图片")
-        }
-        if !form.isForm || [.pairs, .template].contains(form.control) {
-          Button { session.chooseFile() } label: {
-            Label(form.isImage ? "选择图片…" : session.inputStyle == .file ? "选择文件…" : "导入…",
-              systemImage: form.isImage ? "photo" : session.inputStyle == .file ? "folder" : "square.and.arrow.down")
-          }.help(form.isImage ? "选择图片" : session.inputStyle == .file ? "选择文件" : "从文件导入")
-        }
-        if inlineToggles {
-          Divider().frame(height: 16).padding(.horizontal, 2)
-          ForEach(fields) { field in
-            Toggle(field.label, isOn: Binding(get: { field.read(session.options) == "true" },
-              set: { field.write(&session.options, String($0)) }))
-              .toggleStyle(.checkbox).fixedSize()
-          }
-        }
-        Spacer(minLength: 8)
-        Button { session.clearInput() } label: { Label("清空输入", systemImage: "trash") }
-          .labelStyle(.iconOnly).help("清空输入")
-      } else {
-        Spacer(minLength: 8)
-        Button { session.options = T.Options() } label: { Label("重置", systemImage: "arrow.counterclockwise") }
-          .help("恢复默认参数")
-      }
-    }
   }
   @ViewBuilder private var formInput: some View {
     switch form.control {
