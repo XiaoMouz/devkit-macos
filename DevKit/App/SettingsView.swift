@@ -1,3 +1,4 @@
+import DevKitCore
 import SwiftUI
 
 struct SettingsView: View {
@@ -36,11 +37,16 @@ struct SettingsView: View {
         }
       }.formStyle(.grouped).tabItem { Label("通用", systemImage: "gearshape") }
       SpotlightSettingsView().tabItem { Label("Spotlight", systemImage: "magnifyingglass") }
-      VStack(spacing: 14) {
-        Image(systemName: "curlybraces.square.fill").font(.system(size: 52)).foregroundStyle(.secondary)
+      VStack(spacing: 12) {
+        Image(nsImage: NSApp.applicationIconImage).resizable().scaledToFit().frame(width: 96, height: 96)
+          .accessibilityHidden(true)
         Text("DevKit").font(.title.bold())
         Text("原生 macOS Web 开发者工具箱").foregroundStyle(.secondary)
-        Text("0.1.0 · macOS 26+").font(.caption).foregroundStyle(.secondary)
+        HStack(spacing: 14) {
+          Label("\(ToolRegistry.all.count) 个工具", systemImage: "square.grid.2x2")
+          Label("本地处理", systemImage: "lock.shield")
+        }.font(.callout).foregroundStyle(.secondary).padding(.top, 4)
+        Text("0.1.0 · macOS 26+").font(.caption).foregroundStyle(.tertiary)
       }.frame(maxWidth: .infinity, maxHeight: .infinity).tabItem { Label("关于", systemImage: "info.circle") }
     }.frame(width: 800, height: 610)
       .onChange(of: appearance) { _, value in AppAppearance.apply(value) }

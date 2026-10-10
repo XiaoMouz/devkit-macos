@@ -1,4 +1,85 @@
+import DevKitCore
 import SwiftUI
+
+extension ToolCategory {
+  /// Content-layer identity colour. Used only for small icon glyphs and their
+  /// low-opacity tiles, never for selection, which stays on neutral surfaces.
+  var tint: Color {
+    switch self {
+    case .encoding: .blue
+    case .structured: .indigo
+    case .security: .pink
+    case .generators: .orange
+    case .text: .teal
+    case .numbers: .green
+    case .web: .cyan
+    case .css: .purple
+    case .assets: .mint
+    }
+  }
+}
+
+struct ToolIconTile: View {
+  let symbol: String
+  var tint: Color = .accentColor
+  var size: CGFloat = 24
+  var emphasized = false
+  var body: some View {
+    Image(systemName: symbol)
+      .font(.system(size: size * 0.52, weight: .medium))
+      .symbolRenderingMode(.hierarchical)
+      .foregroundStyle(tint)
+      .frame(width: size, height: size)
+      .background(tint.opacity(emphasized ? 0.2 : 0.12),
+        in: RoundedRectangle(cornerRadius: size * 0.3, style: .continuous))
+      .accessibilityHidden(true)
+  }
+}
+
+/// Right-aligned count with tabular digits and a fixed minimum width.
+struct CountBadge: View {
+  let count: Int
+  var body: some View {
+    Text("\(count)").font(.system(size: 10, weight: .medium)).monospacedDigit()
+      .foregroundStyle(.secondary).padding(.horizontal, 6).frame(minWidth: 22, minHeight: 16)
+      .background(.primary.opacity(0.06), in: Capsule())
+  }
+}
+
+/// A plain list or card button with quiet hover, press and selection surfaces.
+struct HoverSurfaceButtonStyle: ButtonStyle {
+  var cornerRadius: CGFloat = 8
+  var selected = false
+  var resting = 0.0
+  var bordered = false
+  func makeBody(configuration: Configuration) -> some View {
+    HoverSurface(configuration: configuration, style: self)
+  }
+}
+private struct HoverSurface: View {
+  let configuration: ButtonStyleConfiguration
+  let style: HoverSurfaceButtonStyle
+  @Environment(\.isEnabled) private var isEnabled
+  @State private var hovering = false
+  var body: some View {
+    let shape = RoundedRectangle(cornerRadius: style.cornerRadius, style: .continuous)
+    configuration.label
+      .background(shape.fill(.primary.opacity(fillOpacity)))
+      .overlay {
+        if style.bordered {
+          shape.strokeBorder(.primary.opacity(hovering ? 0.14 : 0.07), lineWidth: 1)
+        }
+      }
+      .contentShape(shape)
+      .onHover { hovering = isEnabled && $0 }
+      .animation(.easeOut(duration: 0.12), value: hovering)
+  }
+  private var fillOpacity: Double {
+    if configuration.isPressed { return style.resting + 0.11 }
+    if style.selected { return 0.1 }
+    return style.resting + (hovering ? 0.05 : 0)
+  }
+}
 
 struct WorkspaceCard: ViewModifier {
   func body(content: Content) -> some View {
@@ -79,7 +160,9 @@ struct WorkspacePaneDeck<Pane: View>: View {
             HStack(spacing: 8) {
               Text(titles[role] ?? role.rawValue).font(.system(size: 11, weight: .medium))
               Spacer()
-              if role == .output { Text("只读").font(.system(size: 10)) }
+              if role == .output {
+                Label("只读", systemImage: "lock").font(.system(size: 10)).labelStyle(.titleAndIcon)
+              }
             }.foregroundStyle(.secondary).padding(.horizontal, 16).frame(height: 24)
             pane(role).frame(maxWidth: .infinity, maxHeight: .infinity)
           }
