@@ -65,6 +65,22 @@ struct ToolOptionsForm<Options: ToolOptions>: View {
 }
 
 enum ToolOptionLabels {
+  /// SF Symbols for modes shown in the toolbar, so mode controls read as icon and text.
+  static func symbol(_ value: String) -> String? {
+    [
+      "encode": "arrow.right.to.line", "decode": "arrow.left.to.line",
+      "format": "text.alignleft", "minify": "arrow.down.right.and.arrow.up.left",
+      "validate": "checkmark.seal", "tree": "list.bullet.indent", "query": "magnifyingglass",
+      "diff": "plusminus", "schema": "checklist", "typescript": "chevron.left.forwardslash.chevron.right",
+      "parse": "doc.text.magnifyingglass", "build": "hammer", "sort": "arrow.up.arrow.down",
+      "match": "text.magnifyingglass", "replace": "arrow.2.squarepath",
+      "generate": "sparkles", "scan": "qrcode.viewfinder",
+      "component": "puzzlepiece", "url": "link", "form": "list.bullet.rectangle",
+      "zones": "globe", "add-days": "calendar.badge.plus", "difference": "timer",
+      "scale": "arrow.up.left.and.arrow.down.right", "fit": "rectangle.center.inset.filled", "fill": "crop",
+      "set-cookie": "square.and.arrow.down", "cookie": "square.and.arrow.up",
+    ][value]
+  }
   static func title(_ value: String) -> String {
     [
       "encode": "编码", "decode": "解码", "format": "格式化", "minify": "压缩", "validate": "校验",

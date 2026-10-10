@@ -17,16 +17,23 @@ struct ToolPrimaryControl<T: ToolModule>: View {
       let binding = Binding(get: { field.read(session.options) }, set: { field.write(&session.options, $0) })
       if choices.count <= 3 {
         WorkspaceSegments(items: choices.map { (ToolOptionLabels.title($0), $0) }, selection: binding,
-          inToolbar: inToolbar)
+          symbols: Dictionary(uniqueKeysWithValues: choices.compactMap { value in
+            ToolOptionLabels.symbol(value).map { (value, $0) }
+          }), inToolbar: inToolbar)
       } else if inToolbar {
         // A toolbar pull-down: one glass item with a disclosure chevron. A pop-up
         // button here would nest its own bezel and stepper arrows inside the glass.
         Menu {
           Picker(field.label, selection: binding) {
-            ForEach(choices, id: \.self) { Text(ToolOptionLabels.title($0)).tag($0) }
+            ForEach(choices, id: \.self) { value in
+              Label(ToolOptionLabels.title(value), systemImage: ToolOptionLabels.symbol(value) ?? "circle")
+                .tag(value)
+            }
           }.pickerStyle(.inline).labelsHidden()
         } label: {
-          Text(ToolOptionLabels.title(binding.wrappedValue))
+          Label(ToolOptionLabels.title(binding.wrappedValue),
+            systemImage: ToolOptionLabels.symbol(binding.wrappedValue) ?? "slider.horizontal.3")
+            .labelStyle(.titleAndIcon).padding(.horizontal, 8)
         }.menuIndicator(.visible).fixedSize().help(field.label)
       } else {
         Picker(field.label, selection: binding) {

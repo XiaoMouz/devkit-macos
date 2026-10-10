@@ -30,7 +30,9 @@ struct CodeEditor: NSViewRepresentable {
     view.usesFindBar = true
     view.isIncrementalSearchingEnabled = true
     view.textContainerInset = NSSize(width: 16, height: 16)
-    view.backgroundColor = .textBackgroundColor
+    // Matches the floating pane surface the editor sits on.
+    view.backgroundColor = .workspaceCard
+    scroll.backgroundColor = .workspaceCard
     view.textColor = .textColor
     view.setAccessibilityLabel(label)
     configure(view, scroll: scroll)

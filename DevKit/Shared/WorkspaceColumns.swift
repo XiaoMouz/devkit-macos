@@ -10,13 +10,14 @@ struct WorkspaceColumns<First: View, Second: View>: View {
   @ViewBuilder let second: () -> Second
   var body: some View {
     GeometryReader { bounds in
-      let usable = max(0, bounds.size.width - 7)
+      let usable = max(0, bounds.size.width - 16)
       let minimum = min(280, usable * 0.4)
       let left = min(max(usable * fraction, minimum), max(minimum, usable - minimum))
       HStack(spacing: 0) {
-        first().frame(width: left, height: bounds.size.height, alignment: .topLeading).clipped()
-        Rectangle().fill(.clear).frame(width: 7)
-          .overlay { Rectangle().fill(.separator).frame(width: 1) }
+        first().frame(width: left, height: bounds.size.height, alignment: .topLeading)
+        // Floating panes are separated by the gap itself; a grip marks the handle.
+        Rectangle().fill(.clear).frame(width: 16)
+          .overlay { Capsule().fill(.secondary.opacity(hovering ? 0.55 : 0.25)).frame(width: 3, height: 24) }
           .contentShape(Rectangle())
           .onHover { inside in
             guard inside != hovering else { return }
@@ -39,7 +40,7 @@ struct WorkspaceColumns<First: View, Second: View>: View {
           }
         second().frame(
           width: max(0, usable - left), height: bounds.size.height, alignment: .topLeading
-        ).clipped()
+        )
       }.frame(width: bounds.size.width, height: bounds.size.height, alignment: .topLeading)
     }
     .onDisappear {

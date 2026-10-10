@@ -4,7 +4,10 @@ import SwiftUI
 struct MainWindow: View {
   @State private var workspace = WindowWorkspace()
   @State private var query = ""
-  @State private var section = "tools"
+  @State private var favoritesExpanded = true
+  /// The sidebar row last chosen, so a favourite stays highlighted where it was clicked
+  /// even though the same tool also appears in its category.
+  @State private var sidebarTag: String?
   @State private var expandedCategories: Set<ToolCategory> = [.encoding]
   @AppStorage("showToolConfiguration") private var configurationVisible = true
   @AppStorage(FavoriteTools.key) private var favorites = FavoriteTools.defaults
@@ -18,7 +21,6 @@ struct MainWindow: View {
   }
   private var matches: [ToolMetadata] {
     ToolRegistry.all.map { $0.metadata }.filter {
-      (section != "favorites" || favoriteIDs.contains($0.id)) &&
       (query.isEmpty || "\($0.name) \($0.id) \($0.summary) \($0.category.rawValue)".localizedStandardContains(query))
     }
   }
@@ -35,9 +37,9 @@ struct MainWindow: View {
     .searchFocused($searchFocused)
     .onSubmit(of: .search) { if let first = matches.first { open(first.id) } }
     .frame(minWidth: 900, minHeight: 580)
-    // The editor surface is the window's base layer, so the floating sidebar and the
-    // toolbar's glass read against it instead of a lighter window background.
-    .containerBackground(Color(nsColor: .textBackgroundColor), for: .window)
+    // A distinct base layer lets the floating sidebar and content panes read as
+    // elevated, instead of merging with a window background of the same tone.
+    .containerBackground(Color(nsColor: .workspaceBase), for: .window)
     .focusedSceneValue(\.workspaceActions, commandActions)
     .background(WindowCommandScope(actions: commandActions))
     .onAppear { if cachedTools.isEmpty { open("base64") } }
@@ -58,7 +60,7 @@ struct MainWindow: View {
         }
       }.frame(width: bounds.size.width, height: bounds.size.height).clipped()
     }
-    .background(Color(nsColor: .textBackgroundColor))
+    .background(Color(nsColor: .workspaceBase))
     .navigationTitle(active?.metadata.name ?? "工具总览")
     .navigationSubtitle(active?.metadata.summary ?? "\(ToolRegistry.all.count) 个工具")
     .toolbar { toolbarContent }
@@ -107,64 +109,85 @@ struct MainWindow: View {
     // so the primary action stays a neutral verb instead of repeating it.
     return tab.bridge.running ? "取消" : "执行"
   }
+  private static let favoritePrefix = "favorite:"
+  private static func toolID(_ tag: String) -> String {
+    tag.hasPrefix(favoritePrefix) ? String(tag.dropFirst(favoritePrefix.count)) : tag
+  }
+  private var sidebarSelection: Binding<String?> {
+    Binding(get: {
+      guard let id = workspace.navigation.selectedToolID else { return nil }
+      if let sidebarTag, Self.toolID(sidebarTag) == id { return sidebarTag }
+      return id
+    }, set: { tag in
+      sidebarTag = tag
+      if let tag { open(Self.toolID(tag)) }
+    })
+  }
   private var sidebar: some View {
     ScrollViewReader { scroll in
-      List(selection: Binding(get: { workspace.navigation.selectedToolID },
-        set: { if let id = $0 { open(id) } })) {
-        if section == "favorites" || !query.isEmpty {
+      List(selection: sidebarSelection) {
+        if !query.isEmpty {
           ForEach(matches) { toolRow($0) }
         } else {
+          // Favourites are pinned above the catalogue, as Finder and Music pin theirs,
+          // instead of being a separate mode the list has to switch into.
+          if !favoriteTools.isEmpty {
+            Section(isExpanded: $favoritesExpanded) {
+              ForEach(favoriteTools) { toolRow($0, tag: Self.favoritePrefix + $0.id) }
+            } header: {
+              sectionHeader("收藏", symbol: "star.fill", tint: .yellow, count: favoriteTools.count)
+            }
+          }
           ForEach(ToolCategory.allCases, id: \.self) { category in
+            let tools = allTools.filter { $0.category == category }
             Section(isExpanded: Binding(get: { expandedCategories.contains(category) }, set: {
               if $0 { expandedCategories.insert(category) } else { expandedCategories.remove(category) }
             })) {
-              ForEach(matches.filter { $0.category == category }) { toolRow($0) }
+              ForEach(tools) { toolRow($0) }
             } header: {
-              HStack(spacing: 6) {
-                Image(systemName: category.symbol).foregroundStyle(category.tint)
-                Text(category.rawValue)
-                Spacer(minLength: 6)
-                Text("\(matches.filter { $0.category == category }.count)").monospacedDigit()
-                  .foregroundStyle(.tertiary)
-              }
+              sectionHeader(category.rawValue, symbol: category.symbol, tint: category.tint, count: tools.count)
             }
           }
         }
       }
       .listStyle(.sidebar)
       .overlay {
-        if matches.isEmpty {
-          ContentUnavailableView(section == "favorites" && query.isEmpty ? "还没有收藏" : "没有匹配的工具",
-            systemImage: section == "favorites" && query.isEmpty ? "star" : "magnifyingglass",
-            description: Text(section == "favorites" && query.isEmpty ? "在工具栏点击星标添加收藏" : "换个关键词试试"))
+        if !query.isEmpty && matches.isEmpty {
+          ContentUnavailableView.search(text: query)
         }
       }
-      .safeAreaInset(edge: .top, spacing: 0) {
-        // Verbatim titles: "工具" is also a menu-bar key in en.lproj, and translating
-        // only one segment would mix languages inside a single control.
-        Picker("显示", selection: $section) {
-          Label { Text(verbatim: "工具") } icon: { Image(systemName: "square.grid.2x2") }.tag("tools")
-          Label { Text(verbatim: "收藏") } icon: { Image(systemName: "star") }.tag("favorites")
-        }.pickerStyle(.segmented).labelsHidden().padding(.horizontal, 12).padding(.vertical, 6)
-      }
-      .safeAreaInset(edge: .bottom, spacing: 0) {
-        HStack {
+      // A bar the list scrolls beneath: the hard edge effect separates the footer
+      // from rows passing behind it instead of letting them show through the text.
+      .safeAreaBar(edge: .bottom) {
+        HStack(spacing: 10) {
           Button { workspace.showOverview() } label: { Label("工具总览", systemImage: "square.grid.2x2") }
-            .labelStyle(.iconOnly).help("工具总览")
-          Text("\(matches.count) 个工具").font(.caption).foregroundStyle(.secondary)
+            .help("工具总览")
+          Text("\(ToolRegistry.all.count) 个工具").font(.callout).foregroundStyle(.secondary)
           Spacer()
-          SettingsLink { Label("设置", systemImage: "gearshape") }.labelStyle(.iconOnly).help("设置")
-        }.buttonStyle(.borderless).padding(.horizontal, 14).padding(.vertical, 10)
-      }
-      .onChange(of: workspace.navigation.selectedID) { _, _ in
-        if let metadata = active?.metadata {
-          expandedCategories.insert(metadata.category)
-          Task { @MainActor in await Task.yield(); scroll.scrollTo(metadata.id, anchor: .center) }
+          SettingsLink { Label("设置", systemImage: "gearshape") }.help("设置")
         }
+        .labelStyle(.iconOnly).buttonStyle(.borderless).controlSize(.large)
+        .padding(.horizontal, 16).padding(.vertical, 10)
+      }
+      .scrollEdgeEffectStyle(.hard, for: .bottom)
+      .onChange(of: workspace.navigation.selectedID) { _, _ in
+        guard let metadata = active?.metadata else { return }
+        // A favourite that was clicked stays in place; otherwise reveal the category row.
+        if sidebarTag == Self.favoritePrefix + metadata.id { return }
+        expandedCategories.insert(metadata.category)
+        Task { @MainActor in await Task.yield(); scroll.scrollTo(metadata.id, anchor: .center) }
       }
     }
   }
-  private func toolRow(_ item: ToolMetadata) -> some View {
+  private func sectionHeader(_ title: String, symbol: String, tint: Color, count: Int) -> some View {
+    HStack(spacing: 6) {
+      Image(systemName: symbol).foregroundStyle(tint)
+      Text(title)
+      Spacer(minLength: 6)
+      Text("\(count)").monospacedDigit().foregroundStyle(.tertiary)
+    }
+  }
+  private func toolRow(_ item: ToolMetadata, tag: String? = nil) -> some View {
     Label {
       VStack(alignment: .leading, spacing: 2) {
         Text(item.name).lineLimit(1)
@@ -173,12 +196,12 @@ struct MainWindow: View {
     } icon: {
       ToolIconTile(symbol: item.symbol, tint: item.category.tint, size: 22)
     }
-    .tag(item.id).id(item.id).help(item.summary)
+    .tag(tag ?? item.id).id(tag ?? item.id).help(item.summary)
     .contextMenu { Button(favoriteIDs.contains(item.id) ? "取消收藏" : "收藏") { toggleFavorite(item.id) } }
   }
   private var commandActions: WorkspaceActions {
     WorkspaceActions(run: { active?.bridge.execute() }, copy: { active?.bridge.copy() }, search: {
-      columns = .all; section = "tools"; searchFocused = true
+      columns = .all; searchFocused = true
     }, selectPane: active?.metadata.id == "websocket"
       ? nil : { active?.bridge.selectPane($0) })
   }

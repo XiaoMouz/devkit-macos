@@ -71,7 +71,7 @@ struct ToolWorkspace<T: ToolModule>: View {
           availableWidth = max(0, width - 32)
           if detachedPane == nil { session.bridge.workspaceWidth = availableWidth }
         }
-    }.background(Color(nsColor: .textBackgroundColor))
+    }.background(Color(nsColor: .workspaceBase))
       .toolbar {
         // In the main window, view switching joins the window toolbar instead of
         // stacking a second control row above the editors.
@@ -126,7 +126,9 @@ struct ToolWorkspace<T: ToolModule>: View {
     }, set: { value in
       if value == "comparison" { session.chooseLayout(.split); focusedPane = .input }
       else { session.chooseLayout(.focused); focusedPane = WorkspacePane(rawValue: value) ?? .input }
-    }), inToolbar: true)
+    }), symbols: ["input": session.inputStyle == .generator ? "slider.horizontal.3" : "square.and.pencil",
+      "secondary": "doc.on.doc", "output": "doc.text", "comparison": "rectangle.split.2x1"],
+      inToolbar: true, iconOnly: true)
   }
   private var windowMenu: some View {
     Menu {
@@ -148,14 +150,16 @@ struct ToolWorkspace<T: ToolModule>: View {
   }
   private var secondaryInput: some View {
     VStack(spacing: 0) {
-      HStack {
-        Button("粘贴") {
+      PaneActions {
+        Button {
           if let text = NSPasteboard.general.string(forType: .string) { session.input.secondary = text; session.refreshLayout() }
-        }
-        Button("导入…") { session.chooseFile(secondary: true) }
-        Spacer()
-        Button { session.input.secondary = "" } label: { Image(systemName: "trash") }.accessibilityLabel("清空第二输入")
-      }.buttonStyle(.glass).controlSize(.small).paneActionRow()
+        } label: { Label("粘贴", systemImage: "doc.on.clipboard") }.help("粘贴文本")
+        Button { session.chooseFile(secondary: true) } label: { Label("导入…", systemImage: "square.and.arrow.down") }
+          .help("从文件导入")
+        Spacer(minLength: 8)
+        Button { session.input.secondary = "" } label: { Label("清空\(form.secondaryTitle)", systemImage: "trash") }
+          .labelStyle(.iconOnly).help("清空\(form.secondaryTitle)")
+      }
       CodeEditor(text: $session.input.secondary, label: form.secondaryTitle, contentSettled: session.refreshLayout,
         editingBegan: { focusedPane = .secondary })
     }.onDrop(of: [.fileURL], isTargeted: nil) { providers in
@@ -188,34 +192,49 @@ struct ToolWorkspace<T: ToolModule>: View {
       }
     }
   }
+  private func resultViews(_ output: ToolOutput) -> [(String, String, String)] {
+    var views = [(session.metadata.id == "http-client" ? "正文" : "文本", "text", "text.alignleft")]
+    if session.binaryArtifact != nil { views.append(("文件", "files", "doc")) }
+    if !output.rows.isEmpty {
+      views.append((session.metadata.id == "http-client" ? "状态与响应头" : "条目", "rows", "list.bullet"))
+    }
+    if output.html != nil || session.imageArtifact != nil { views.append(("预览", "preview", "eye")) }
+    return views
+  }
   private func resultActions(_ output: ToolOutput) -> some View {
-    HStack(spacing: 8) {
-      Picker("结果视图", selection: $display) {
-        Text(session.metadata.id == "http-client" ? "正文" : "文本").tag("text")
-        if session.binaryArtifact != nil { Text("文件").tag("files") }
-        if !output.rows.isEmpty { Text(session.metadata.id == "http-client" ? "状态与响应头" : "条目").tag("rows") }
-        if output.html != nil || session.imageArtifact != nil { Text("预览").tag("preview") }
-      }.labelsHidden().fixedSize()
-      Spacer(minLength: 4)
+    let views = resultViews(output)
+    return PaneActions {
+      // A single view needs no switch; several read better as segments than a pop-up.
+      if views.count > 1 {
+        Picker("结果视图", selection: $display) {
+          ForEach(views, id: \.1) { view in Label(view.0, systemImage: view.2).tag(view.1) }
+        }.pickerStyle(.segmented).labelsHidden().fixedSize()
+      }
+      Spacer(minLength: 8)
       if session.binaryArtifact == nil || display == "text" {
-      Button { session.copyResult() } label: {
-        Image(systemName: session.copied ? "checkmark" : "doc.on.doc").contentTransition(.symbolEffect(.replace))
-      }.help(session.imageArtifact != nil ? "复制图片" : "复制完整结果").accessibilityLabel(session.imageArtifact != nil ? "复制图片" : "复制结果")
-        .disabled(!session.current)
+        Button { session.copyResult() } label: {
+          Label(session.copied ? "已复制" : session.imageArtifact != nil ? "复制图片" : "复制",
+            systemImage: session.copied ? "checkmark" : "doc.on.doc").contentTransition(.symbolEffect(.replace))
+        }.help(session.imageArtifact != nil ? "复制图片" : "复制完整结果 ⌘⇧C").disabled(!session.current)
       }
       if output.artifacts.isEmpty {
-        Button("导出…") { session.save(session.textArtifact) }.disabled(!session.current)
+        Button { session.save(session.textArtifact) } label: { Label("导出…", systemImage: "square.and.arrow.up") }
+          .help("导出为文件").disabled(!session.current)
       } else if output.artifacts.count == 1 {
-        Button(session.imageArtifact != nil ? "保存图片…" : "保存文件…") { session.save(output.artifacts[0]) }.disabled(!session.current)
+        Button { session.save(output.artifacts[0]) } label: {
+          Label(session.imageArtifact != nil ? "保存图片…" : "保存文件…", systemImage: "square.and.arrow.down")
+        }.help(session.imageArtifact != nil ? "保存图片" : "保存文件").disabled(!session.current)
       } else {
-        Menu("导出文件") {
+        Menu {
           ForEach(output.artifacts.indices, id: \.self) { index in
             Button(output.artifacts[index].name) { session.save(output.artifacts[index]) }
           }
-        }.disabled(!session.current)
+        } label: { Label("导出文件", systemImage: "square.and.arrow.up") }
+          .fixedSize().help("选择要导出的文件").disabled(!session.current)
       }
-    }.font(.system(size: 12)).buttonStyle(.glass).controlSize(.small).paneActionRow()
+    }
   }
+
   @ViewBuilder private func resultBody(_ output: ToolOutput) -> some View {
     if display == "files", let artifact = session.binaryArtifact {
       VStack(spacing: 16) {
@@ -223,7 +242,8 @@ struct ToolWorkspace<T: ToolModule>: View {
         Text(artifact.name).font(.headline)
         Text(artifact.mime).font(.caption).foregroundStyle(.secondary)
         Text(ByteCountFormatter.string(fromByteCount: Int64(artifact.data.count), countStyle: .file)).foregroundStyle(.secondary)
-        Button("保存文件…") { session.save(artifact) }.buttonStyle(.glassProminent).disabled(!session.current)
+        Button { session.save(artifact) } label: { Label("保存文件…", systemImage: "square.and.arrow.down") }
+          .buttonStyle(.borderedProminent).controlSize(.large).disabled(!session.current)
       }.frame(maxWidth: .infinity, maxHeight: .infinity)
     } else if display == "preview", let html = output.html { SafePreview(html: html) }
     else if display == "preview", session.imageArtifact != nil {
