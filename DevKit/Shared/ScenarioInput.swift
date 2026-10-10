@@ -5,6 +5,7 @@ struct ScenarioInput<T: ToolModule>: View {
   @Bindable var session: ToolSession<T>
   var editingBegan: () -> Void = {}
   @State private var timestampSource = "timestamp"
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   private var form: ToolPresentation { session.presentation }
   private var fields: [OptionField<T.Options>] {
     session.visibleFields.filter { $0.id != primaryToolField(T.self)?.id }
@@ -55,6 +56,9 @@ struct ScenarioInput<T: ToolModule>: View {
           }
       }
     }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+      .animation(WorkspaceMotion.layout(reduceMotion: reduceMotion), value: session.operation)
+      .animation(WorkspaceMotion.layout(reduceMotion: reduceMotion), value: session.input.file != nil)
+      .animation(WorkspaceMotion.layout(reduceMotion: reduceMotion), value: timestampSource)
       .onDrop(of: [.fileURL], isTargeted: nil) { providers in
         guard let provider = providers.first else { return false }
         _ = provider.loadObject(ofClass: URL.self) { url, _ in

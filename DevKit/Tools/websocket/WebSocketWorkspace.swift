@@ -115,6 +115,7 @@ struct WebSocketWorkspace: View {
   @Bindable var bridge: WorkspaceBridge
   @Bindable var model: SocketSession
   @State private var pane = "send"
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   var body: some View {
     VStack(spacing: 12) {
       HStack {
@@ -129,19 +130,17 @@ struct WebSocketWorkspace: View {
           .buttonStyle(.bordered).fixedSize().help("更多操作")
       }.padding(.bottom, 8)
       GeometryReader { bounds in
-        if bounds.size.width >= 720 {
-          WorkspaceColumns {
-            sendPane.floatingPane()
-          } second: {
-            messagesPane.floatingPane()
-          }
-        } else {
-          VStack(spacing: 0) {
+        let split = bounds.size.width >= 720
+        VStack(spacing: 8) {
+          if !split {
             WorkspaceSegments(items: [("发送", "send"), ("消息（\(model.messages.count)）", "messages")], selection: $pane)
-              .padding(10)
-            if pane == "send" { sendPane } else { messagesPane }
-          }.frame(maxWidth: .infinity, maxHeight: .infinity).floatingPane()
-        }
+          }
+          WorkspacePaneDeck(roles: [.input, .output],
+            visible: split ? [.input, .output] : [pane == "send" ? .input : .output],
+            titles: [.input: "发送消息", .output: "会话消息"]) { role in
+            if role == .input { sendPane } else { messagesPane }
+          }
+        }.animation(WorkspaceMotion.layout(reduceMotion: reduceMotion), value: split)
       }
       HStack {
         Text(model.status)
@@ -153,7 +152,8 @@ struct WebSocketWorkspace: View {
           maxWidth: .infinity, alignment: .leading)
       }
     }
-    .padding(16).background(Color(nsColor: .workspaceBase))
+    .padding(WorkspaceMetrics.inset).background(Color(nsColor: .workspaceBase))
+    .animation(WorkspaceMotion.layout(reduceMotion: reduceMotion), value: model.error != nil)
     .onChange(of: bridge.runRequest) { toggle() }
     .onChange(of: bridge.copyRequest) { copy() }
     .onChange(of: model.connected || model.connecting) { _, active in bridge.running = active }

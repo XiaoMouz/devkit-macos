@@ -15,7 +15,7 @@ struct CodeEditor: NSViewRepresentable {
     let scroll = NSTextView.scrollableTextView()
     scroll.hasVerticalScroller = true
     scroll.hasHorizontalScroller = !wrap
-    scroll.drawsBackground = true
+    scroll.drawsBackground = false
     let view = scroll.documentView as! NSTextView
     view.delegate = context.coordinator
     view.isRichText = false
@@ -30,9 +30,8 @@ struct CodeEditor: NSViewRepresentable {
     view.usesFindBar = true
     view.isIncrementalSearchingEnabled = true
     view.textContainerInset = NSSize(width: 16, height: 16)
-    // Matches the floating pane surface the editor sits on.
-    view.backgroundColor = .workspaceCard
-    scroll.backgroundColor = .workspaceCard
+    // The pane paints and clips one continuous surface, including native editors.
+    view.drawsBackground = false
     view.textColor = .textColor
     view.setAccessibilityLabel(label)
     configure(view, scroll: scroll)
@@ -43,7 +42,8 @@ struct CodeEditor: NSViewRepresentable {
     view.isEditable = editable && isEnabled
     if !isEnabled && view.window?.firstResponder === view { view.window?.makeFirstResponder(nil) }
     view.isSelectable = isEnabled
-    scroll.isHidden = !isEnabled
+    // Keep the native view rendered during its parent's fade/resize transition.
+    scroll.setAccessibilityHidden(!isEnabled)
     view.font = .monospacedSystemFont(ofSize: fontSize, weight: .regular)
     view.isHorizontallyResizable = !wrap
     view.textContainer?.widthTracksTextView = wrap

@@ -6,17 +6,18 @@ struct WorkspaceColumns<First: View, Second: View>: View {
   @State private var fraction: CGFloat = 0.5
   @State private var dragStart: CGFloat?
   @State private var hovering = false
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @ViewBuilder let first: () -> First
   @ViewBuilder let second: () -> Second
   var body: some View {
     GeometryReader { bounds in
-      let usable = max(0, bounds.size.width - 16)
+      let usable = max(0, bounds.size.width - WorkspaceMetrics.paneGap)
       let minimum = min(280, usable * 0.4)
       let left = min(max(usable * fraction, minimum), max(minimum, usable - minimum))
       HStack(spacing: 0) {
         first().frame(width: left, height: bounds.size.height, alignment: .topLeading)
         // Floating panes are separated by the gap itself; a grip marks the handle.
-        Rectangle().fill(.clear).frame(width: 16)
+        Rectangle().fill(.clear).frame(width: WorkspaceMetrics.paneGap)
           .overlay { Capsule().fill(.secondary.opacity(hovering ? 0.55 : 0.25)).frame(width: 3, height: 24) }
           .contentShape(Rectangle())
           .onHover { inside in
@@ -33,10 +34,14 @@ struct WorkspaceColumns<First: View, Second: View>: View {
               }
               .onEnded { _ in dragStart = nil }
           )
-          .onTapGesture(count: 2) { fraction = 0.5 }
+          .onTapGesture(count: 2) {
+            withAnimation(WorkspaceMotion.layout(reduceMotion: reduceMotion)) { fraction = 0.5 }
+          }
           .accessibilityLabel("调整左右面板宽度")
           .accessibilityAdjustableAction { direction in
-            fraction = min(max(fraction + (direction == .increment ? 0.05 : -0.05), 0.2), 0.8)
+            withAnimation(WorkspaceMotion.layout(reduceMotion: reduceMotion)) {
+              fraction = min(max(fraction + (direction == .increment ? 0.05 : -0.05), 0.2), 0.8)
+            }
           }
         second().frame(
           width: max(0, usable - left), height: bounds.size.height, alignment: .topLeading

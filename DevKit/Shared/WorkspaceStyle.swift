@@ -1,6 +1,52 @@
 import DevKitCore
 import SwiftUI
 
+enum WorkspaceMetrics {
+  static let sidebarWidth: CGFloat = 232
+  static let inset: CGFloat = 12
+  static let paneGap: CGFloat = 12
+  static let cornerRadius: CGFloat = 16
+}
+
+enum WorkspaceMotion {
+  static func layout(reduceMotion: Bool) -> Animation? {
+    reduceMotion ? nil : .smooth(duration: 0.26, extraBounce: 0)
+  }
+}
+
+/// Count and disclosure keep separate, fixed slots, including while hovering.
+struct SidebarSectionHeader: View {
+  let title: String
+  let symbol: String
+  let tint: Color
+  let count: Int
+  @Binding var expanded: Bool
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @State private var hovering = false
+  var body: some View {
+    Button {
+      withAnimation(WorkspaceMotion.layout(reduceMotion: reduceMotion)) { expanded.toggle() }
+    } label: {
+      HStack(spacing: 6) {
+        Image(systemName: symbol).foregroundStyle(tint).frame(width: 16)
+        Text(title).lineLimit(1)
+        Spacer(minLength: 4)
+        Text("\(count)").monospacedDigit().frame(width: 22, alignment: .trailing)
+        Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold))
+          .rotationEffect(.degrees(expanded ? 90 : 0)).frame(width: 12, height: 16)
+          .opacity(hovering ? 1 : 0.5)
+      }
+      .font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+      .padding(.trailing, 10).frame(height: 28).contentShape(Rectangle())
+    }
+    .buttonStyle(.plain).padding(.top, 8).padding(.bottom, 2)
+    .onHover { hovering = $0 }
+    .accessibilityLabel("\(title)，\(count) 个工具")
+    .accessibilityValue(expanded ? "已展开" : "已收起")
+    .accessibilityHint(expanded ? "收起分类" : "展开分类")
+  }
+}
+
 extension ToolCategory {
   /// Content-layer identity colour. Used only for small icon glyphs and their
   /// low-opacity tiles, never for selection, which stays on neutral surfaces.
@@ -62,6 +108,7 @@ private struct HoverSurface: View {
   let configuration: ButtonStyleConfiguration
   let style: HoverSurfaceButtonStyle
   @Environment(\.isEnabled) private var isEnabled
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var hovering = false
   var body: some View {
     let shape = RoundedRectangle(cornerRadius: style.cornerRadius, style: .continuous)
@@ -74,7 +121,7 @@ private struct HoverSurface: View {
       }
       .contentShape(shape)
       .onHover { hovering = isEnabled && $0 }
-      .animation(.easeOut(duration: 0.12), value: hovering)
+      .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: hovering)
   }
   private var fillOpacity: Double {
     if configuration.isPressed { return style.resting + 0.11 }
@@ -105,9 +152,10 @@ private struct FloatingPane: ViewModifier {
   @Environment(\.colorScheme) private var colorScheme
   @Environment(\.colorSchemeContrast) private var contrast
   func body(content: Content) -> some View {
-    let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
+    let shape = RoundedRectangle(cornerRadius: WorkspaceMetrics.cornerRadius, style: .continuous)
     let dark = colorScheme == .dark
     content
+      .background(Color(nsColor: .workspaceCard))
       .clipShape(shape)
       .overlay {
         shape.strokeBorder(.primary.opacity(contrast == .increased ? 0.3 : dark ? 0.1 : 0.07), lineWidth: 1)
@@ -119,13 +167,25 @@ private struct FloatingPane: ViewModifier {
       }
   }
 }
-/// The sidebar as an inset, floating Liquid Glass panel. The column behind it is
-/// painted with the window base, so the panel floats whatever the system would
-/// otherwise draw for a sidebar column.
+/// One behind-window material, as in the stashed chrome, without an opaque fill
+/// beneath it or a second glass sheet. The system supplies its appearance/contrast.
+private struct SidebarMaterial: NSViewRepresentable {
+  func makeNSView(context: Context) -> NSVisualEffectView {
+    let view = NSVisualEffectView()
+    view.material = .sidebar
+    view.blendingMode = .behindWindow
+    view.state = .followsWindowActiveState
+    return view
+  }
+  func updateNSView(_ view: NSVisualEffectView, context: Context) {}
+}
+
 private struct FloatingSidebarPanel: ViewModifier {
   private let inset: CGFloat = 8
-  private let radius: CGFloat = 18
+  private let radius = WorkspaceMetrics.cornerRadius
   @Environment(\.colorScheme) private var colorScheme
+  @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+  @Environment(\.colorSchemeContrast) private var contrast
   func body(content: Content) -> some View {
     let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
     content
@@ -133,15 +193,20 @@ private struct FloatingSidebarPanel: ViewModifier {
       .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: radius, bottomTrailingRadius: radius,
         style: .continuous))
       .background {
-        ZStack {
-          shape.fill(Color(nsColor: .workspaceBase))
-            .shadow(color: .black.opacity(colorScheme == .dark ? 0.4 : 0.12), radius: 14, y: 3)
-          Color.clear.glassEffect(.regular, in: shape)
+        Group {
+          if reduceTransparency {
+            Color(nsColor: .windowBackgroundColor)
+          } else {
+            SidebarMaterial()
+          }
         }
+        .clipShape(shape)
+        .overlay { shape.strokeBorder(.primary.opacity(contrast == .increased ? 0.3 : 0.08), lineWidth: 1) }
+        .shadow(color: .black.opacity(colorScheme == .dark ? 0.14 : 0.05), radius: 5, y: 2)
         // Reach up beneath the toolbar so the traffic lights sit inside the panel.
         .padding(.top, inset).ignoresSafeArea(.container, edges: .top)
       }
-      .padding(.leading, inset).padding(.bottom, inset)
+      .padding(.horizontal, inset).padding(.bottom, inset)
       .background { Color(nsColor: .workspaceBase).ignoresSafeArea() }
   }
 }
@@ -250,10 +315,12 @@ struct WorkspacePaneDeck<Pane: View>: View {
   @State private var fraction: CGFloat = 0.5
   @State private var dragStart: CGFloat?
   @State private var hovering = false
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   var body: some View {
     GeometryReader { bounds in
       let split = visible.count == 2
-      let space = max(0, bounds.size.width - 16)
+      let gap = WorkspaceMetrics.paneGap
+      let space = max(0, bounds.size.width - gap)
       let left = min(
         max(space * fraction, min(320, space * 0.4)), max(0, space - min(320, space * 0.4)))
       ZStack(alignment: .topLeading) {
@@ -275,13 +342,13 @@ struct WorkspacePaneDeck<Pane: View>: View {
               height: bounds.size.height, alignment: .topLeading
             )
             .floatingPane()
-            .offset(x: second ? left + 16 : 0)
+            .offset(x: second ? left + gap : 0)
             .opacity(shown ? 1 : 0)
             .allowsHitTesting(shown).disabled(!shown)
             .accessibilityElement(children: .contain).accessibilityHidden(!shown)
         }
         if split {
-          Rectangle().fill(.clear).frame(width: 16, height: bounds.size.height)
+          Rectangle().fill(.clear).frame(width: gap, height: bounds.size.height)
             .overlay {
               // The gap between floating panes is the divider; only a grip remains.
               Capsule().fill(.secondary.opacity(hovering ? 0.55 : 0.25)).frame(width: 3, height: 24)
@@ -299,14 +366,19 @@ struct WorkspacePaneDeck<Pane: View>: View {
                   max(((dragStart ?? left) + value.translation.width) / max(space, 1), 0.25), 0.75)
               }.onEnded { _ in dragStart = nil }
             )
-            .onTapGesture(count: 2) { fraction = 0.5 }
+            .onTapGesture(count: 2) {
+              withAnimation(WorkspaceMotion.layout(reduceMotion: reduceMotion)) { fraction = 0.5 }
+            }
             .accessibilityLabel("调整对照面板宽度")
             .accessibilityAdjustableAction { direction in
-              fraction = min(max(fraction + (direction == .increment ? 0.05 : -0.05), 0.25), 0.75)
+              withAnimation(WorkspaceMotion.layout(reduceMotion: reduceMotion)) {
+                fraction = min(max(fraction + (direction == .increment ? 0.05 : -0.05), 0.25), 0.75)
+              }
             }
         }
       // Not clipped: pane shadows fall outside the deck; hidden panes stay within it.
       }.frame(width: bounds.size.width, height: bounds.size.height, alignment: .topLeading)
+        .animation(WorkspaceMotion.layout(reduceMotion: reduceMotion), value: visible)
     }
     .onChange(of: visible) { _, _ in
       if hovering {

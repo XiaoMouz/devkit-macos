@@ -10,11 +10,16 @@ struct ToolWorkspace<T: ToolModule>: View {
   @State private var selectedArtifact = 0
   @AppStorage("editorFontSize") private var fontSize = 13.0
   @Environment(\.workspaceActive) private var workspaceActive
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @AppStorage(FavoriteTools.key) private var favorites = FavoriteTools.defaults
   private var form: ToolPresentation { session.presentation }
   private var paired: Bool { session.inputStyle == .pair && !session.metadata.network }
   private var mode: WorkspaceLayoutMode { session.layoutPolicy.mode(width: availableWidth) }
   private var roles: [WorkspacePane] { paired ? [.input, .secondary, .output] : [.input, .output] }
+  private var showsStatus: Bool {
+    session.bridge.running || !session.status.isEmpty || session.output != nil && !session.current
+      || elapsedLabel(session.elapsed) != nil
+  }
   private var visible: [WorkspacePane] {
     if let detachedPane {
       switch detachedPane {
@@ -59,16 +64,21 @@ struct ToolWorkspace<T: ToolModule>: View {
                 .strokeBorder(.orange.opacity(0.25), lineWidth: 1)
             }
         }
-        HStack(spacing: 8) {
-          if session.bridge.running { ProgressView().controlSize(.mini) }
-          Text(session.status).lineLimit(1)
-          if session.output != nil && !session.current { Text("· 待更新") }
-          Spacer()
-          if let elapsed = elapsedLabel(session.elapsed) { Text(elapsed).monospacedDigit() }
-        }.font(.caption).foregroundStyle(.secondary).frame(height: 16)
-      }.padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 8)
+        if showsStatus {
+          HStack(spacing: 8) {
+            if session.bridge.running { ProgressView().controlSize(.mini) }
+            Text(session.status).lineLimit(1)
+            if session.output != nil && !session.current { Text("· 待更新") }
+            Spacer()
+            if let elapsed = elapsedLabel(session.elapsed) { Text(elapsed).monospacedDigit() }
+          }.font(.caption).foregroundStyle(.secondary).frame(height: 16)
+            .transition(.opacity)
+        }
+      }.padding(WorkspaceMetrics.inset)
+        .animation(WorkspaceMotion.layout(reduceMotion: reduceMotion), value: session.error != nil)
+        .animation(WorkspaceMotion.layout(reduceMotion: reduceMotion), value: showsStatus)
         .onChange(of: bounds.size.width, initial: true) { _, width in
-          availableWidth = max(0, width - 32)
+          availableWidth = max(0, width - WorkspaceMetrics.inset * 2)
           if detachedPane == nil { session.bridge.workspaceWidth = availableWidth }
         }
     }.background(Color(nsColor: .workspaceBase))

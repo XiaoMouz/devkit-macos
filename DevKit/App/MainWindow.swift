@@ -9,6 +9,7 @@ struct MainWindow: View {
   /// even though the same tool also appears in its category.
   @State private var sidebarTag: String?
   @State private var expandedCategories: Set<ToolCategory> = [.encoding]
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @AppStorage("showToolConfiguration") private var configurationVisible = true
   @AppStorage(FavoriteTools.key) private var favorites = FavoriteTools.defaults
   /// Incremented to move keyboard focus into the sidebar search field.
@@ -26,11 +27,12 @@ struct MainWindow: View {
     }
   }
   @State private var columns = NavigationSplitViewVisibility.all
-  // The split view lays out the toolbar, title and inspector and collapses the
-  // sidebar; the sidebar column itself draws an inset floating glass panel.
+  // Keep native toolbar and collapse behavior, with a fixed-width sidebar and
+  // a single inset, behind-window material surface.
   var body: some View {
     NavigationSplitView(columnVisibility: $columns) {
-      sidebar.navigationSplitViewColumnWidth(min: 220, ideal: 248, max: 330)
+      sidebar.navigationSplitViewColumnWidth(WorkspaceMetrics.sidebarWidth)
+        .background(FixedSidebarWidth(width: WorkspaceMetrics.sidebarWidth))
         // The system toggle is a standalone glass button; over the glass panel it
         // stacks glass on glass and sits flush with the panel's top edge.
         .toolbar(removing: .sidebarToggle)
@@ -44,6 +46,7 @@ struct MainWindow: View {
     // A distinct base layer lets the floating sidebar and content panes read as
     // elevated, instead of merging with a window background of the same tone.
     .containerBackground(Color(nsColor: .workspaceBase), for: .window)
+    .animation(WorkspaceMotion.layout(reduceMotion: reduceMotion), value: columns)
     .focusedSceneValue(\.workspaceActions, commandActions)
     .background(WindowCommandScope(actions: commandActions))
     .onAppear { if cachedTools.isEmpty { open("base64") } }
@@ -64,12 +67,13 @@ struct MainWindow: View {
         }
       }.frame(width: bounds.size.width, height: bounds.size.height).clipped()
     }
-    .background(Color(nsColor: .workspaceBase))
+    .background { Color(nsColor: .workspaceBase).ignoresSafeArea() }
     .navigationTitle(active?.metadata.name ?? "工具总览")
     .toolbar { toolbarContent }
     .inspector(isPresented: inspectorVisible) {
       if let active { active.configuration.id(active.id).inspectorColumnWidth(min: 220, ideal: 260, max: 360) }
     }
+    .animation(WorkspaceMotion.layout(reduceMotion: reduceMotion), value: inspectorVisible.wrappedValue)
   }
   private var inspectorVisible: Binding<Bool> {
     Binding(get: { configurationVisible && active?.hasConfiguration == true },
@@ -113,7 +117,9 @@ struct MainWindow: View {
   private var sidebarToggle: some View {
     let hidden = columns == .detailOnly
     return Button {
-      withAnimation { columns = hidden ? .all : .detailOnly }
+      withAnimation(WorkspaceMotion.layout(reduceMotion: reduceMotion)) {
+        columns = hidden ? .all : .detailOnly
+      }
     } label: {
       Label(hidden ? "显示侧栏" : "隐藏侧栏", systemImage: "sidebar.left")
     }.labelStyle(.iconOnly).help(hidden ? "显示侧栏 ⌃⌘S" : "隐藏侧栏 ⌃⌘S")
@@ -151,20 +157,25 @@ struct MainWindow: View {
             // Favourites are pinned above the catalogue, as Finder and Music pin theirs,
             // instead of being a separate mode the list has to switch into.
             if !favoriteTools.isEmpty {
-              Section(isExpanded: $favoritesExpanded) {
-                ForEach(favoriteTools) { toolRow($0, tag: Self.favoritePrefix + $0.id) }
+              Section {
+                if favoritesExpanded {
+                  ForEach(favoriteTools) { toolRow($0, tag: Self.favoritePrefix + $0.id) }
+                }
               } header: {
-                sectionHeader("收藏", symbol: "star.fill", tint: .yellow, count: favoriteTools.count)
+                SidebarSectionHeader(title: "收藏", symbol: "star.fill", tint: .yellow,
+                  count: favoriteTools.count, expanded: $favoritesExpanded)
               }
             }
             ForEach(ToolCategory.allCases, id: \.self) { category in
               let tools = allTools.filter { $0.category == category }
-              Section(isExpanded: Binding(get: { expandedCategories.contains(category) }, set: {
-                if $0 { expandedCategories.insert(category) } else { expandedCategories.remove(category) }
-              })) {
-                ForEach(tools) { toolRow($0) }
+              Section {
+                if expandedCategories.contains(category) { ForEach(tools) { toolRow($0) } }
               } header: {
-                sectionHeader(category.rawValue, symbol: category.symbol, tint: category.tint, count: tools.count)
+                SidebarSectionHeader(title: category.rawValue, symbol: category.symbol,
+                  tint: category.tint, count: tools.count,
+                  expanded: Binding(get: { expandedCategories.contains(category) }, set: {
+                    if $0 { expandedCategories.insert(category) } else { expandedCategories.remove(category) }
+                  }))
               }
             }
           }
@@ -200,16 +211,6 @@ struct MainWindow: View {
       }
     }
     .floatingSidebarPanel()
-  }
-  private func sectionHeader(_ title: String, symbol: String, tint: Color, count: Int) -> some View {
-    HStack(spacing: 6) {
-      Image(systemName: symbol).foregroundStyle(tint)
-      Text(title)
-      Spacer(minLength: 6)
-      Text("\(count)").monospacedDigit().foregroundStyle(.tertiary)
-    }
-    // Room above separates sections; the smaller gap below ties the title to its rows.
-    .padding(.top, 12).padding(.bottom, 4)
   }
   private func toolRow(_ item: ToolMetadata, tag: String? = nil) -> some View {
     // Names only; the description stays available as the row's tooltip.
@@ -281,6 +282,54 @@ struct MainWindow: View {
     workspace.open(id)
   }
   private func toggleFavorite(_ id: String) { favorites = FavoriteTools.toggling(id, in: favorites) }
+}
+
+/// SwiftUI's column width is only a preference. Lock the owning AppKit sidebar
+/// item as well, including divider-driven collapse. Programmatic collapse via
+/// columnVisibility (the toolbar button) remains available.
+private struct FixedSidebarWidth: NSViewRepresentable {
+  let width: CGFloat
+  func makeNSView(context: Context) -> SidebarWidthView { SidebarWidthView(width: width) }
+  func updateNSView(_ view: SidebarWidthView, context: Context) {
+    view.width = width
+    view.enforceWidth()
+    // Apply after SwiftUI updates the split item during a visibility change.
+    DispatchQueue.main.async { [weak view] in view?.enforceWidth() }
+  }
+  final class SidebarWidthView: NSView {
+    var width: CGFloat
+    init(width: CGFloat) {
+      self.width = width
+      super.init(frame: .zero)
+    }
+    required init?(coder: NSCoder) { nil }
+    override func viewDidMoveToWindow() {
+      super.viewDidMoveToWindow()
+      enforceWidth()
+    }
+    override func layout() {
+      super.layout()
+      enforceWidth()
+    }
+    func enforceWidth() {
+      var ancestor = superview
+      while let view = ancestor {
+        if let split = view as? NSSplitView,
+          let controller = split.delegate as? NSSplitViewController,
+          let item = controller.splitViewItems.first(where: {
+            $0.behavior == .sidebar && isDescendant(of: $0.viewController.view)
+          }) {
+          if item.minimumThickness != width { item.minimumThickness = width }
+          if item.maximumThickness != width { item.maximumThickness = width }
+          if item.canCollapse { item.canCollapse = false }
+          if item.canCollapseFromWindowResize { item.canCollapseFromWindowResize = false }
+          if item.isSpringLoaded { item.isSpringLoaded = false }
+          return
+        }
+        ancestor = view.superview
+      }
+    }
+  }
 }
 
 /// Favourites persist as a comma-separated list; retired JSON tool IDs map to `json`.
