@@ -10,7 +10,7 @@ struct DevKitApp: App {
     WindowGroup {
       MainWindow()
         .containerBackground(.clear, for: .window)
-        .preferredColorScheme(appearance == "dark" ? .dark : appearance == "light" ? .light : nil)
+        .onChange(of: appearance, initial: true) { _, value in AppAppearance.apply(value) }
     }
     .defaultSize(width: 1280, height: 820)
     .windowResizability(.contentMinSize)
@@ -21,6 +21,9 @@ struct DevKitApp: App {
 }
 
 @MainActor final class DevKitApplicationDelegate: NSObject, NSApplicationDelegate {
+  func applicationWillFinishLaunching(_ notification: Notification) {
+    AppAppearance.apply(UserDefaults.standard.string(forKey: "appearance") ?? "system")
+  }
   func applicationDidFinishLaunching(_ notification: Notification) {
     SpotlightSettingsStore.shared.refresh()
   }

@@ -52,3 +52,10 @@
 应用自身的工具索引通过“设置 → Spotlight → 清空索引并关闭”管理。静态 App Intents 的目录显示由系统管理；应用开关控制动态工具实体与执行权限。
 
 安装新版 App 应替换整个 bundle，并在替换后运行 `codesign --verify --deep --strict`。不要用旧 Debug 目录覆盖合并 Release bundle，残留资源可能导致封印校验失败。
+
+
+## Liquid Glass 偏好适配
+
+`GlassPreferences.swift` 隔离系统读取与透明度策略，`WorkspaceGlass` 只调整窗口外壳背景。macOS 27 的数值滑块已在本机确认写入全局 `NSGlassTintAmount`（0 为透明、1 为最浓色调）；这不是公开的 AppKit 偏好契约，所以只读该值，缺失时退回原生材质，不猜测或写入系统设置。系统模式的可见窗口每秒刷新一次，并在应用激活、辅助功能变化时刷新；自定义模式停止系统轮询。跨版本发布前应在目标系统验证这条适配路径。
+
+`glassMode` 保存模式，`glassTransparency` 保存用户自定义通透度。原生玻璃配合独立的不透明表面层控制背景，系统减少透明度优先；表面颜色在视图的 `effectiveAppearance` 中解析，避免深浅色切换残留。运行 `Scripts/test-appearance.sh` 验证偏好刷新、模式分离、透明度端点、系统值缺失与无障碍优先级。

@@ -15,6 +15,7 @@
 		2331C53F247912322BE28ED4 /* SpotlightSettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E9AE9A333C442EE32790DD6 /* SpotlightSettingsStore.swift */; };
 		242C04A97E37C235978CEE4A /* CSSUnitIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = F54727F91EB5B9247516C217 /* CSSUnitIntent.swift */; };
 		25285464C8D00ABAAE249174 /* UnicodeEscapeIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00A8B119F503B619AA73EDC5 /* UnicodeEscapeIntent.swift */; };
+		2A324F4747AD44CF98930AE4 /* AppAppearance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 352F425ADC2B73D531C33BAF /* AppAppearance.swift */; };
 		2C1EB54DAA6D59A7E99164E2 /* WorkspaceColumns.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1CA8134DA3AC641106BAC9B /* WorkspaceColumns.swift */; };
 		3333D19FFFB4DC1E7D32731E /* SafePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8767B59BF3A93FF23903AAA4 /* SafePreview.swift */; };
 		36E647CAC99EEC9AB653376E /* RandomStringIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62B809C1F0BE00F8A665B9C1 /* RandomStringIntent.swift */; };
@@ -59,6 +60,7 @@
 		D6F3EB94D9675144A63605BD /* ToolWorkspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9FBCAA91D65B3F4253E869C /* ToolWorkspace.swift */; };
 		E461D70FD64EF6CC603FB9E7 /* SlugIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = E116EA1D67DF13B464DD211F /* SlugIntent.swift */; };
 		E796E28548147EB52B0195E6 /* TimestampIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 628786DF75321944F702040F /* TimestampIntent.swift */; };
+		EBCC33AD3678BFA575B874C4 /* GlassPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E36E4CC65DD939CBFF42201 /* GlassPreferences.swift */; };
 		ED8FDE7997BD78A5D71EAD62 /* JsonFormatIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 372D4620EDA6EFAA7E31BC78 /* JsonFormatIntent.swift */; };
 		EED34DDEA5668C0EDB6BDBC4 /* DevKitCore in Frameworks */ = {isa = PBXBuildFile; productRef = C8FF5CC08F4C490542797101 /* DevKitCore */; };
 		EFC92ACA137EC9C0E7B48A21 /* NumberFormatIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45BAA14FD9367AB6A9E0D29C /* NumberFormatIntent.swift */; };
@@ -78,6 +80,7 @@
 /* Begin PBXFileReference section */
 		00A8B119F503B619AA73EDC5 /* UnicodeEscapeIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnicodeEscapeIntent.swift; sourceTree = "<group>"; };
 		0A2E05C4D1C025205B239311 /* URLEncodeIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLEncodeIntent.swift; sourceTree = "<group>"; };
+		0E36E4CC65DD939CBFF42201 /* GlassPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassPreferences.swift; sourceTree = "<group>"; };
 		11749324B75E83D1506EFF2C /* WindowCommandScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowCommandScope.swift; sourceTree = "<group>"; };
 		15062207977D420DB874FFDE /* UUIDIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UUIDIntent.swift; sourceTree = "<group>"; };
 		1B3FBB4060C767205820C64D /* MD5Intent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MD5Intent.swift; sourceTree = "<group>"; };
@@ -86,6 +89,7 @@
 		22CD1103A4DF5C759F0ACFE4 /* RasterPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RasterPreview.swift; sourceTree = "<group>"; };
 		25F807B4DB6992B24C425A68 /* Base64Intents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Base64Intents.swift; sourceTree = "<group>"; };
 		3008BCD5006AEF406AFAE0C2 /* URLDecodeIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLDecodeIntent.swift; sourceTree = "<group>"; };
+		352F425ADC2B73D531C33BAF /* AppAppearance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppAppearance.swift; sourceTree = "<group>"; };
 		3556719D8345C5BEE5A7A310 /* Clipboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard.swift; sourceTree = "<group>"; };
 		372D4620EDA6EFAA7E31BC78 /* JsonFormatIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JsonFormatIntent.swift; sourceTree = "<group>"; };
 		38473C6D03CD48AA5586D2B6 /* StringEscapeIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringEscapeIntent.swift; sourceTree = "<group>"; };
@@ -477,8 +481,10 @@
 		9A8BCC5103C64E2B531970EF /* App */ = {
 			isa = PBXGroup;
 			children = (
+				352F425ADC2B73D531C33BAF /* AppAppearance.swift */,
 				2257D582B7D6A1565F7EE2CD /* DetachedWorkspaceWindows.swift */,
 				7169039307C6842EA79FAD88 /* DevKitApp.swift */,
+				0E36E4CC65DD939CBFF42201 /* GlassPreferences.swift */,
 				E3F328A6ED97BBD577BB46F6 /* MainWindow.swift */,
 				8EAF1D260745BEE53747C93C /* SettingsView.swift */,
 				55EBC6D95993A7A6270B9597 /* SpotlightSettingsView.swift */,
@@ -839,6 +845,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2A324F4747AD44CF98930AE4 /* AppAppearance.swift in Sources */,
 				64B564A81829B82B82BADB1C /* Base64Intents.swift in Sources */,
 				242C04A97E37C235978CEE4A /* CSSUnitIntent.swift in Sources */,
 				AEBF9B5600E6BEDB49B1D201 /* Clipboard.swift in Sources */,
@@ -847,6 +854,7 @@
 				3B1A45F630A2B70A3C19415C /* DetachedWorkspaceWindows.swift in Sources */,
 				3708DF3571CE5B595C7C4CBE /* DevKitApp.swift in Sources */,
 				6138A68A4AD5013FF9164C9E /* DevKitShortcuts.swift in Sources */,
+				EBCC33AD3678BFA575B874C4 /* GlassPreferences.swift in Sources */,
 				B1FC14ECE35C7F9C457DE304 /* HTMLEncodeIntent.swift in Sources */,
 				6FE120AF12F3EA268542AFAD /* HTTPStatusIntent.swift in Sources */,
 				0F3FA7ACDE230DF1488FCFD0 /* HexTextIntent.swift in Sources */,

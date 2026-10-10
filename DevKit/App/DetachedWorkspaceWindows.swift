@@ -54,14 +54,12 @@ import SwiftUI
 private struct DetachedWorkspaceRoot<T: ToolModule>: View {
   @Bindable var session: ToolSession<T>
   let pane: DetachedWorkspacePane
-  @AppStorage("appearance") private var appearance = "system"
   private var actions: WorkspaceActions {
     WorkspaceActions(
       run: { session.run() }, copy: { session.copyResult() }, search: {}, supportsNavigation: false)
   }
   var body: some View {
     ToolWorkspace(session: session, detachedPane: pane)
-      .preferredColorScheme(appearance == "dark" ? .dark : appearance == "light" ? .light : nil)
       .focusedSceneValue(\.workspaceActions, actions)
       .background(WindowCommandScope(actions: actions))
   }

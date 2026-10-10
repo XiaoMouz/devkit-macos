@@ -59,12 +59,8 @@ struct MainWindow: View {
   }
   private var header: some View {
     HStack(spacing: 0) {
-      HStack {
-        Spacer().frame(width: 76)
-        Button { sidebarVisible.toggle() } label: { Image(systemName: "sidebar.left") }
-          .buttonStyle(.plain).help("收放工具列表").accessibilityLabel("收放工具列表")
-        Spacer(minLength: 0)
-      }.padding(.leading, 12).frame(width: sidebarVisible ? WorkspaceChromeMetrics.sidebarWidth : 128)
+      WorkspaceSidebarControl(sidebarVisible: sidebarVisible) { sidebarVisible.toggle() }
+        .frame(width: sidebarVisible ? WorkspaceChromeMetrics.sidebarWidth : 128)
       HStack(spacing: 12) {
         if let active {
           Text(active.metadata.name).font(.system(size: 15, weight: .semibold))
