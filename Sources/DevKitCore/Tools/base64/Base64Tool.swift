@@ -8,7 +8,7 @@ public enum Base64Tool: ToolModule {
     public init() {}
   }
   public static let metadata = ToolMetadata(
-    "base64", "Base64", .encoding, "UTF-8 与二进制编码转换；标准 / URL Safe。", sample: "hello", secondary: "",
+    "base64", "Base64", .encoding, "UTF-8 文本编解码；标准 / URL Safe，支持文本导出。", sample: "hello", secondary: "",
     input: .text, network: false)
   public static var fields: [OptionField<Options>] {
     [
@@ -21,6 +21,7 @@ public enum Base64Tool: ToolModule {
     fields.filter { field in options.operation == "encode" || field.id != "padding" }
   }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
+    try require(input.file == nil, "请导入 UTF-8 文本。Base64 工具仅处理文本。")
     if options.operation == "encode" {
       var value = input.bytes.base64EncodedString()
       if options.urlSafe {
@@ -30,6 +31,13 @@ public enum Base64Tool: ToolModule {
       if !options.padding { value = value.replacingOccurrences(of: "=", with: "") }
       return ToolOutput(value)
     }
-    return textOrArtifact(try Base64Codec.decode(input.text, urlSafe: options.urlSafe))
+    let data = try Base64Codec.decode(input.text, urlSafe: options.urlSafe)
+    guard let text = String(data: data, encoding: .utf8) else {
+      throw ToolFailure("解码结果不是 UTF-8 文本。Base64 工具仅支持文本编解码。")
+    }
+    return ToolOutput(text)
+  }
+  public static func example(for options: Options) -> ToolInput {
+    ToolInput(text: options.operation == "decode" ? "aGVsbG8=" : "hello")
   }
 }

@@ -31,6 +31,8 @@ public enum JwtTool: ToolModule {
       ResultRow("Header", try prettyJSON(header)), ResultRow("Payload", try prettyJSON(payload)),
     ]
     var state = "未验证签名；不要仅凭解析结果信任令牌。"
+    var verification: ResultReport?
+    var html: String?
     if options.verify {
       try require(
         (header as? [String: Any])?["alg"] as? String == "HS256", "此验证入口只接受 alg=HS256，拒绝算法替换。")
@@ -40,6 +42,14 @@ public enum JwtTool: ToolModule {
         signature, authenticating: Data("\(parts[0]).\(parts[1])".utf8),
         using: SymmetricKey(data: Data(options.key.utf8)))
       state = valid ? "HS256 签名有效；仍需检查 exp、aud、iss 等业务声明。" : "签名无效"
+      verification = ResultReport(valid ? "success" : "failure", valid ? "JWT 签名校验通过" : "JWT 签名校验未通过",
+        valid ? "签名与当前密钥匹配，仍需检查过期时间、受众和签发者。" : "签名与当前密钥不匹配，请检查令牌内容及密钥。",
+        metrics: [ResultRow("算法", "HS256"), ResultRow("签名", valid ? "有效" : "无效")])
+      rows.append(ResultRow("签名", state))
+      html = ComparisonPreview.documents([
+        ("令牌内容", [(text: "头部：" + rows[0].value, kind: ""), (text: "载荷：" + rows[1].value, kind: "")]),
+        ("签名校验", [(text: String(parts[2]), kind: valid ? "add" : "error"), (text: state, kind: valid ? "" : "error")]),
+      ])
     }
     if let values = payload as? [String: Any] {
       for key in ["iat", "exp", "nbf"] {
@@ -49,6 +59,6 @@ public enum JwtTool: ToolModule {
       }
     }
     return ToolOutput(
-      rows.map { "\($0.label)\n\($0.value)" }.joined(separator: "\n\n"), rows: rows, note: state)
+      rows.map { "\($0.label)\n\($0.value)" }.joined(separator: "\n\n"), rows: rows, html: html, note: state, report: verification)
   }
 }

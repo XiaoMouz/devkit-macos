@@ -135,15 +135,27 @@ public struct ToolOutput: Codable, Sendable {
   public var artifacts: [Artifact]
   public var html: String?
   public var note: String?
+  public var report: ResultReport?
   public init(
     _ text: String = "", rows: [ResultRow] = [], artifacts: [Artifact] = [], html: String? = nil,
-    note: String? = nil
+    note: String? = nil, report: ResultReport? = nil
   ) {
     self.text = text
     self.rows = rows
     self.artifacts = artifacts
     self.html = html
     self.note = note
+    self.report = report
+  }
+}
+/// A shared summary for comparison and validation tools; rows retain the detailed findings.
+public struct ResultReport: Codable, Sendable {
+  public let state: String
+  public let title: String
+  public let detail: String
+  public let metrics: [ResultRow]
+  public init(_ state: String, _ title: String, _ detail: String, metrics: [ResultRow] = []) {
+    self.state = state; self.title = title; self.detail = detail; self.metrics = metrics
   }
 }
 public struct ToolFailure: Error, LocalizedError, Codable, Sendable {

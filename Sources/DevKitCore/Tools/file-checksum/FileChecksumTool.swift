@@ -19,9 +19,18 @@ public enum FileChecksumTool: ToolModule {
     guard let data = input.file else { throw ToolFailure("请选择文件。") }
     let hash = Digest.compute(data, algorithm: options.algorithm)
     let expected = options.expected.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    let same = hash == expected
     return ToolOutput(
       hash,
+      rows: expected.isEmpty ? [] : [ResultRow("期望摘要", expected), ResultRow("实际摘要", hash)],
+      html: expected.isEmpty ? nil : ComparisonPreview.documents([
+        ("期望摘要", [(text: expected, kind: same ? "" : "remove")]),
+        ("实际摘要", [(text: hash, kind: same ? "" : "add")]),
+      ]),
       note: expected.isEmpty
-        ? "\(input.fileName ?? "文件") · \(data.count) 字节" : (hash == expected ? "校验一致" : "校验不一致"))
+        ? "\(input.fileName ?? "文件") · \(data.count) 字节" : (same ? "校验一致" : "校验不一致"),
+      report: expected.isEmpty ? nil : ResultReport(same ? "success" : "failure", same ? "文件校验通过" : "文件摘要不一致",
+        same ? "计算摘要与期望值完全匹配。" : "实际摘要与期望值不同，请检查文件或期望摘要。",
+        metrics: [ResultRow("算法", options.algorithm), ResultRow("文件大小", ByteCountFormatter.string(fromByteCount: Int64(data.count), countStyle: .file))]))
   }
 }

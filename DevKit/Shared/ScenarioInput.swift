@@ -7,7 +7,8 @@ struct ScenarioInputActions<T: ToolModule>: View {
   @State private var optionsPresented = false
   private var form: ToolPresentation { session.presentation }
   private var fields: [OptionField<T.Options>] {
-    session.visibleFields.filter { $0.id != primaryToolField(T.self)?.id }
+    session.visibleFields.filter { $0.id != primaryToolField(T.self)?.id
+      && !(session.metadata.id == "json" && session.operation == "query" && ["syntax", "path"].contains($0.id)) }
   }
   private var hasEditorOptions: Bool {
     !form.isForm && !form.isImage && form.control != .request && session.inputStyle != .file
@@ -83,6 +84,14 @@ struct ScenarioInput<T: ToolModule>: View {
   }
   var body: some View {
     VStack(spacing: 0) {
+      if session.metadata.id == "json", session.operation == "query" {
+        VStack(alignment: .leading, spacing: 8) {
+          ToolParameterFields(options: $session.options, fields: fields.filter { ["syntax", "path"].contains($0.id) })
+          Text(session.optionValues["syntax"] == "pointer" ? "例如 /users/0/name；留空表示整个文档。" : "例如 $.users[0].name；$ 表示整个文档。")
+            .font(.caption).foregroundStyle(.secondary)
+        }.padding(14)
+        Divider()
+      }
       if form.isForm {
         ScrollView {
           VStack(alignment: .leading, spacing: 22) {
@@ -183,34 +192,40 @@ struct ScenarioInput<T: ToolModule>: View {
     }
   }
   private var fileInput: some View {
-    ScrollView {
-      VStack(alignment: .leading, spacing: 18) {
-        if let data = session.input.file {
-          if let image = RasterPreview.image(data), form.isImage {
-            Image(nsImage: image).resizable().interpolation(session.metadata.id == "qr-code" ? .none : .high)
-              .scaledToFit().frame(maxWidth: .infinity).frame(height: 230)
-          } else { Image(systemName: "doc.fill").font(.system(size: 44)).foregroundStyle(.secondary) }
-          Text(session.input.fileName ?? "文件").font(.headline).textSelection(.enabled)
-          Text(ByteCountFormatter.string(fromByteCount: Int64(data.count), countStyle: .file))
-            .font(.caption).foregroundStyle(.secondary)
-          Button { session.chooseFile() } label: {
-            Label(form.isImage ? "更换图片…" : "更换文件…", systemImage: form.isImage ? "photo" : "folder")
-          }.buttonStyle(.bordered)
-        } else {
-          VStack(spacing: 16) {
-            Image(systemName: form.isImage ? "photo.badge.plus" : "doc.badge.plus").font(.system(size: 36)).foregroundStyle(.tertiary)
-            Text(form.isImage ? "拖入图片，或选择图片" : "拖入文件，或选择文件").foregroundStyle(.secondary)
+    GeometryReader { bounds in
+      ScrollView {
+        VStack(alignment: .leading, spacing: 18) {
+          if let data = session.input.file {
+            if let image = RasterPreview.image(data), form.isImage {
+              Image(nsImage: image).resizable().interpolation(session.metadata.id == "qr-code" ? .none : .high)
+                .scaledToFit().frame(maxWidth: .infinity).frame(height: 230)
+            } else { Image(systemName: "doc.fill").font(.system(size: 44)).foregroundStyle(.secondary) }
+            Text(session.input.fileName ?? "文件").font(.headline).textSelection(.enabled)
+            Text(ByteCountFormatter.string(fromByteCount: Int64(data.count), countStyle: .file))
+              .font(.caption).foregroundStyle(.secondary)
             Button { session.chooseFile() } label: {
-              Label(form.isImage ? "选择图片…" : "选择文件…", systemImage: form.isImage ? "photo" : "folder")
-            }.buttonStyle(.bordered).controlSize(.large)
-          }.frame(maxWidth: .infinity).padding(.vertical, 38)
-        }
-        ToolParameterFields(options: $session.options, fields: fields)
-        Button { session.run() } label: {
-          Label(session.bridge.running ? "取消" : form.action,
-            systemImage: session.bridge.running ? "stop.fill" : "play.fill")
-        }.buttonStyle(.borderedProminent).controlSize(.large).disabled(session.input.file == nil)
-      }.padding(20)
+              Label(form.isImage ? "更换图片…" : "更换文件…", systemImage: form.isImage ? "photo" : "folder")
+            }.buttonStyle(.bordered)
+          } else {
+            VStack(spacing: 16) {
+              Image(systemName: form.isImage ? "photo.badge.plus" : "doc.badge.plus").font(.system(size: 36)).foregroundStyle(.tertiary)
+              Text(form.isImage ? "拖入图片，或选择图片" : "拖入文件，或选择文件").foregroundStyle(.secondary)
+              Button { session.chooseFile() } label: {
+                Label(form.isImage ? "选择图片…" : "选择文件…", systemImage: form.isImage ? "photo" : "folder")
+              }.buttonStyle(.bordered).controlSize(.large)
+            }.frame(maxWidth: .infinity).padding(.vertical, 38)
+          }
+          ToolParameterFields(options: $session.options, fields: fields)
+          if session.metadata.id != "data-url" {
+            Button { session.run() } label: {
+              Label(session.bridge.running ? "取消" : form.action,
+                systemImage: session.bridge.running ? "stop.fill" : "play.fill")
+            }.buttonStyle(.borderedProminent).controlSize(.large).disabled(session.input.file == nil)
+          }
+        }.padding(20).frame(maxWidth: .infinity)
+          .frame(minHeight: session.metadata.id == "data-url" ? bounds.size.height : 0,
+            alignment: session.metadata.id == "data-url" ? .center : .topLeading)
+      }
     }
   }
   private var requestInput: some View {

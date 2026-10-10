@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Exercise the packaged worker against local fixtures; no public network service."""
+import argparse
 import base64
 import hashlib
 import http.server
@@ -14,8 +15,12 @@ import threading
 import time
 import unittest
 
-ROOT = Path(__file__).resolve().parents[1]
-WORKER = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / 'build/Build/Products/Debug/DevKit.app/Contents/Helpers/DevKitWorker'
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('app', type=Path, help='DevKit.app produced by Xcode Run or Archive')
+args = parser.parse_args()
+WORKER = args.app / 'Contents/Helpers/DevKitWorker'
+if not WORKER.is_file():
+    parser.error('所选 App 中没有 DevKitWorker，请传入 Xcode 构建出的 DevKit.app。')
 sys.argv = sys.argv[:1]
 
 def payload(tool, text='', options=None, secondary='', file=None):

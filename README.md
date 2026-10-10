@@ -10,37 +10,21 @@ JSON 的格式化、查询、对比、Schema 校验和 TypeScript 类型生成�
 
 当前版本 **0.1.0，自用预览版**。模块均有实际处理逻辑，具体能力和限制见 [实现范围](docs/implementation-status.md)。原设计中的所有进阶选项并非都已覆盖。Spotlight 已实现 App Intents，但系统交互验收仍有阻塞，不能将其视为已完成的发布承诺。
 
-## 构建与运行
+## Xcode 构建、验收与发布
 
-需要 macOS 26+、Xcode 26+（本次使用 Xcode 27）、XcodeGen 和 Python 3。
+打开 `DevKit.xcodeproj`，选择 `DevKit` scheme 和 `My Mac`：
 
-```sh
-brew install xcodegen
-Scripts/build.sh Release
-open build/Build/Products/Release/DevKit.app
-```
+- 日常验收：按 `⌘R`，使用 Debug 配置运行 Xcode 当前构建的应用。
+- 打包发布：选择 `Product → Archive`，使用 Release 配置归档；在 `Window → Organizer → Archives` 中选择归档，再通过 `Distribute App` 完成对应渠道的签名、导出或上传。
+- 签名设置：在 Xcode 的 `Signing & Capabilities` 中选择团队；本机配置可保存在已忽略的 `Config/Signing.local.xcconfig`，不由外部脚本重签名。
 
-也可以打开 `DevKit.xcodeproj`，运行 `DevKit` scheme。工程由 `project.yml` 生成。
+需要 macOS 26+、Xcode 26+（本次使用 Xcode 27）。仓库已保存生成的工程；修改 `project.yml` 后才需要 XcodeGen 同步工程结构。
 
-Xcode 中选择 `DevKit → My Mac`，按 `⌘R` 运行；`Product → Archive` 使用 Release 配置归档。若出现 `Missing package product 'DevKitCore'`，并提示本地包已被另一工程打开，先关闭单独打开的 `Package.swift` / Swift Package 窗口；必要时退出 Xcode，再只打开 `DevKit.xcodeproj`。
+交互验收只使用 Xcode 启动的那一份 App。不要并行打开 Applications 安装版、其他构建目录的 App 或另建 UI Review / Layout Check 副本。
 
-Xcode 的本机签名配置写入 `Config/Signing.local.xcconfig`（已被 Git 忽略）：
+Spotlight 系统动作需要有效的开发者团队签名；没有开发签名时，工具箱仍可运行，但不能将其视为已通过 Spotlight 验收。分发渠道及相应签名、公证选项由 Xcode Organizer 管理。
 
-```xcconfig
-DEVELOPMENT_TEAM = 你的开发团队ID
-CODE_SIGN_IDENTITY = Apple Development
-```
-
-Debug 和 Release 共用此配置，重新运行 XcodeGen 后仍会保留；没有本机配置时使用临时签名。
-
-**Spotlight 需要开发者签名。** 本机 macOS 27 的系统日志确认：临时签名缺少 Team ID，动作虽然能被搜索到，系统仍会拒绝执行。构建脚本会使用钥匙串中唯一的有效 Apple 开发签名；无证书时只生成带提示的工具箱预览版，多个证书时要求明确选择。证书准备好后，使用：
-
-```sh
-DEVKIT_REQUIRE_SPOTLIGHT=1 Scripts/build.sh Release
-# 多个证书时设置 DEVKIT_SIGNING_IDENTITY 为选定证书的 SHA-1
-```
-
-在 Xcode → Settings → Accounts 配置开发团队与 Apple Development 证书。本地签名检查只说明运行前提满足，仍需验证系统 Spotlight 的 A/B 流程。
+若出现 `Missing package product 'DevKitCore'`，并提示本地包已被另一工程打开，先关闭单独打开的 `Package.swift` / Swift Package 窗口，再只打开 `DevKit.xcodeproj`。
 
 仓库包含本地解析器 bundle；普通 Swift 构建不需要 Node.js，也不联网下载解析器。修改 JavaScript 模块时，需要 Node.js 22+：
 
@@ -49,15 +33,16 @@ npm ci --prefix Vendor --ignore-scripts
 node Vendor/build.mjs
 ```
 
-## 验证与打包
+## 自动化测试与维护
+
+核心与会话回归测试位于 Swift Package 的 Tests 中，可在 Xcode 中运行，或执行 `swift test`。以下脚本只检查已有产物，不负责构建、安装或发布 App：
 
 ```sh
-swift test
-python3 Scripts/integration-tests.py build/Build/Products/Release/DevKit.app/Contents/Helpers/DevKitWorker
-Scripts/package.sh
+python3 Scripts/integration-tests.py "/path/from/Xcode/DevKit.app"
+python3 Scripts/check-spotlight-metadata.py "/path/from/Xcode/DevKit.app"
 ```
 
-产物为 `dist/DevKit-0.1.0-macos.zip`，保留本次构建选择的签名。公众分发前需要开发者自己的 Developer ID 签名、公证和 macOS 26 实机验证。
+App 路径从 Xcode 的 Products 中定位；发布检查使用 Organizer 中的归档产物。编辑器、外观回归和资源维护说明见 [开发维护](docs/development.md)。
 
 ## 工程结构
 

@@ -116,22 +116,35 @@ private actor Gate {
     try await waitUntil { checksum.input.file != nil }
     #expect(checksum.input.file == Data("hello".utf8))
   }
-  @Test func base64FileEncodingCanSwitchToDecodeAndRestoreTheFile() async throws {
-    let bridge = WorkspaceBridge()
-    let session = ToolSession<Base64Tool>(id: UUID(), bridge: bridge) { request in
+  @Test func base64TextRoundTripUsesTextViewAndTextExport() async throws {
+    let session = ToolSession<Base64Tool>(id: UUID(), bridge: WorkspaceBridge()) { request in
       try await Base64Tool.executeEncoded(request.input, options: request.options)
     }
-    let data = Data([0xff, 0x00, 0x80])
-    session.input = ToolInput(file: data, fileName: "fixture.bin")
-    session.run()
-    try await waitUntil { session.current }
-    session.options.operation = "decode"
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let file = directory.appendingPathComponent("hello.txt")
+    try Data("hello".utf8).write(to: file)
+    session.loadFile(file)
+    try await waitUntil { session.input.text == "hello" }
     #expect(session.input.file == nil)
-    #expect(session.input.text == data.base64EncodedString())
     session.run()
     try await waitUntil { session.current }
-    #expect(session.output?.artifacts.first?.data == data)
-    #expect(session.recommendedDisplay == "files")
+    let encoded = try #require(session.output?.text)
+    session.options.operation = "decode"
+    session.input.text = encoded
+    session.run()
+    try await waitUntil { session.current }
+    #expect(session.output?.text == "hello")
+    #expect(session.output?.artifacts.isEmpty == true)
+    #expect(session.recommendedDisplay == "text")
+    #expect(session.textArtifact.name == "result.txt")
+    #expect(session.textArtifact.data == Data("hello".utf8))
+    let binary = directory.appendingPathComponent("binary.bin")
+    try Data([0xff, 0x80]).write(to: binary)
+    session.loadFile(binary)
+    try await waitUntil { session.error != nil }
+    #expect(session.input.file == nil)
   }
   @Test func detachedViewsShareEditsAndInvalidateResultsWithoutRerunning() async throws {
     let bridge = WorkspaceBridge()

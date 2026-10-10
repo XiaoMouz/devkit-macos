@@ -42,6 +42,11 @@ struct ToolWorkspace<T: ToolModule>: View {
       return PaneStatus(title: session.status, symbol: "info.circle", tint: .secondary, detail: session.status)
     }
     guard session.output != nil else { return PaneStatus(title: "待生成", symbol: "text.alignleft", tint: .secondary) }
+    if session.current, let report = session.output?.report {
+      return PaneStatus(title: report.state == "failure" ? "未通过" : report.state == "difference" ? "存在差异" : "已通过",
+        symbol: report.state == "failure" ? "exclamationmark.circle" : report.state == "difference" ? "plusminus.circle" : "checkmark.circle",
+        tint: report.state == "failure" ? .red : report.state == "difference" ? .orange : .green, elapsed: elapsedLabel(session.elapsed))
+    }
     return session.current
       ? PaneStatus(title: "已完成", symbol: "checkmark.circle", tint: .green, elapsed: elapsedLabel(session.elapsed))
       : PaneStatus(title: "待更新", symbol: "arrow.trianglehead.clockwise", tint: .orange)
@@ -199,7 +204,11 @@ struct ToolWorkspace<T: ToolModule>: View {
   }
   private var resultPane: some View {
     VStack(spacing: 0) {
-      if let output = session.output {
+      if let error = session.error {
+        ResultReportView(report: ResultReport("failure", "未能完成处理", error))
+        WorkspaceEmptyState(title: "请检查输入后重新执行", detail: error, symbol: "exclamationmark.circle", tint: .red) { EmptyView() }
+      } else if let output = session.output {
+        if let report = output.report { ResultReportView(report: report) }
         resultBody(output).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         if let note = output.note {
           Text(note).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
@@ -231,26 +240,39 @@ struct ToolWorkspace<T: ToolModule>: View {
     }
   }
   private var resultUsesEditor: Bool {
+    if session.error != nil { return false }
     guard let output = session.output else { return false }
+    if output.report != nil { return display == "text" && session.metadata.id != "text-diff" }
     if display == "files" && session.binaryArtifact != nil { return false }
     if display == "preview" && (output.html != nil || session.imageArtifact != nil) { return false }
     if display == "rows" && !output.rows.isEmpty { return false }
     return session.metadata.id != "text-diff"
   }
   private func resultViews(_ output: ToolOutput) -> [(String, String, String)] {
+    if output.report != nil {
+      var views = [(session.metadata.id == "json" ? "路径列表" : "问题明细", "rows", "list.bullet")]
+      if output.html != nil { views.append(("高亮对照", "preview", "rectangle.split.2x1")) }
+      views.append(("文本", "text", "text.alignleft"))
+      return views
+    }
     var views = [(session.metadata.id == "http-client" ? "正文" : "文本", "text", "text.alignleft")]
     if session.binaryArtifact != nil { views.append(("文件", "files", "doc")) }
     if !output.rows.isEmpty {
       views.append((session.metadata.id == "http-client" ? "状态与响应头" : "条目", "rows", "list.bullet"))
     }
-    if output.html != nil || session.imageArtifact != nil { views.append(("预览", "preview", "eye")) }
+    if output.html != nil || session.imageArtifact != nil { views.append((session.metadata.id == "json" ? "折叠视图" : "预览", "preview", "eye")) }
     return views
   }
   private func resultActions(_ output: ToolOutput) -> some View {
     let views = resultViews(output)
     return Group {
-      // Keep alternate views in a compact menu so the header stays one row.
-      if views.count > 1 {
+      if output.report != nil, output.html != nil {
+        Picker("结果视图", selection: $display) {
+          Text(session.metadata.id == "json" ? "路径" : "明细").tag("rows")
+          Text("高亮").tag("preview")
+          Text("文本").tag("text")
+        }.pickerStyle(.segmented).labelsHidden().frame(width: 176).help("切换问题路径与高亮对照")
+      } else if views.count > 1 {
         Menu {
           Picker("结果视图", selection: $display) {
             ForEach(views, id: \.1) { view in Label(view.0, systemImage: view.2).tag(view.1) }
@@ -308,17 +330,27 @@ struct ToolWorkspace<T: ToolModule>: View {
             .scaledToFit().padding(24).frame(maxWidth: .infinity, maxHeight: .infinity)
         } else { Text("此文件可通过导出菜单保存").foregroundStyle(.secondary) }
       }
+    } else if display == "rows", output.rows.isEmpty, output.report != nil {
+      if let html = output.html { SafePreview(html: html) }
+      else {
+        CodeEditor(text: .constant(output.text), editable: false, label: "校验详情", language: outputLanguage, status: resultStatus)
+      }
     } else if display == "rows", !output.rows.isEmpty {
       ScrollView {
         LazyVStack(spacing: 0) {
           ForEach(Array(output.rows.enumerated()), id: \.offset) { _, row in
             HStack(alignment: .top, spacing: 16) {
-              Text(row.label).foregroundStyle(.secondary).frame(minWidth: 70, alignment: .leading)
-              HighlightedText(text: row.value.isEmpty ? "（空值）" : row.value, fontSize: fontSize)
+              Text(row.label).font(.system(.body, design: .monospaced))
+                .foregroundStyle(rowTint(row, report: output.report))
+                .frame(minWidth: 70, alignment: .leading)
+              HighlightedText(text: row.value.isEmpty ? "（空值）" : output.report != nil && row.value.count > 1200
+                ? String(row.value.prefix(1200)) + "\n…（完整内容可复制或导出）" : row.value,
+                language: output.report == nil ? .automatic : .plain, fontSize: fontSize)
                 .textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
               Button { if Clipboard.copy(row.value) { session.status = "已复制" } } label: { Image(systemName: "doc.on.doc") }
                 .buttonStyle(.plain).disabled(!session.current).accessibilityLabel("复制 " + row.label)
             }.padding(14)
+              .background(output.report == nil ? Color.clear : rowTint(row, report: output.report).opacity(0.045))
             Divider()
           }
         }
@@ -337,6 +369,17 @@ struct ToolWorkspace<T: ToolModule>: View {
       CodeEditor(text: .constant(String(output.text.prefix(500_000))), editable: false, label: form.outputTitle,
         language: outputLanguage, status: resultStatus)
     }
+  }
+  private func rowTint(_ row: ResultRow, report: ResultReport?) -> Color {
+    if session.metadata.id == "contrast" {
+      return row.value == "通过" ? .green : row.value == "未通过" ? .red : .secondary
+    }
+    if session.metadata.id == "jwt", row.label != "签名" { return .secondary }
+    if report?.state == "failure" { return .red }
+    if row.label.hasPrefix("+ ") { return .green }
+    if row.label.hasPrefix("− ") { return .red }
+    if row.label.hasPrefix("~ ") { return .orange }
+    return .secondary
   }
   private func detach(_ pane: DetachedWorkspacePane) { DetachedWorkspaceWindows.shared.open(session, pane: pane) }
 }

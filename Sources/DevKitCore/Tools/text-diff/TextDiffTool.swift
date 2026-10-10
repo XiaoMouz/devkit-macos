@@ -50,7 +50,17 @@ public enum TextDiffTool: ToolModule {
         break
       }
     }
+    let rows = removed.sorted().map { ResultRow("− 原文第 \($0 + 1) 行", original[$0]) }
+      + inserted.sorted().map { ResultRow("+ 对比第 \($0 + 1) 行", changed[$0]) }
+    let same = rows.isEmpty
     return ToolOutput(
-      output.joined(separator: "\n"), note: "新增 \(inserted.count) 行 · 删除 \(removed.count) 行")
+      output.joined(separator: "\n"), rows: rows,
+      html: ComparisonPreview.documents([
+        ("原始文本", original.enumerated().map { (text: $0.element, kind: removed.contains($0.offset) ? "remove" : "") }),
+        ("对比文本", changed.enumerated().map { (text: $0.element, kind: inserted.contains($0.offset) ? "add" : "") }),
+      ]), note: options.ignoreWhitespace ? "已忽略行首尾空白。" : "逐行比较，包含行首尾空白。",
+      report: ResultReport(same ? "success" : "difference", same ? "两份文本一致" : "发现文本差异",
+        same ? "所有行均通过比较，可在下方查看完整内容。" : "明细列出变化行号；高亮对照显示原文删除行和对比文本新增行。",
+        metrics: [ResultRow("新增行", String(inserted.count)), ResultRow("删除行", String(removed.count)), ResultRow("原文行数", String(original.count)), ResultRow("对比行数", String(changed.count))]))
   }
 }

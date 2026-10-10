@@ -30,6 +30,9 @@ public enum ContrastTool: ToolModule {
       rows.map { "\($0.label): \($0.value)" }.joined(separator: "\n"), rows: rows,
       html: cssPreview(
         "background:\(background.css);color:\(foreground.css);border-radius:16px;",
-        content: "Aa 对比预览"), note: "WCAG 2.2；大号文字为 ≥18pt 或 ≥14pt 粗体。")
+        content: "Aa 对比预览"), note: "WCAG 2.2；大号文字为 ≥18pt 或 ≥14pt 粗体。",
+      report: ResultReport(ratio >= 4.5 ? "success" : "failure", ratio >= 4.5 ? "普通文字 AA 对比度通过" : "普通文字 AA 对比度未通过",
+        ratio >= 4.5 ? "当前颜色达到普通文字 AA 标准，各等级结果见下方。" : "建议加深前景色或提高背景亮度，使对比值达到 4.5:1。",
+        metrics: [ResultRow("当前对比值", String(format: "%.2f:1", ratio)), ResultRow("普通文字 AA", "≥ 4.5:1")]))
   }
 }

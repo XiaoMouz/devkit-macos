@@ -22,7 +22,9 @@ export default (i, o) => {
         throw Error("路径不存在");
       value = value[k];
     }
-  } else
+  } else {
+    if (!o.path.trim()) throw Error("请输入 JSONPath 查询路径，例如 $ 或 $.users[0].name");
     value = JSONPath({ path: o.path, json: data, eval: false, wrap: true });
+  }
   return result(stringifyLossless(value, null, 2));
 };

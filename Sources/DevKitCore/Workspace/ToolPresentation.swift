@@ -41,7 +41,7 @@ public struct ToolPresentation: Sendable {
       if id == "image-metadata", values["strip"] == "true" { action = "移除元数据" }
     case "file-checksum": control = .file; inputTitle = "待校验文件"; action = "计算摘要"
     case "base64":
-      inputTitle = operation == "decode" ? "Base64" : "文本或文件"; acceptsBinary = operation == "encode"
+      inputTitle = operation == "decode" ? "Base64" : "文本"
       action = operation == "decode" ? "解码" : "编码"
     case "hash", "hmac":
       inputTitle = "文本或文件"; acceptsBinary = true; action = "计算摘要"

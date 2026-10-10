@@ -49,6 +49,7 @@
 		B718202278033A3B71D8047C /* URLEncodeIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A2E05C4D1C025205B239311 /* URLEncodeIntent.swift */; };
 		B72CA7BE78A9C89B4218C097 /* ULIDIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A921C10EF36ADFADDBC9A7E7 /* ULIDIntent.swift */; };
 		BD50F241D2AFB9DAF7C51FA3 /* ToolOptionsForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83CE0555DA6BFBA77E749EAC /* ToolOptionsForm.swift */; };
+		BF768BF73C6241CB29BC304A /* ResultReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAEAA469A4C87FBB7439F6FA /* ResultReportView.swift */; };
 		C079932555387BC468DBB8AF /* ColorIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E6FFED29803388E050DF29 /* ColorIntent.swift */; };
 		C9AC3FC29A9515915820523D /* TextCaseIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D4E96C7A90F2F6812BD4CC0 /* TextCaseIntent.swift */; };
 		CC71A83DDD26DEE58F80904E /* WindowWorkspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = E85E7BF74B99D08F149B7F45 /* WindowWorkspace.swift */; };
@@ -123,6 +124,7 @@
 		A4D3BBE63C78C0BD4C2387EA /* WorkspaceBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceBridge.swift; sourceTree = "<group>"; };
 		A921C10EF36ADFADDBC9A7E7 /* ULIDIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ULIDIntent.swift; sourceTree = "<group>"; };
 		A9FBCAA91D65B3F4253E869C /* ToolWorkspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolWorkspace.swift; sourceTree = "<group>"; };
+		AAEAA469A4C87FBB7439F6FA /* ResultReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultReportView.swift; sourceTree = "<group>"; };
 		B1CA8134DA3AC641106BAC9B /* WorkspaceColumns.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceColumns.swift; sourceTree = "<group>"; };
 		B9304776B0B0F2CB0B480ED4 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
 		BDC99B3BEC0A0849561AF9ED /* ToolChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolChrome.swift; sourceTree = "<group>"; };
@@ -623,6 +625,7 @@
 				3556719D8345C5BEE5A7A310 /* Clipboard.swift */,
 				4AB268D94E04651508BD93BD /* CodeEditor.swift */,
 				22CD1103A4DF5C759F0ACFE4 /* RasterPreview.swift */,
+				AAEAA469A4C87FBB7439F6FA /* ResultReportView.swift */,
 				8767B59BF3A93FF23903AAA4 /* SafePreview.swift */,
 				704E361F4969393EF8384680 /* ScenarioControls.swift */,
 				8CC892DEBD413424D28C2A61 /* ScenarioInput.swift */,
@@ -792,6 +795,7 @@
 				EFC92ACA137EC9C0E7B48A21 /* NumberFormatIntent.swift in Sources */,
 				36E647CAC99EEC9AB653376E /* RandomStringIntent.swift in Sources */,
 				81102DF1B6A99E255B41010F /* RasterPreview.swift in Sources */,
+				BF768BF73C6241CB29BC304A /* ResultReportView.swift in Sources */,
 				82CAAB45A6A69FBDEF0E91A3 /* ResultSnippet.swift in Sources */,
 				6C8102FE3210D45BF06ECE03 /* SHA256Intent.swift in Sources */,
 				3333D19FFFB4DC1E7D32731E /* SafePreview.swift in Sources */,

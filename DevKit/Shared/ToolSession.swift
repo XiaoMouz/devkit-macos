@@ -80,6 +80,7 @@ import UniformTypeIdentifiers
   var current: Bool { output != nil && resultRevision == revision && !bridge.running }
   var recommendedDisplay: String {
     guard let output else { return "text" }
+    if output.report != nil { return "rows" }
     if ["color", "contrast"].contains(metadata.id) { return "rows" }
     if metadata.id == "image-metadata" { return "rows" }
     if metadata.id == "http-client" { return imageArtifact != nil ? "preview" : binaryArtifact != nil ? "files" : output.text.isEmpty ? "rows" : "text" }

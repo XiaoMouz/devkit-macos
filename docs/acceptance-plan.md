@@ -1,5 +1,7 @@
 # DevKit 测试与验收
 
+日常交互验收唯一入口为 **Xcode → DevKit scheme → My Mac → Run（Debug）**。打包发布同样使用 Xcode 的 `Product → Archive` 和 Organizer，发布产物不与日常验收应用并行启动。
+
 本文件定义未来验收要求，不记录为已执行的测试。验收以实际行为为准，文档、构建、元数据和系统界面分别提供对应证据。
 
 ## 验证层次

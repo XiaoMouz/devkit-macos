@@ -4,7 +4,11 @@
 
 `project.yml` 是 Xcode 配置源，工程随仓库保存。最低部署版本为 26.0。本次环境为 macOS 27.0.1、Xcode 27、Apple Silicon；最低版本和 Intel 不等于已实机验证。
 
-`Scripts/build.sh Debug|Release` 生成工程、构建应用与工作进程、嵌入 helper 并做临时签名。`Scripts/package.sh` 生成 Release ZIP。脚本不安装证书、不上传产物、不发布版本。
+用户指定：构建、验收、签名、归档与发布统一使用 Xcode。打开 `DevKit.xcodeproj`，选择 `DevKit` scheme 和 `My Mac`；日常按 `⌘R` 运行 Debug，发布时选择 `Product → Archive` 构建 Release，在 Organizer 的 Archives 中通过 `Distribute App` 完成签名、导出或上传。
+
+交互验收仅使用 Xcode 当前启动的应用，不并行启动安装版、其他构建目录的 App 或独立身份的预览副本。外置构建、打包、重签名、路径定位和旧注册清理脚本已移除；不再维护第二条发布流水线。Xcode 工程内的 `Embed worker` 构建阶段负责把 helper 放进应用包，属于正常 target 构建依赖。
+
+签名由 Xcode 的 Signing & Capabilities 和 `Config/Signing.xcconfig` 管理，本机团队配置保存在不入库的 `Config/Signing.local.xcconfig`。不通过外部脚本挑选证书或重签名。
 
 ## 应用图标
 
@@ -12,7 +16,7 @@
 
 使用 XcodeGen 2.46 或更新版本生成工程，`.icon` 会作为 `wrapper.icon` 加入 Resources，目标的 `ASSETCATALOG_COMPILER_APPICON_NAME` 保持为 `AppIcon`。Xcode 构建时负责生成系统所需图标资源，详见 [Apple Icon Composer 接入说明](https://developer.apple.com/documentation/xcode/creating-your-app-icon-using-icon-composer)。
 
-运行 `Scripts/export-icon.sh` 可导出默认、深色、单色、小尺寸和 macOS 26 效果，默认写入已忽略的 `build/icon-previews/`。预览 PNG 无需提交，修改图标后需重新构建应用。
+在 Icon Composer 中检查默认、深色、单色及小尺寸效果，最终图标资源由 Xcode 构建生成。图标验收使用同一 Xcode Run 产物。
 
 ## 编辑器语法资源
 
@@ -59,14 +63,13 @@
 
 `DevKitSession` 是同源的 Swift Package 测试目标，只包含会话、桥接及执行服务代码，供 `DevKitSessionTests` 验证异步和生命周期；应用仍由 Xcode target 编译。测试可注入执行器，生产默认使用包内工作进程。关闭标签与最后一个独立窗口时才取消会话任务。
 
-## 清理本项目的旧系统注册
+## 测试与产物检查
 
-`python3 Scripts/reset-spotlight-registration.py` 注销本项目路径内的旧 DevKit 与预览副本，保留 `~/Applications/DevKit.app`。如明确需要注销安装副本，可加 `--include-installed`。脚本不清空系统注册数据库，不删除 App 文件，记录在 `build/spotlight-registration-cleanup-latest.json`。
+`Scripts/` 保留工具注册表维护、编辑器/外观回归、worker 集成测试与 Spotlight 元数据检查。`integration-tests.py` 和 `check-spotlight-metadata.py` 显式接收 Xcode 构建出的 App 路径，不定位、构建、安装或启动其他版本。
 
-应用自身的工具索引通过“设置 → Spotlight → 清空索引并关闭”管理。静态 App Intents 的目录显示由系统管理；应用开关控制动态工具实体与执行权限。
+应用自身的工具索引通过“设置 → Spotlight → 清空索引并关闭”管理。静态 App Intents 由系统管理；测试时复用原 bundle ID，不创建带同名动作的应用副本。
 
-安装新版 App 应替换整个 bundle，并在替换后运行 `codesign --verify --deep --strict`。不要用旧 Debug 目录覆盖合并 Release bundle，残留资源可能导致封印校验失败。
-
+历史重复包的 ZIP 备份保留在已忽略的 `build/retired-spotlight-apps.noindex/` 中，日常验收不恢复或启动这些旧包。
 
 ## 窗口结构与 Liquid Glass
 
@@ -80,11 +83,8 @@
 
 2026-10-10 本机 `linkd` 日志显示 `Unable to get teamId from app.devkit.macos`，随后 `Rejecting invalid client due to requiresValidatedBundle`，对应系统 UI 的“快捷指令无法与 App 通信”。动作目录发现与实际 IPC 运行是不同阶段；这是签名身份缺失，不能靠重建索引、修改 Base64 参数或让用户重复绑定解决。
 
-`Scripts/sign-app.py` 统一签名策略：自动选择唯一有效的 Apple Development、Mac Developer 或 Developer ID Application 身份，存在多个时通过 `DEVKIT_SIGNING_IDENTITY` 指定 SHA-1；无身份时明确标记 ad-hoc 预览。`DEVKIT_REQUIRE_SPOTLIGHT=1 Scripts/build.sh Release` 会在无开发签名时提前失败。签名按 worker、app 的顺序进行，随后验证签名及 TeamIdentifier，不再无条件将已签名构建覆盖成 `-`。
+在 Xcode 中选择有效的开发团队与 Apple Development 签名；Archive 的分发签名、公证或上传在 Organizer 中根据渠道配置。没有所需证书时先修复 Xcode 账户及签名设置，不通过外部脚本覆盖或伪造签名。
 
-设置页读取运行进程的真实签名；无 Team ID 时提示系统执行受阻，索引状态不再冒充执行可用。不要伪造 Team ID、添加 Apple 私有 entitlement 或关闭系统验证来绕过此要求。证书配置须由用户在 Xcode 账户设置中完成。发布仍另需 Developer ID、公证与目标系统实测。
-
-运行 `python3 Scripts/signing-tests.py` 验证没有证书、唯一证书、多个证书及指定证书的构建策略；`Scripts/check-spotlight-metadata.py` 只验证动作描述，不验证通信。
-
+设置页读取运行进程的真实签名；无 Team ID 时会提示系统执行受阻。`Scripts/check-spotlight-metadata.py` 只验证动作描述，不替代系统通信与执行验证。
 
 若 Xcode 已创建证书，但 `security find-identity -p codesigning` 能看到身份而 `-v` 仍显示 0 个有效身份，应检查证书有效期、私钥与 WWDR 中间证书链，不要反复创建证书。当前 Apple Development 证书使用 WWDR G3；可从 [Apple PKI](https://www.apple.com/certificateauthority/) 获取签发者对应的官方中间证书并验证，再安装到登录钥匙串。不要设为“始终信任”来掩盖链验证错误。签名成功后的通信证据应包含 `linkd` 接受应用的 autoShortcut / mediator 连接，而非仅存在动作元数据。

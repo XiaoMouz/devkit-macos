@@ -1,5 +1,25 @@
 # 0.1.0 验收记录
 
+## 2026-10-10 发布也统一到 Xcode
+
+- 按用户要求，构建、运行、签名、Archive 与分发全部由 Xcode 处理：Run 使用 Debug，Archive 使用 Release，在 Organizer 中选择分发渠道并签名、导出或上传。
+- 移除 8 个外置流程脚本：构建、打包、重签名、签名策略测试、旧版注册清理、流程辅助测试、Xcode 产物定位和图标批量导出。保留回归测试、注册表及离线资源维护工具。
+- 集成测试显式接收 Xcode 生成的 DevKit.app 路径，不再导入已删除的路径定位模块。对当前 Xcode Debug helper 的 12 项集成测试通过。
+- 已检查共享 scheme：Run = Debug、Archive = Release、归档后显示 Organizer；worker 的 SKIP_INSTALL 配置和嵌入构建阶段保留。剩余 Python 脚本语法检查、测试 CLI 帮助检查通过。
+- README、项目约定及开发/验收文档同步更新。本轮只调整流程，没有执行归档上传或公开发布。
+
+下文中的旧脚本和旧打包命令是历史验收记录，不再作为当前操作说明。
+
+## 2026-10-10 验收统一到 Xcode Run
+
+- 用户明确指定以 Xcode 为唯一验收入口。原生 Xcode 窗口确认：工程 `DevKit.xcodeproj`、scheme `DevKit`、目标 `My Mac`，状态 `Running DevKit`。
+- `Scripts/xcode_app.py` 解析 Debug 构建设置，与正在运行的 DerivedData App 路径一致；本轮保留该进程，没有重启或替换正在验收的产物。
+- `/Applications/DevKit.app`、项目 `build/Build/Products/Debug/DevKit.app` 和 `Release/DevKit.app` 三份旧副本已做逐文件校验的 ZIP 备份并移除。废纸篓旧包仅注销注册，文件保留。
+- 最终 Launch Services 只剩 Xcode DerivedData 下的 Debug App，进程列表只有同一路径的一份 DevKit，归档清理 dry-run 无待清理项。
+- 默认构建脚本使用 Xcode 默认 DerivedData，不再生成项目内第二套验收 App；集成测试默认定位同一 Debug helper。Release 打包使用临时目录并在退出时移除临时 App，仅保留 ZIP。
+- `AGENTS.md`、README 和开发/验收文档写明统一入口，后续 UI 验收不再创建独立身份的预览副本。
+- 8 项流程回归检查和两份 shell 脚本语法检查通过。本轮没有执行 Release 打包，也没有为脚本调整重复运行应用功能测试。
+
 ## 2026-10-10 场景输入与 JSON 合并
 
 - 当前 48 个工具入口；原 JSON、JSON 路径、JSON 结构对比、JSON Schema、TypeScript 类型五个入口合并为 JSON 工作台，原有处理能力保留。
