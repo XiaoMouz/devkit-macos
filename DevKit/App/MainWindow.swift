@@ -11,7 +11,8 @@ struct MainWindow: View {
   @State private var expandedCategories: Set<ToolCategory> = [.encoding]
   @AppStorage("showToolConfiguration") private var configurationVisible = true
   @AppStorage(FavoriteTools.key) private var favorites = FavoriteTools.defaults
-  @FocusState private var searchFocused: Bool
+  /// Incremented to move keyboard focus into the sidebar search field.
+  @State private var searchRequest = 0
   private var cachedTools: [ToolTab] { workspace.tabs }
   private var active: ToolTab? { workspace.active }
   private var favoriteIDs: [String] { FavoriteTools.ids(favorites) }
@@ -25,17 +26,14 @@ struct MainWindow: View {
     }
   }
   @State private var columns = NavigationSplitViewVisibility.all
-  // System containers own the Liquid Glass chrome: the split view floats the
-  // sidebar, the unified toolbar groups its items, and the inspector slides in.
+  // The split view lays out the toolbar, title and inspector and collapses the
+  // sidebar; the sidebar column itself draws an inset floating glass panel.
   var body: some View {
     NavigationSplitView(columnVisibility: $columns) {
-      sidebar.navigationSplitViewColumnWidth(min: 210, ideal: 236, max: 320)
+      sidebar.navigationSplitViewColumnWidth(min: 220, ideal: 248, max: 330)
     } detail: {
       detail
     }
-    .searchable(text: $query, placement: .sidebar, prompt: "搜索工具")
-    .searchFocused($searchFocused)
-    .onSubmit(of: .search) { if let first = matches.first { open(first.id) } }
     .frame(minWidth: 900, minHeight: 580)
     // A distinct base layer lets the floating sidebar and content panes read as
     // elevated, instead of merging with a window background of the same tone.
@@ -124,60 +122,67 @@ struct MainWindow: View {
     })
   }
   private var sidebar: some View {
-    ScrollViewReader { scroll in
-      List(selection: sidebarSelection) {
-        if !query.isEmpty {
-          ForEach(matches) { toolRow($0) }
-        } else {
-          // Favourites are pinned above the catalogue, as Finder and Music pin theirs,
-          // instead of being a separate mode the list has to switch into.
-          if !favoriteTools.isEmpty {
-            Section(isExpanded: $favoritesExpanded) {
-              ForEach(favoriteTools) { toolRow($0, tag: Self.favoritePrefix + $0.id) }
-            } header: {
-              sectionHeader("收藏", symbol: "star.fill", tint: .yellow, count: favoriteTools.count)
+    VStack(spacing: 0) {
+      SidebarSearchField(text: $query, prompt: "搜索工具", focusRequest: searchRequest) {
+        if let first = matches.first { open(first.id) }
+      }.padding(.horizontal, 12).padding(.top, 2).padding(.bottom, 8)
+      ScrollViewReader { scroll in
+        List(selection: sidebarSelection) {
+          if !query.isEmpty {
+            ForEach(matches) { toolRow($0) }
+          } else {
+            // Favourites are pinned above the catalogue, as Finder and Music pin theirs,
+            // instead of being a separate mode the list has to switch into.
+            if !favoriteTools.isEmpty {
+              Section(isExpanded: $favoritesExpanded) {
+                ForEach(favoriteTools) { toolRow($0, tag: Self.favoritePrefix + $0.id) }
+              } header: {
+                sectionHeader("收藏", symbol: "star.fill", tint: .yellow, count: favoriteTools.count)
+              }
+            }
+            ForEach(ToolCategory.allCases, id: \.self) { category in
+              let tools = allTools.filter { $0.category == category }
+              Section(isExpanded: Binding(get: { expandedCategories.contains(category) }, set: {
+                if $0 { expandedCategories.insert(category) } else { expandedCategories.remove(category) }
+              })) {
+                ForEach(tools) { toolRow($0) }
+              } header: {
+                sectionHeader(category.rawValue, symbol: category.symbol, tint: category.tint, count: tools.count)
+              }
             }
           }
-          ForEach(ToolCategory.allCases, id: \.self) { category in
-            let tools = allTools.filter { $0.category == category }
-            Section(isExpanded: Binding(get: { expandedCategories.contains(category) }, set: {
-              if $0 { expandedCategories.insert(category) } else { expandedCategories.remove(category) }
-            })) {
-              ForEach(tools) { toolRow($0) }
-            } header: {
-              sectionHeader(category.rawValue, symbol: category.symbol, tint: category.tint, count: tools.count)
-            }
+        }
+        .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
+        .overlay {
+          if !query.isEmpty && matches.isEmpty {
+            ContentUnavailableView.search(text: query)
           }
         }
-      }
-      .listStyle(.sidebar)
-      .overlay {
-        if !query.isEmpty && matches.isEmpty {
-          ContentUnavailableView.search(text: query)
+        // A bar the list scrolls beneath: the hard edge effect separates the footer
+        // from rows passing behind it instead of letting them show through the text.
+        .safeAreaBar(edge: .bottom) {
+          HStack(spacing: 10) {
+            Button { workspace.showOverview() } label: { Label("工具总览", systemImage: "square.grid.2x2") }
+              .help("工具总览")
+            Text("\(ToolRegistry.all.count) 个工具").font(.callout).foregroundStyle(.secondary)
+            Spacer()
+            SettingsLink { Label("设置", systemImage: "gearshape") }.help("设置")
+          }
+          .labelStyle(.iconOnly).buttonStyle(.borderless).controlSize(.large)
+          .padding(.horizontal, 16).padding(.vertical, 10)
         }
-      }
-      // A bar the list scrolls beneath: the hard edge effect separates the footer
-      // from rows passing behind it instead of letting them show through the text.
-      .safeAreaBar(edge: .bottom) {
-        HStack(spacing: 10) {
-          Button { workspace.showOverview() } label: { Label("工具总览", systemImage: "square.grid.2x2") }
-            .help("工具总览")
-          Text("\(ToolRegistry.all.count) 个工具").font(.callout).foregroundStyle(.secondary)
-          Spacer()
-          SettingsLink { Label("设置", systemImage: "gearshape") }.help("设置")
+        .scrollEdgeEffectStyle(.hard, for: .bottom)
+        .onChange(of: workspace.navigation.selectedID) { _, _ in
+          guard let metadata = active?.metadata else { return }
+          // A favourite that was clicked stays in place; otherwise reveal the category row.
+          if sidebarTag == Self.favoritePrefix + metadata.id { return }
+          expandedCategories.insert(metadata.category)
+          Task { @MainActor in await Task.yield(); scroll.scrollTo(metadata.id, anchor: .center) }
         }
-        .labelStyle(.iconOnly).buttonStyle(.borderless).controlSize(.large)
-        .padding(.horizontal, 16).padding(.vertical, 10)
-      }
-      .scrollEdgeEffectStyle(.hard, for: .bottom)
-      .onChange(of: workspace.navigation.selectedID) { _, _ in
-        guard let metadata = active?.metadata else { return }
-        // A favourite that was clicked stays in place; otherwise reveal the category row.
-        if sidebarTag == Self.favoritePrefix + metadata.id { return }
-        expandedCategories.insert(metadata.category)
-        Task { @MainActor in await Task.yield(); scroll.scrollTo(metadata.id, anchor: .center) }
       }
     }
+    .floatingSidebarPanel()
   }
   private func sectionHeader(_ title: String, symbol: String, tint: Color, count: Int) -> some View {
     HStack(spacing: 6) {
@@ -186,6 +191,8 @@ struct MainWindow: View {
       Spacer(minLength: 6)
       Text("\(count)").monospacedDigit().foregroundStyle(.tertiary)
     }
+    // Room above separates sections; the smaller gap below ties the title to its rows.
+    .padding(.top, 12).padding(.bottom, 4)
   }
   private func toolRow(_ item: ToolMetadata, tag: String? = nil) -> some View {
     Label {
@@ -196,12 +203,13 @@ struct MainWindow: View {
     } icon: {
       ToolIconTile(symbol: item.symbol, tint: item.category.tint, size: 22)
     }
+    .padding(.vertical, 3)
     .tag(tag ?? item.id).id(tag ?? item.id).help(item.summary)
     .contextMenu { Button(favoriteIDs.contains(item.id) ? "取消收藏" : "收藏") { toggleFavorite(item.id) } }
   }
   private var commandActions: WorkspaceActions {
     WorkspaceActions(run: { active?.bridge.execute() }, copy: { active?.bridge.copy() }, search: {
-      columns = .all; searchFocused = true
+      columns = .all; searchRequest += 1
     }, selectPane: active?.metadata.id == "websocket"
       ? nil : { active?.bridge.selectPane($0) })
   }
@@ -274,5 +282,48 @@ enum FavoriteTools {
     var list = ids(raw)
     if list.contains(id) { list.removeAll { $0 == id } } else { list.append(id) }
     return list.joined(separator: ",")
+  }
+}
+
+/// The native search field, placed inside the floating sidebar panel. SwiftUI's
+/// sidebar `.searchable` decides its own position in the column, outside the panel.
+private struct SidebarSearchField: NSViewRepresentable {
+  @Binding var text: String
+  let prompt: String
+  let focusRequest: Int
+  let submit: () -> Void
+  func makeNSView(context: Context) -> NSSearchField {
+    let field = NSSearchField()
+    field.placeholderString = prompt
+    field.controlSize = .large
+    field.delegate = context.coordinator
+    field.setAccessibilityLabel(prompt)
+    return field
+  }
+  func updateNSView(_ field: NSSearchField, context: Context) {
+    context.coordinator.parent = self
+    if field.stringValue != text { field.stringValue = text }
+    if context.coordinator.focusRequest != focusRequest {
+      context.coordinator.focusRequest = focusRequest
+      field.window?.makeFirstResponder(field)
+    }
+  }
+  func makeCoordinator() -> Coordinator { Coordinator(self) }
+  @MainActor final class Coordinator: NSObject, NSSearchFieldDelegate {
+    var parent: SidebarSearchField
+    var focusRequest: Int
+    init(_ parent: SidebarSearchField) {
+      self.parent = parent
+      focusRequest = parent.focusRequest
+    }
+    func controlTextDidChange(_ notification: Notification) {
+      guard let field = notification.object as? NSSearchField else { return }
+      parent.text = field.stringValue
+    }
+    func control(_ control: NSControl, textView: NSTextView, doCommandBy selector: Selector) -> Bool {
+      guard selector == #selector(NSResponder.insertNewline(_:)) else { return false }
+      parent.submit()
+      return true
+    }
   }
 }

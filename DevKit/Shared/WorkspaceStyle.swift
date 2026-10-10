@@ -119,8 +119,35 @@ private struct FloatingPane: ViewModifier {
       }
   }
 }
+/// The sidebar as an inset, floating Liquid Glass panel. The column behind it is
+/// painted with the window base, so the panel floats whatever the system would
+/// otherwise draw for a sidebar column.
+private struct FloatingSidebarPanel: ViewModifier {
+  private let inset: CGFloat = 8
+  private let radius: CGFloat = 18
+  @Environment(\.colorScheme) private var colorScheme
+  func body(content: Content) -> some View {
+    let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
+    content
+      // Rows scroll to the panel's bottom edge, so they follow its rounded corners.
+      .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: radius, bottomTrailingRadius: radius,
+        style: .continuous))
+      .background {
+        ZStack {
+          shape.fill(Color(nsColor: .workspaceBase))
+            .shadow(color: .black.opacity(colorScheme == .dark ? 0.4 : 0.12), radius: 14, y: 3)
+          Color.clear.glassEffect(.regular, in: shape)
+        }
+        // Reach up beneath the toolbar so the traffic lights sit inside the panel.
+        .padding(.top, inset).ignoresSafeArea(.container, edges: .top)
+      }
+      .padding(.leading, inset).padding(.bottom, inset)
+      .background { Color(nsColor: .workspaceBase).ignoresSafeArea() }
+  }
+}
 extension View {
   func floatingPane() -> some View { modifier(FloatingPane()) }
+  func floatingSidebarPanel() -> some View { modifier(FloatingSidebarPanel()) }
 }
 
 extension View {
