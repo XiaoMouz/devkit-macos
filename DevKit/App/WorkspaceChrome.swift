@@ -6,7 +6,7 @@ enum WorkspaceChromeMetrics {
   static let headerHeight: CGFloat = 44
 }
 
-/// System and custom modes share the same background-only opacity path.
+/// Navigation keeps regular glass at every setting so its text remains legible.
 struct WorkspaceGlass: NSViewRepresentable {
   @AppStorage("glassMode") private var mode = GlassMode.system.rawValue
   @AppStorage("glassTransparency") private var transparency = 0.55
@@ -30,16 +30,17 @@ final class GlassBandView: NSView {
     super.init(frame: frame)
     wantsLayer = true
     layer?.masksToBounds = true
-    backdrop.material = .underWindowBackground
+    backdrop.material = .sidebar
     backdrop.blendingMode = .behindWindow
     backdrop.state = .followsWindowActiveState
+    glass.style = .regular
     glass.cornerRadius = 0
     surface.wantsLayer = true
     for view in [backdrop, glass, surface] {
       view.translatesAutoresizingMaskIntoConstraints = false
       addSubview(view)
       // Keep the glass rim outside the window's own rounding.
-      let inset: CGFloat = view === glass ? 16 : 0
+      let inset: CGFloat = view is NSGlassEffectView ? 16 : 0
       NSLayoutConstraint.activate([
         view.leadingAnchor.constraint(equalTo: leadingAnchor, constant: -inset),
         view.trailingAnchor.constraint(equalTo: trailingAnchor, constant: inset),
@@ -99,15 +100,21 @@ final class GlassBandView: NSView {
     render()
   }
   private func render() {
-    glass.style = presentation.usesNativeStyle ? .regular : .clear
-    let opaque = presentation.surfaceOpacity == 1
-    backdrop.isHidden = opaque
-    glass.isHidden = opaque
-    // Resolve the dynamic color in this view's appearance, never the current global
-    // drawing context. This keeps forced dark and return-to-system transitions consistent.
+    // Apple's Regular variant adjusts background luminosity for navigation text.
+    // Keep it intact even at the clearest setting. Clear is reserved for media
+    // overlays and does not provide the contrast this dense sidebar needs.
+    glass.style = .regular
+    glass.alphaValue = 1
+    glass.isHidden = presentation.opaqueFallback
+    backdrop.alphaValue = presentation.backdropWeight
+    backdrop.isHidden = presentation.backdropWeight == 0
+    surface.isHidden = !presentation.opaqueFallback
+    // Only accessibility's Reduce Transparency requests an opaque background.
     effectiveAppearance.performAsCurrentDrawingAppearance {
-      surface.layer?.backgroundColor = NSColor.windowBackgroundColor
-        .withAlphaComponent(presentation.surfaceOpacity).cgColor
+      // A neutral tint stays inside native glass rendering; it protects secondary
+      // labels over bright backdrops without painting an opaque sheet over the glass.
+      glass.tintColor = NSColor.windowBackgroundColor.withAlphaComponent(0.18)
+      surface.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
     }
   }
 }
@@ -128,7 +135,8 @@ struct WorkspaceSidebarControl: NSViewRepresentable {
     override init(frame: NSRect) {
       super.init(frame: frame)
       button.setButtonType(.momentaryChange)
-      button.isBordered = false
+      button.isBordered = true
+      button.bezelStyle = .glass
       button.image = NSImage(systemSymbolName: "sidebar.left", accessibilityDescription: "收放工具列表")
       button.imagePosition = .imageOnly
       button.contentTintColor = .secondaryLabelColor

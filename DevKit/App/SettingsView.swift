@@ -20,17 +20,17 @@ struct SettingsView: View {
             Text("自定义").tag(GlassMode.custom.rawValue)
           }
           if glassMode == GlassMode.custom.rawValue {
-            Slider(value: $transparency, in: 0...1, step: 0.01) {
-              Text("透明度 \(Int((transparency * 100).rounded()))%")
-            }.accessibilityLabel("背景透明度")
+            Slider(value: Binding(get: { 1 - transparency }, set: { transparency = 1 - $0 }), in: 0...1, step: 0.01) {
+              Text("磨砂强度 \(Int(((1 - transparency) * 100).rounded()))%")
+            }.accessibilityLabel("玻璃磨砂强度")
             HStack {
-              Text("不透明")
+              Text("通透")
               Spacer()
-              Text("更透明")
+              Text("磨砂")
             }.font(.caption).foregroundStyle(.secondary)
           }
           Text(glassMode == GlassMode.custom.rawValue
-            ? "调整顶部和左侧栏的背景通透程度。系统开启“减少透明度”时优先使用不透明背景。"
+            ? "在保持文字清晰的基础上调整磨砂程度。系统开启“减少透明度”时使用不透明背景。"
             : "跟随“系统设置 → 外观 → Liquid Glass”的变化，同时遵循“减少透明度”设置。")
             .font(.caption).foregroundStyle(.secondary)
         }

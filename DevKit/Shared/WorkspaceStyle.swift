@@ -14,26 +14,29 @@ extension View {
   func workspaceCard() -> some View { modifier(WorkspaceCard()) }
 }
 
+/// A quiet, continuous boundary remains visible even with reduced transparency.
+struct WorkspaceBoundary: View {
+  var body: some View {
+    HStack(spacing: 0) { Divider() }.frame(width: 1)
+      .allowsHitTesting(false).accessibilityHidden(true)
+  }
+}
+
 struct WorkspaceSegments<Value: Hashable>: View {
   let items: [(String, Value)]
   @Binding var selection: Value
+  var symbols: [Value: String] = [:]
   var body: some View {
-    HStack(spacing: 3) {
+    Picker("切换", selection: $selection) {
       ForEach(items.indices, id: \.self) { index in
-        let item = items[index]
-        Button {
-          selection = item.1
-        } label: {
-          Text(item.0).font(.system(size: 12, weight: selection == item.1 ? .semibold : .medium))
-            .foregroundStyle(selection == item.1 ? .primary : .secondary)
-            .padding(.horizontal, 11).frame(height: 24)
-            .background(
-              selection == item.1 ? Color(nsColor: .textBackgroundColor) : .clear, in: Capsule()
-            )
-            .contentShape(Capsule())
-        }.buttonStyle(.plain).accessibilityValue(selection == item.1 ? "已选中" : "")
+        Group {
+          if let symbol = symbols[items[index].1] { Label(items[index].0, systemImage: symbol) }
+          else { Text(items[index].0) }
+        }.tag(items[index].1)
       }
-    }.padding(2).background(.quaternary.opacity(0.65), in: Capsule())
+    }
+    .labelsHidden().pickerStyle(.segmented).controlSize(.small)
+    .fixedSize().glassEffect(.regular, in: .capsule)
   }
 }
 

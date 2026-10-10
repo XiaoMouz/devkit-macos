@@ -147,8 +147,8 @@ struct ToolWorkspace<T: ToolModule>: View {
           }
         }
       } label: { Image(systemName: "ellipsis") }
-        .menuStyle(.borderlessButton).fixedSize().accessibilityLabel("更多工具操作")
-    }.font(.system(size: 12)).foregroundStyle(.secondary).buttonStyle(.plain).frame(height: 30)
+        .menuStyle(.button).buttonStyle(.glass).fixedSize().accessibilityLabel("更多工具操作")
+    }.font(.system(size: 12)).foregroundStyle(.secondary).buttonStyle(.glass).controlSize(.small).frame(height: 30)
   }
   private var workspaceChoices: [(String, String)] {
     var values = [("输入", "input")]
@@ -203,7 +203,7 @@ struct ToolWorkspace<T: ToolModule>: View {
           } label: {
             Image(systemName: "slider.horizontal.3")
           }
-          .buttonStyle(.plain).frame(width: 28, height: 32).help("参数设置").accessibilityLabel("参数设置")
+          .buttonStyle(.glass).frame(width: 28, height: 32).help("参数设置").accessibilityLabel("参数设置")
         }
         if detachedPane != nil {
           Button {
@@ -244,7 +244,7 @@ struct ToolWorkspace<T: ToolModule>: View {
         } label: {
           Text(ToolOptionLabels.title(field.read(session.options))).font(.callout.weight(.semibold))
         }
-        .menuStyle(.borderlessButton).fixedSize().help(field.label)
+        .menuStyle(.button).buttonStyle(.glass).fixedSize().help(field.label)
       }
     } else if metadata.inputStyle == .generator {
       HStack(spacing: 9) {
@@ -298,7 +298,7 @@ struct ToolWorkspace<T: ToolModule>: View {
         systemImage: mode == .split ? "rectangle.split.2x1" : "rectangle"
       )
       .font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
-    }.menuStyle(.borderlessButton).fixedSize().help("短内容并排；长内容或窄窗口使用完整面板。可手动选择并保留布局。")
+    }.menuStyle(.button).buttonStyle(.glass).fixedSize().help("短内容并排；长内容或窄窗口使用完整面板。可手动选择并保留布局。")
   }
   private func layoutTitle(_ value: WorkspaceLayoutPreference) -> String {
     switch value {
@@ -321,7 +321,7 @@ struct ToolWorkspace<T: ToolModule>: View {
     } label: {
       Image(systemName: "rectangle.on.rectangle")
     }
-    .menuStyle(.borderlessButton).fixedSize().help("独立窗口 · 内容实时同步").accessibilityLabel("独立窗口")
+    .menuStyle(.button).buttonStyle(.glass).fixedSize().help("独立窗口 · 内容实时同步").accessibilityLabel("独立窗口")
   }
   private func detach(_ pane: DetachedWorkspacePane) {
     DetachedWorkspaceWindows.shared.open(session, pane: pane)

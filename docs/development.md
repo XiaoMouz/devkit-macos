@@ -58,4 +58,6 @@
 
 `GlassPreferences.swift` 隔离系统读取与透明度策略，`WorkspaceGlass` 只调整窗口外壳背景。macOS 27 的数值滑块已在本机确认写入全局 `NSGlassTintAmount`（0 为透明、1 为最浓色调）；这不是公开的 AppKit 偏好契约，所以只读该值，缺失时退回原生材质，不猜测或写入系统设置。系统模式的可见窗口每秒刷新一次，并在应用激活、辅助功能变化时刷新；自定义模式停止系统轮询。跨版本发布前应在目标系统验证这条适配路径。
 
-`glassMode` 保存模式，`glassTransparency` 保存用户自定义通透度。原生玻璃配合独立的不透明表面层控制背景，系统减少透明度优先；表面颜色在视图的 `effectiveAppearance` 中解析，避免深浅色切换残留。运行 `Scripts/test-appearance.sh` 验证偏好刷新、模式分离、透明度端点、系统值缺失与无障碍优先级。
+`glassMode` 保存模式，`glassTransparency` 继续保存既有通透度，磨砂强度滑块通过 `1 - glassTransparency` 绑定。导航区域始终使用一个完整的 `NSGlassEffectView.Style.regular`，并保留语义侧栏材质的最低覆盖；滑块只增加补充磨砂。使用随有效外观解析的中性原生 tint 保护亮背景上的文字。正常范围内不使用 `.clear`，不把玻璃层淡出到透明，也不添加纯色覆盖；仅在系统“减少透明度”开启时使用不透明辅助功能背景。
+
+材质选择依据 [Apple Materials](https://developer.apple.com/design/human-interface-guidelines/materials)：Regular 会调整背景亮度和模糊程度以维持文字可读性，Clear 主要面向富媒体上的亮色大控件。运行 `Scripts/test-appearance.sh` 验证实际原生视图在滑块两端及中间值都保留 Regular 材质，覆盖偏好刷新、减少透明度和外观切换。

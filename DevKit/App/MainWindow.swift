@@ -25,6 +25,7 @@ struct MainWindow: View {
       HStack(spacing: 0) {
         if sidebarVisible {
           sidebar.frame(width: WorkspaceChromeMetrics.sidebarWidth)
+            .overlay(alignment: .trailing) { WorkspaceBoundary() }
         }
         HStack(spacing: 0) {
           GeometryReader { bounds in
@@ -61,6 +62,7 @@ struct MainWindow: View {
     HStack(spacing: 0) {
       WorkspaceSidebarControl(sidebarVisible: sidebarVisible) { sidebarVisible.toggle() }
         .frame(width: sidebarVisible ? WorkspaceChromeMetrics.sidebarWidth : 128)
+        .overlay(alignment: .trailing) { if sidebarVisible { WorkspaceBoundary() } }
       HStack(spacing: 12) {
         if let active {
           Text(active.metadata.name).font(.system(size: 15, weight: .semibold))
@@ -68,7 +70,7 @@ struct MainWindow: View {
           Button { toggleFavorite(active.metadata.id) } label: {
             Image(systemName: favoriteIDs.contains(active.metadata.id) ? "star.fill" : "star")
               .font(.system(size: 12)).foregroundStyle(.secondary)
-          }.buttonStyle(.plain).help("收藏当前工具").accessibilityLabel("收藏当前工具")
+          }.buttonStyle(.glass).controlSize(.small).help("收藏当前工具").accessibilityLabel("收藏当前工具")
           active.primaryControl.id(active.id)
           Spacer(minLength: 10)
           Button { active.bridge.execute() } label: {
@@ -78,9 +80,8 @@ struct MainWindow: View {
           if active.hasConfiguration {
             Button { configurationVisible.toggle() } label: {
               Label("配置", systemImage: "sidebar.right").font(.system(size: 12))
-                .padding(.horizontal, 8).padding(.vertical, 7)
-                .background(configurationVisible ? Color.primary.opacity(0.07) : .clear, in: RoundedRectangle(cornerRadius: 7))
-            }.buttonStyle(.plain).help("收放工具配置").accessibilityLabel("收放工具配置")
+            }.buttonStyle(.glass).tint(configurationVisible ? Color.primary.opacity(0.12) : nil)
+              .accessibilityValue(configurationVisible ? "已展开" : "已收起").help("收放工具配置").accessibilityLabel("收放工具配置")
           }
         } else {
           Text("工具总览").font(.system(size: 15, weight: .semibold))
@@ -96,8 +97,8 @@ struct MainWindow: View {
   private var sidebar: some View {
     VStack(spacing: 0) {
       HStack(spacing: 5) {
-        sidebarMode("工具", symbol: "square.grid.2x2", value: "tools")
-        sidebarMode("收藏", symbol: "star", value: "favorites")
+        WorkspaceSegments(items: [("工具", "tools"), ("收藏", "favorites")], selection: $section,
+          symbols: ["tools": "square.grid.2x2", "favorites": "star"])
         Spacer()
       }.padding(.horizontal, 12).padding(.top, 10).padding(.bottom, 7)
       HStack(spacing: 8) {
@@ -140,20 +141,12 @@ struct MainWindow: View {
       }
       HStack {
         Button { workspace.showOverview() } label: { Image(systemName: "square.grid.2x2") }
-          .buttonStyle(.plain).help("工具总览")
+          .buttonStyle(.glass).controlSize(.small).help("工具总览")
         Text("\(matches.count) 个工具").font(.system(size: 11)).foregroundStyle(.secondary)
         Spacer()
-        SettingsLink { Image(systemName: "gearshape") }.buttonStyle(.plain).help("设置")
+        SettingsLink { Image(systemName: "gearshape") }.buttonStyle(.glass).controlSize(.small).help("设置")
       }.foregroundStyle(.secondary).padding(.horizontal, 16).padding(.vertical, 12)
     }
-  }
-  private func sidebarMode(_ name: String, symbol: String, value: String) -> some View {
-    Button { section = value } label: {
-      Label(name, systemImage: symbol).font(.system(size: 12, weight: .medium))
-        .padding(.horizontal, 10).padding(.vertical, 7)
-        .background(section == value ? Color.primary.opacity(0.08) : .clear, in: Capsule())
-    }.buttonStyle(.plain).foregroundStyle(section == value ? .primary : .secondary)
-      .accessibilityValue(section == value ? "已选中" : "")
   }
   private func toolRow(_ item: ToolMetadata) -> some View {
     Button { open(item.id) } label: {

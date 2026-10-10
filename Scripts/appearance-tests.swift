@@ -20,18 +20,30 @@ import CoreFoundation
       precondition(read == tint)
       let systemStyle = GlassPresentation(mode: .system, customTransparency: 0.8,
         systemTint: read, reduceTransparency: false)
-      precondition(systemStyle.surfaceOpacity == tint)
+      precondition(systemStyle.frosting == tint && !systemStyle.opaqueFallback)
     }
     let transparent = GlassPresentation(mode: .custom, customTransparency: 1, systemTint: 1, reduceTransparency: false)
-    let opaque = GlassPresentation(mode: .custom, customTransparency: 0, systemTint: 0, reduceTransparency: false)
-    precondition(transparent.surfaceOpacity == 0 && opaque.surfaceOpacity == 1)
+    let frosted = GlassPresentation(mode: .custom, customTransparency: 0, systemTint: 0, reduceTransparency: false)
+    precondition(transparent.backdropWeight > 0 && transparent.backdropWeight < frosted.backdropWeight)
+    precondition(frosted.backdropWeight == 1)
+    // A real native view must retain Regular glass at every slider position;
+    // a pure state-mapping check would miss a disappearing legibility layer.
+    let band = GlassBandView(frame: NSRect(x: 0, y: 0, width: 188, height: 500))
+    for value in [1.0, 0.5, 0.0, 1.0] {
+      band.configure(mode: .custom, transparency: value)
+      let materials = band.subviews.compactMap { $0 as? NSGlassEffectView }
+      precondition(materials.count == 1)
+      precondition(materials[0].style == .regular && materials[0].alphaValue == 1)
+      precondition(materials[0].isHidden == NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency)
+    }
+    precondition(!transparent.opaqueFallback && !frosted.opaqueFallback)
     precondition(GlassPresentation(mode: .system, customTransparency: 0.8, systemTint: nil,
       reduceTransparency: false).usesNativeStyle)
     precondition(GlassPresentation(mode: .custom, customTransparency: 1, systemTint: nil,
-      reduceTransparency: true).surfaceOpacity == 1)
+      reduceTransparency: true).opaqueFallback)
     precondition(GlassPresentation(mode: .custom, customTransparency: .nan, systemTint: nil,
       reduceTransparency: false).transparency == 0.55)
-    print("PASS: system settings refresh, custom endpoints, native fallback and reduced transparency")
+    print("PASS: all slider positions retain Regular glass, system refresh and accessibility fallback")
     let windows = (0..<3).map { _ in
       let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
         styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)

@@ -120,11 +120,11 @@ struct WebSocketWorkspace: View {
       HStack {
         TextField("wss:// 或 ws:// 地址", text: $model.url).textFieldStyle(.roundedBorder).disabled(
           model.connected || model.connecting)
-        Button("发送消息") { model.send() }.disabled(!model.connected)
+        Button("发送消息") { model.send() }.buttonStyle(.glass).disabled(!model.connected)
         Menu {
           Button("复制全部消息") { copy() }
           Button("清空消息") { model.clear() }
-        } label: { Image(systemName: "ellipsis") }.menuStyle(.borderlessButton).fixedSize()
+        } label: { Image(systemName: "ellipsis") }.menuStyle(.button).buttonStyle(.glass).fixedSize()
       }.padding(.bottom, 8)
       GeometryReader { bounds in
         if bounds.size.width >= 720 {
@@ -135,10 +135,8 @@ struct WebSocketWorkspace: View {
           }
         } else {
           VStack(spacing: 0) {
-            Picker("会话面板", selection: $pane) {
-              Text("发送").tag("send")
-              Text("消息（\(model.messages.count)）").tag("messages")
-            }.pickerStyle(.segmented).labelsHidden().frame(width: 210).padding(10)
+            WorkspaceSegments(items: [("发送", "send"), ("消息（\(model.messages.count)）", "messages")], selection: $pane)
+              .padding(10)
             if pane == "send" { sendPane } else { messagesPane }
           }.frame(maxWidth: .infinity, maxHeight: .infinity)
         }

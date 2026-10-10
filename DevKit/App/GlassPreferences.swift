@@ -9,7 +9,13 @@ struct GlassPresentation: Equatable {
   /// nil delegates to native glass on systems without a readable numeric preference.
   let transparency: Double?
   let reduceTransparency: Bool
-  var surfaceOpacity: Double { reduceTransparency ? 1 : transparency.map { 1 - $0 } ?? 0 }
+  /// Regular glass is always present for navigation text legibility. The preference
+  /// changes only the supplementary native blur, never the glass layer's opacity.
+  var frosting: Double { transparency.map { 1 - $0 } ?? 1 }
+  // Dense navigation keeps a semantic material beneath its labels, even when
+  // the user's glass setting is at its clearest. Only the extra frosting varies.
+  var backdropWeight: Double { reduceTransparency ? 0 : 0.65 + 0.35 * frosting }
+  var opaqueFallback: Bool { reduceTransparency }
   var usesNativeStyle: Bool { transparency == nil }
 
   init(mode: GlassMode, customTransparency: Double, systemTint: Double?, reduceTransparency: Bool) {
