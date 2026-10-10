@@ -6,3 +6,5 @@ Vendor/node_modules/
 .DS_Store
 xcuserdata/
 *.xcuserstate
+
+__pycache__/

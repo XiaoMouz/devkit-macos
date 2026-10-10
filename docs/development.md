@@ -61,3 +61,17 @@
 `glassMode` 保存模式，`glassTransparency` 继续保存既有通透度，磨砂强度滑块通过 `1 - glassTransparency` 绑定。导航区域始终使用一个完整的 `NSGlassEffectView.Style.regular`，并保留语义侧栏材质的最低覆盖；滑块只增加补充磨砂。使用随有效外观解析的中性原生 tint 保护亮背景上的文字。正常范围内不使用 `.clear`，不把玻璃层淡出到透明，也不添加纯色覆盖；仅在系统“减少透明度”开启时使用不透明辅助功能背景。
 
 材质选择依据 [Apple Materials](https://developer.apple.com/design/human-interface-guidelines/materials)：Regular 会调整背景亮度和模糊程度以维持文字可读性，Clear 主要面向富媒体上的亮色大控件。运行 `Scripts/test-appearance.sh` 验证实际原生视图在滑块两端及中间值都保留 Regular 材质，覆盖偏好刷新、减少透明度和外观切换。
+
+
+## Spotlight 的开发签名要求
+
+2026-10-10 本机 `linkd` 日志显示 `Unable to get teamId from app.devkit.macos`，随后 `Rejecting invalid client due to requiresValidatedBundle`，对应系统 UI 的“快捷指令无法与 App 通信”。动作目录发现与实际 IPC 运行是不同阶段；这是签名身份缺失，不能靠重建索引、修改 Base64 参数或让用户重复绑定解决。
+
+`Scripts/sign-app.py` 统一签名策略：自动选择唯一有效的 Apple Development、Mac Developer 或 Developer ID Application 身份，存在多个时通过 `DEVKIT_SIGNING_IDENTITY` 指定 SHA-1；无身份时明确标记 ad-hoc 预览。`DEVKIT_REQUIRE_SPOTLIGHT=1 Scripts/build.sh Release` 会在无开发签名时提前失败。签名按 worker、app 的顺序进行，随后验证签名及 TeamIdentifier，不再无条件将已签名构建覆盖成 `-`。
+
+设置页读取运行进程的真实签名；无 Team ID 时提示系统执行受阻，索引状态不再冒充执行可用。不要伪造 Team ID、添加 Apple 私有 entitlement 或关闭系统验证来绕过此要求。证书配置须由用户在 Xcode 账户设置中完成。发布仍另需 Developer ID、公证与目标系统实测。
+
+运行 `python3 Scripts/signing-tests.py` 验证没有证书、唯一证书、多个证书及指定证书的构建策略；`Scripts/check-spotlight-metadata.py` 只验证动作描述，不验证通信。
+
+
+若 Xcode 已创建证书，但 `security find-identity -p codesigning` 能看到身份而 `-v` 仍显示 0 个有效身份，应检查证书有效期、私钥与 WWDR 中间证书链，不要反复创建证书。当前 Apple Development 证书使用 WWDR G3；可从 [Apple PKI](https://www.apple.com/certificateauthority/) 获取签发者对应的官方中间证书并验证，再安装到登录钥匙串。不要设为“始终信任”来掩盖链验证错误。签名成功后的通信证据应包含 `linkd` 接受应用的 autoShortcut / mediator 连接，而非仅存在动作元数据。

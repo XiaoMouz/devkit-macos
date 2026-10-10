@@ -65,3 +65,34 @@
 - 元数据检查：仅 `DevKitCommandIntent`、`DevKitToolIntent` 两个公开动作，2 个 App Shortcuts；30 个旧动作停止公开发现，另有 2 个内部结果动作。
 - 注销项目中旧构建及预览副本的 Launch Services 注册。清理脚本只针对 `app.devkit.macos` / `app.devkit.preview` 在本项目内的路径，默认保留正式安装副本；未重建或删除系统级 Spotlight 数据库。
 - 仍未验收：系统 Spotlight 应用启动返回 Launchd job spawn failed（162），因此 Quick Key 参数采集和系统结果卡片的完整交互无法在本机确认。macOS 26 基线实机也仍需检查。
+
+
+## 2026-10-10 Spotlight 独立入口修复
+
+- 恢复公开的 Base64 命令与引导动作，补齐搜索关键词，并将系统快捷短语绑定说明提前到设置页。
+- 构建号 2 的 Release 构建通过；编译元数据确认四个可发现的后台动作和完整参数摘要，校验脚本为 `Scripts/check-spotlight-metadata.py`。
+- `swift test`：48 项 Core 与 4 项 Session 测试通过。新增覆盖 Quick Key 后的参数、完整命令、用户别名、大小写和 enc/dec、空白与换行保留、缺少参数、超限、开关拦截和跨工具输入拒绝。
+- 用户明确选择自行验证 Spotlight。尚不将系统内搜索、Quick Key 参数传递、结果卡片和点击复制标记为验收通过。
+
+
+## 2026-10-10 系统调用失败的根因
+
+用户已能在 Spotlight 发现并选中“Base64 命令”，但运行提示“快捷指令无法与 App 通信”。本机日志证据：
+
+```text
+linkd: Unable to get teamId from app.devkit.macos PID [33396]
+linkd: Rejecting invalid client due to requiresValidatedBundle
+linkd: LNConnectionErrorDomain Code=1200 / AppleEvents communication failed
+```
+
+`codesign -dvv` 显示 Signature=adhoc、TeamIdentifier=not set；`security find-identity -v -p codesigning` 返回 0 valid identities。修正构建脚本，增加运行签名诊断与四项签名策略测试；强制 Spotlight 模式已验证会因缺少证书而提前失败。
+
+A/B 体验定义不变，当前系统端执行尚未通过。下一步必须先由用户准备有效 Apple 开发签名，再构建安装并验证执行与复制；不再让临时签名包进入同样的无效重试。
+
+
+## 2026-10-10 开发者签名后的通信验证
+
+- 用户已创建 Apple Development 证书与私钥。最初能枚举签名身份但有效身份为 0；检查发现缺少 WWDR G3 中间证书，钥匙串只有旧版过期 WWDR。补齐 Apple PKI 官方 G3 中间证书前先验证其 Apple 信任链，未添加自定义根信任或更改证书信任策略；之后有效身份为 1。
+- 使用 `DEVKIT_REQUIRE_SPOTLIGHT=1 Scripts/build.sh Release` 成功构建并签名。应用与 worker 的开发者 TeamIdentifier 一致，深度签名校验通过。安装版 worker 的编码、解码、缺少填充且保留尾部换行三项检查通过。
+- 安装后 `linkd` 对 `app.devkit.macos` 的 `autoShortcut` 和 `mediator` 连接均记录 `Accepting`；应用日志记录 `Registered process`，系统收到新的 AppShortcut 参数。该次启动的注册/连接错误为 0，之前的缺少 Team ID 拒绝已排除。
+- 通信与注册阶段已通过；系统 Spotlight 中 A/B 的完整输入、结果和点击复制仍由用户自行验证，不能将本条记录等同于完整交互验收。

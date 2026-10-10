@@ -35,7 +35,9 @@ import SwiftUI
         try await SpotlightIndexManager.shared.synchronize(snapshot)
         if generation == current {
           updating = false
-          status = snapshot.enabled ? "已同步 \(SpotlightCatalog.tools.filter { snapshot.allows($0.id) }.count) 个工具" : "DevKit 工具索引已清空，快捷执行已关闭"
+          status = !snapshot.enabled ? "DevKit 工具索引已清空，快捷执行已关闭"
+            : !SpotlightRuntimeStatus.current.hasDeveloperIdentity ? "工具索引已同步；当前签名无法执行 Spotlight 动作"
+            : "工具索引已同步（\(SpotlightCatalog.tools.filter { snapshot.allows($0.id) }.count)）；快捷短语需在 Spotlight 中绑定"
         }
       } catch {
         if generation == current { updating = false; status = "索引更新失败：\(error.localizedDescription)" }
@@ -65,7 +67,9 @@ actor SpotlightIndexManager {
       } catch { throw ToolFailure("写入工具索引失败：\(error.localizedDescription)") }
       // DevKit never donated intents. Static legacy actions are retired by isDiscoverable=false
       // and the updated provider, rather than calling an unrelated donation-history service.
-      DevKitShortcuts.updateAppShortcutParameters()
+      if SpotlightRuntimeStatus.current.hasDeveloperIdentity {
+        DevKitShortcuts.updateAppShortcutParameters()
+      }
     }
     operation = next
     try await next.value

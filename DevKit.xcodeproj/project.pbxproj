@@ -36,6 +36,7 @@
 		6C8102FE3210D45BF06ECE03 /* SHA256Intent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20FBA14E71BDA7B107E16BE8 /* SHA256Intent.swift */; };
 		6D47F193A8F3C126111F91CF /* NumberBaseIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D1A9F97CC93CB3FEADCD493 /* NumberBaseIntent.swift */; };
 		6FE120AF12F3EA268542AFAD /* HTTPStatusIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = F95F7E2797029FC4C4A580C4 /* HTTPStatusIntent.swift */; };
+		718FEF3C205C1016A1DC55DF /* SpotlightRuntimeStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11D4EC543C8291FEF8AF2833 /* SpotlightRuntimeStatus.swift */; };
 		72F9DA5C9ED416185767E9F6 /* WorkspaceChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF05E3A64472EAA81DC2B975 /* WorkspaceChrome.swift */; };
 		79B064BA41CCA4B78572FD23 /* UUIDIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15062207977D420DB874FFDE /* UUIDIntent.swift */; };
 		7C3E2EBA964E1F7EA353A0EF /* NanoIDIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6E6E4CD9FBE639EE7CC4A08 /* NanoIDIntent.swift */; };
@@ -82,6 +83,7 @@
 		0A2E05C4D1C025205B239311 /* URLEncodeIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLEncodeIntent.swift; sourceTree = "<group>"; };
 		0E36E4CC65DD939CBFF42201 /* GlassPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassPreferences.swift; sourceTree = "<group>"; };
 		11749324B75E83D1506EFF2C /* WindowCommandScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowCommandScope.swift; sourceTree = "<group>"; };
+		11D4EC543C8291FEF8AF2833 /* SpotlightRuntimeStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotlightRuntimeStatus.swift; sourceTree = "<group>"; };
 		15062207977D420DB874FFDE /* UUIDIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UUIDIntent.swift; sourceTree = "<group>"; };
 		1B3FBB4060C767205820C64D /* MD5Intent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MD5Intent.swift; sourceTree = "<group>"; };
 		20FBA14E71BDA7B107E16BE8 /* SHA256Intent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SHA256Intent.swift; sourceTree = "<group>"; };
@@ -509,6 +511,7 @@
 				9ED739B53858608C6DBE46F8 /* DevKitShortcuts.swift */,
 				967725E8B8EB34928E241474 /* ManagedToolIntents.swift */,
 				C073BE278198051E34CF79AE /* ResultSnippet.swift */,
+				11D4EC543C8291FEF8AF2833 /* SpotlightRuntimeStatus.swift */,
 				8E9AE9A333C442EE32790DD6 /* SpotlightSettingsStore.swift */,
 			);
 			path = Spotlight;
@@ -874,6 +877,7 @@
 				3333D19FFFB4DC1E7D32731E /* SafePreview.swift in Sources */,
 				8B43D68A440EF0B50DA87FDE /* SettingsView.swift in Sources */,
 				E461D70FD64EF6CC603FB9E7 /* SlugIntent.swift in Sources */,
+				718FEF3C205C1016A1DC55DF /* SpotlightRuntimeStatus.swift in Sources */,
 				2331C53F247912322BE28ED4 /* SpotlightSettingsStore.swift in Sources */,
 				D18162A45CF5FD947710633C /* SpotlightSettingsView.swift in Sources */,
 				5F1D1D539FD993A0A1B9E73F /* StringEscapeIntent.swift in Sources */,

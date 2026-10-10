@@ -67,6 +67,17 @@ public enum SpotlightCatalog {
 }
 
 public enum SpotlightCommand {
+  /// A dedicated action already knows its tool. Spotlight can supply only the
+  /// argument after its Quick Key, while manual input may include the full command.
+  public static func parse(_ command: String, toolID: String, preferences: SpotlightPreferences) throws -> WorkerRequest {
+    try require(command.utf8.count <= 16 * 1024, "Spotlight 输入上限为 16 KiB，请改用工具箱。")
+    let (first, _) = token(command.drop(while: { $0.isWhitespace }))
+    let hasToolPrefix = first.lowercased() == toolID
+      || preferences.aliases(for: toolID).contains(first.lowercased())
+    let request = try parse(hasToolPrefix ? command : toolID + " " + command, preferences: preferences)
+    try require(request.id == toolID, "此动作只能执行 \(toolID)。")
+    return request
+  }
   public static func parse(_ command: String, preferences: SpotlightPreferences) throws -> WorkerRequest {
     try require(command.utf8.count <= 16 * 1024, "Spotlight 输入上限为 16 KiB，请改用工具箱。")
     try require(preferences.enabled, "Spotlight 已关闭，请在 DevKit 设置中启用。")

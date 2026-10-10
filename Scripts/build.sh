@@ -6,11 +6,10 @@ if ! command -v xcodegen >/dev/null; then
   print -u2 'Install XcodeGen first: brew install xcodegen'
   exit 1
 fi
+python3 Scripts/sign-app.py check
 python3 Scripts/update-registry.py
 xcodegen generate
 xcodebuild -project DevKit.xcodeproj -scheme DevKit -configuration "$configuration" -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
 app_path="build/Build/Products/$configuration/DevKit.app"
-codesign --force --sign - "$app_path/Contents/Helpers/DevKitWorker"
-codesign --force --sign - "$app_path"
-codesign --verify --deep --strict "$app_path"
+python3 Scripts/sign-app.py sign "$app_path"
 print "Built: $PWD/$app_path"

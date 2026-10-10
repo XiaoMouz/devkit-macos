@@ -9,6 +9,31 @@ import Testing
     for id in ids { preferences.setEnabled(true, for: id) }
     return preferences
   }
+  @Test func dedicatedActionAcceptsQuickKeyArgumentsAndFullCommands() async throws {
+    var preferences = enabled("base64")
+    try preferences.setAliases("b64, b", for: "base64")
+    for command in ["encode 123", "base64 encode 123", "B64 ENC 123", "b encode 123"] {
+      let request = try SpotlightCommand.parse(command, toolID: "base64", preferences: preferences)
+      let result = try await Base64Tool.executeEncoded(request.input, options: request.options)
+      #expect(result.text == "MTIz")
+    }
+    let request = try SpotlightCommand.parse("decode MTIzMTIzMTIzYXNkZmFkc2ZzZGFmCg", toolID: "base64", preferences: preferences)
+    let result = try await Base64Tool.executeEncoded(request.input, options: request.options)
+    #expect(result.text == "123123123asdfadsfsdaf\n")
+    #expect(try SpotlightCommand.parse("enc --  你好\n", toolID: "base64", preferences: preferences).input.text == " 你好\n")
+    #expect(try SpotlightCommand.parse("encode --", toolID: "base64", preferences: preferences).input.text.isEmpty)
+  }
+  @Test func dedicatedActionHonorsSwitchesAndCannotRunAnotherTool() throws {
+    var preferences = enabled("base64", "json")
+    for command in ["json format {}", "encode", "encode ", "encode " + String(repeating: "a", count: 16384)] {
+      #expect(throws: ToolFailure.self) { try SpotlightCommand.parse(command, toolID: "base64", preferences: preferences) }
+    }
+    preferences.setEnabled(false, for: "base64")
+    #expect(throws: ToolFailure.self) { try SpotlightCommand.parse("encode 123", toolID: "base64", preferences: preferences) }
+    preferences.setEnabled(true, for: "base64")
+    preferences.enabled = false
+    #expect(throws: ToolFailure.self) { try SpotlightCommand.parse("encode 123", toolID: "base64", preferences: preferences) }
+  }
   @Test func freshInstallAndDisabledToolsNeverExecute() throws {
     #expect(throws: ToolFailure.self) { try SpotlightCommand.parse("b64 encode hello", preferences: .init()) }
     var preferences = enabled("base64")
