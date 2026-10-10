@@ -141,6 +141,11 @@ struct WebSocketWorkspace: View {
           }.frame(maxWidth: .infinity, maxHeight: .infinity)
         }
       }
+      HStack {
+        Text(model.status)
+        Spacer()
+        Text("\(model.messages.count) 条消息")
+      }.font(.caption).foregroundStyle(.secondary)
       if let error = model.error {
         Text(error).font(.callout).foregroundStyle(.orange).padding(14).frame(
           maxWidth: .infinity, alignment: .leading)
@@ -206,8 +211,8 @@ struct SocketConfiguration: View {
     ScrollView {
       VStack(alignment: .leading, spacing: 18) {
         Text("工具配置").font(.system(size: 12, weight: .semibold))
-        Text("请求头 JSON").font(.callout).foregroundStyle(.secondary)
-        TextField("{}", text: $model.headers, axis: .vertical).lineLimit(4...12)
+        Text("请求头").font(.callout).foregroundStyle(.secondary)
+        KeyValueEditor(text: $model.headers, kind: .headers).disabled(model.connected || model.connecting)
           .textFieldStyle(.roundedBorder).disabled(model.connected || model.connecting)
       }.padding(18)
     }

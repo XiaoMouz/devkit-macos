@@ -20,7 +20,13 @@ public enum QrCodeTool: ToolModule {
       .init("scale", "像素倍率", \.scale, range: 2...30),
     ]
   }
+  public static func visibleFields(for options: Options) -> [OptionField<Options>] {
+    fields.filter { field in options.operation != "scan" || field.id == "operation" }
+  }
+  public static func inputStyle(for options: Options) -> InputStyle { options.operation == "scan" ? .file : .text }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
+    try require(["generate", "scan"].contains(options.operation), "二维码操作无效。")
+    try require(["L", "M", "Q", "H"].contains(options.correction), "纠错级别无效。")
     if options.operation == "scan" {
       let image = try ImageCodec.decode(input)
       let request = VNDetectBarcodesRequest()
@@ -33,7 +39,7 @@ public enum QrCodeTool: ToolModule {
         rows: values.enumerated().map { ResultRow(String($0.offset + 1), $0.element) })
     }
     try require(
-      input.text.utf8.count <= 2000 && (2...30).contains(options.scale), "文本最多 2000 字节，倍率 2–30。")
+      !input.text.isEmpty && input.text.utf8.count <= 2000 && (2...30).contains(options.scale), "请输入内容（最多 2000 字节），倍率为 2–30。")
     guard let filter = CIFilter(name: "CIQRCodeGenerator") else { throw ToolFailure("QR 生成器不可用。") }
     filter.setValue(Data(input.text.utf8), forKey: "inputMessage")
     filter.setValue(options.correction, forKey: "inputCorrectionLevel")
@@ -46,6 +52,6 @@ public enum QrCodeTool: ToolModule {
       throw ToolFailure("无法生成二维码图片。")
     }
     let artifact = try ImageCodec.encode(cg, name: "qrcode")
-    return ToolOutput(input.text, artifacts: [artifact], note: "包含四模块静区；导出 PNG 后请实际扫码验证。")
+    return ToolOutput(input.text, artifacts: [artifact])
   }
 }

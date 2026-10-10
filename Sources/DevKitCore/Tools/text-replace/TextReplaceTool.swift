@@ -19,6 +19,9 @@ public enum TextReplaceTool: ToolModule {
       .init("flags", "正则标志", \.flags),
     ]
   }
+  public static func visibleFields(for options: Options) -> [OptionField<Options>] {
+    fields.filter { field in options.regex || field.id != "flags" }
+  }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
     return try ScriptEngine.execute("text-replace", input: input, options: options)
   }

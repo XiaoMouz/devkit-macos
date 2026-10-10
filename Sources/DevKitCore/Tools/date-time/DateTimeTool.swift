@@ -19,8 +19,11 @@ public enum DateTimeTool: ToolModule {
       .init("other", "对比日期", \.other),
     ]
   }
+  public static func visibleFields(for options: Options) -> [OptionField<Options>] {
+    fields.filter { field in (field.id != "days" || options.operation == "add-days") && (field.id != "other" || options.operation == "difference") && (field.id != "zone" || options.operation != "difference") }
+  }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
-    guard let date = Dates.parse(input.text), let zone = TimeZone(identifier: options.zone) else {
+    guard let date = Dates.parse(input.text.trimmingCharacters(in: .whitespacesAndNewlines)) else {
       throw ToolFailure("请输入带时区的 ISO 8601 日期与有效时区。")
     }
     if options.operation == "difference" {
@@ -33,6 +36,7 @@ public enum DateTimeTool: ToolModule {
           ResultRow("24 小时日", String(seconds / 86400)),
         ])
     }
+    guard let zone = TimeZone(identifier: options.zone) else { throw ToolFailure("请选择有效时区。") }
     var target = date
     if options.operation == "add-days" {
       try require((-36500...36500).contains(options.days), "天数超出范围。")

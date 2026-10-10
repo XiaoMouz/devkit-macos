@@ -15,6 +15,9 @@ public enum ImageConvertTool: ToolModule {
       .init("quality", "有损质量 %", \.quality, range: 1...100),
     ]
   }
+  public static func visibleFields(for options: Options) -> [OptionField<Options>] {
+    fields.filter { field in options.format != "png" || field.id != "quality" }
+  }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
     try require((1...100).contains(options.quality), "质量范围为 1–100。")
     let image = try ImageCodec.decode(input)

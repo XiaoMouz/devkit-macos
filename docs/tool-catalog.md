@@ -1,6 +1,6 @@
 # DevKit 工具目录
 
-共规划 9 类、72 个模块。每行对应一个独立功能目录；同一工具的编码/解码或多个算法作为内部操作，不拆成重复页面。本表保留原始设计范围；当前 72 个模块都有实现，各项子能力的实际范围与限制见 [实现记录](implementation-status.md)。
+当前保留 9 类、48 个模块。每行对应一个独立功能目录；同一工具的编码/解码或多个算法作为内部操作，不拆成重复页面。本表按 2026-10-10 的精简需求更新，各项子能力的实际范围与限制见 [实现记录](implementation-status.md)。
 
 批次 1 为核心日用工具，批次 2 为开发数据工具，批次 3 为前端与资源工具，批次 4 为复杂格式及网络工具。批次说明见 [交付计划](delivery-plan.md)。
 
@@ -12,27 +12,13 @@
 | --- | --- | --- | --- | --- |
 | base64 | Base64 | 文本编码/解码；标准与 URL Safe；补齐完全省略的填充；文本与二进制结果区分 | 1 | 快捷候选 |
 | url-codec | URL 编解码 | 参数组件、完整 URL、表单参数模式；明确空格与加号规则 | 1 | 快捷候选 |
-| html-entities | HTML 实体 | 命名与数字实体转义/反转义；不渲染输入 HTML | 2 | 快捷候选 |
-| unicode-escape | Unicode 转义 | Unicode 转义与原文转换；明确码点与 UTF-16 代理对 | 2 | 快捷候选 |
-| string-escape | 字符串转义 | JSON/JavaScript 字面量转义和反转义；不执行字符串 | 2 | 快捷候选 |
-| hex-text | Hex 文本 | 字节与十六进制互转；指定文本编码；错误字节不静默替换 | 2 | 快捷候选 |
-| data-url | Data URL | 解析、生成、提取 MIME 与载荷；支持用户选取文件 | 3 | 工具箱 |
-| compression | 压缩与解压 | Gzip/Zlib/Deflate；文本或文件输入；限制解压后大小 | 4 | 工具箱 |
+| data-url | Data URL | 图片生成 Data URL；Data URL 还原图片、预览、复制和导出；自动识别真实图片类型 | 3 | 工具箱 |
 
 ## 结构化数据
 
 | 模块 ID | 工具 | 功能与边界 | 批次 | 入口 |
 | --- | --- | --- | --- | --- |
-| json | JSON 工作台 | 格式化、压缩、校验、树查看、错误定位；保留数值精度 | 1 | 快捷候选 |
-| json-path | JSON 路径 | JSONPath 查询与 JSON Pointer 定位；标明语法版本 | 2 | 工具箱 |
-| json-schema | JSON Schema | 校验数据与展示错误路径；固定支持版本，远程引用默认关闭 | 4 | 工具箱 |
-| yaml | YAML | 格式化、校验、文档分隔；安全解析，不构造任意对象 | 2 | 工具箱 |
-| xml | XML | 格式化、压缩、校验、XPath 查询；关闭外部实体和网络取回 | 2 | 工具箱 |
-| csv | CSV 与 TSV | 表格预览、分隔符/引号/换行设置、列操作及导出 | 2 | 工具箱 |
-| toml | TOML | 校验、格式化和错误定位；固定支持版本 | 4 | 工具箱 |
-| format-convert | 数据格式互转 | JSON/YAML/TOML/CSV 转换；不能无损表达时显示差异，不默默丢字段 | 4 | 工具箱 |
-| json-diff | JSON 结构对比 | 路径级新增/删除/变化；数组顺序策略显式设置 | 2 | 工具箱 |
-| json-to-model | 数据类型生成 | 从 JSON/Schema 生成 TypeScript 类型等代码；标注推断与可空性 | 4 | 工具箱 |
+| json | JSON 工作台 | 格式化、压缩、语法校验、路径列表、JSONPath/Pointer、结构对比、Schema 校验与 TypeScript 类型推断；保留数值精度 | 1 | 快捷候选 |
 
 ## 摘要与令牌
 
@@ -42,7 +28,6 @@
 | hmac | HMAC | SHA-256/SHA-512；密钥输入格式和结果编码明确 | 2 | 工具箱 |
 | file-checksum | 文件校验 | 流式计算摘要、与给定摘要比较；支持取消和进度 | 2 | 工具箱 |
 | jwt | JWT 工作台 | Header/Payload 解析、时间说明；签名校验独立入口与明确状态 | 2 | 快捷候选，仅解析 |
-| basic-auth | Basic Auth | 用户名密码生成或解析 Authorization 值；本地处理，默认隐藏密码 | 2 | 工具箱 |
 | pem-certificate | PEM 与证书 | 本地证书解析、有效期和指纹；私钥默认不持久化 | 4 | 工具箱 |
 
 ## 标识与测试数据生成
@@ -54,7 +39,6 @@
 | ulid | ULID | 生成、解析时间戳；同毫秒行为按选定规范实现 | 2 | 快捷候选 |
 | nanoid | Nano ID | 长度、字符集、批量；使用安全随机源和无偏采样 | 2 | 快捷候选 |
 | mock-data | Mock 数据 | 按字段模板生成 JSON/CSV；可重复种子与真实随机分开 | 4 | 工具箱 |
-| lorem-ipsum | 占位文本 | 中英文文本、段落/句子数量、纯文本/HTML 输出 | 2 | 快捷候选 |
 | qr-code | 二维码 | 文本生成、纠错级别、导出；识别用户选择的图片 | 3 | 工具箱 |
 
 ## 文本与匹配
@@ -67,7 +51,6 @@
 | text-stats | 文本统计 | 字素、码点、UTF-8 字节、行数、词数；说明统计口径 | 1 | 快捷候选 |
 | regex | 正则测试 | ECMAScript 模式、标志、捕获、替换预览；可中断的隔离执行 | 2 | 工具箱 |
 | text-replace | 文本查找替换 | 普通/正则、多行处理；变更预览与撤销 | 2 | 工具箱 |
-| slug | Slug | URL slug 生成；Unicode/ASCII 策略、连接符与重复符折叠 | 2 | 快捷候选 |
 | markdown | Markdown | 编辑预览与 HTML 导出；原始 HTML 策略明确，默认不请求外部资源 | 3 | 工具箱 |
 
 ## 时间与数值
@@ -80,7 +63,6 @@
 | number-base | 进制转换 | 二/八/十/十六进制；大整数、正负号与补码位宽明确 | 2 | 快捷候选 |
 | number-format | 数字格式 | 千分位、精度、舍入、科学计数法；避免浮点隐式损失 | 2 | 快捷候选 |
 | unit-convert | 单位转换 | 文件大小、时间间隔、数据速率；区分 SI 与 IEC 单位 | 2 | 快捷候选 |
-| bitwise | 位运算 | AND/OR/XOR/移位、掩码预览；位宽与符号明确 | 4 | 工具箱 |
 
 ## Web 与网络
 
@@ -90,7 +72,6 @@
 | query-string | 查询参数 | 键值编辑、重复键、多值、百分号编码和参数排序 | 1 | 工具箱 |
 | http-status | HTTP 状态码 | 本地查询含义与典型用途，资料标记来源和更新版本 | 2 | 快捷候选 |
 | mime-types | MIME 类型 | 扩展名与 MIME 查询，用户选取文件的类型说明 | 2 | 快捷候选 |
-| user-agent | User Agent | 解析浏览器/平台字段；版本数据库独立，无法识别时如实返回 | 4 | 工具箱 |
 | cookie | Cookie | Cookie/Set-Cookie 解析与构建，属性解释；不直接修改浏览器 | 2 | 工具箱 |
 | curl-convert | cURL 转换 | 静态解析受支持参数，转为请求配置或 fetch；绝不执行 shell | 4 | 工具箱 |
 | http-client | HTTP 调试 | 方法、头、请求体、状态、耗时和响应；明确发送才联网 | 4 | 工具箱 |
@@ -104,11 +85,6 @@
 | color | 颜色转换 | HEX/RGB/HSL、透明度、色板；复制目标格式，标明色彩空间 | 1 | 快捷候选 |
 | contrast | 对比度 | 前景背景对比值、文字大小条件；固定并标注采用的标准版本 | 3 | 工具箱 |
 | css-unit | CSS 单位 | px/rem/em 等换算；根字号、父字号及视口参数显式填写 | 3 | 快捷候选 |
-| css-gradient | 渐变生成 | 线性/径向渐变、色标、角度、CSS 输出 | 3 | 工具箱 |
-| box-shadow | 阴影生成 | 多层阴影、内阴影、预览与 CSS 复制 | 3 | 工具箱 |
-| border-radius | 圆角生成 | 四角及椭圆半径、联动设置、CSS 输出 | 3 | 工具箱 |
-| cubic-bezier | 缓动曲线 | 控制点、动画预览、cubic-bezier 输出；跟随减少动态效果 | 3 | 工具箱 |
-| flex-grid | Flex 与 Grid | 可视化布局参数、布局预览及 CSS 导出 | 3 | 工具箱 |
 
 ## 代码与图形资源
 
@@ -122,6 +98,26 @@
 | image-compress | 图片压缩 | 质量与目标体积设置、前后对比；无损/有损准确区分 | 3 | 工具箱 |
 | image-metadata | 图片信息 | 尺寸、色彩空间、EXIF 查看与选择性移除；输出新文件 | 3 | 工具箱 |
 | favicon | 网站图标 | 从图片生成 favicon/应用图标尺寸集及 HTML 引用示例 | 3 | 工具箱 |
+
+## 按场景组织输入与结果
+
+| 场景 | 工具 ID | 当前交互 |
+| --- | --- | --- |
+| JSON 工作台 | json | 一个入口切换八种操作，按需显示查询路径、类型名或第二份文档；输入保持，不再重复开工具。 |
+| 图片与文件 | data-url、qr-code、image-convert、image-resize、image-compress、image-metadata、favicon、file-checksum | 按操作选取、拖入或粘贴图片/文件；图片预览、复制、保存；图片信息提供字段表与完整元数据。 |
+| 生成参数 | uuid、ulid、nanoid、random-string | 参数表单与结果列表；ULID 解析模式才显示文本字段。 |
+| 字段模板 | mock-data | 用字段名和类型行编辑模板，配置条数、种子和格式。 |
+| 日期与数值 | timestamp、date-time、cron、number-base、number-format、unit-convert、css-unit | 单值、日期选择器与相关参数；单位限定同类，CSS 只显示需要的换算基准。 |
+| 颜色 | color、contrast | 原生选色与色值输入、前景背景预览，结果直接展示格式或对比度等级。 |
+| 查询与请求 | url-parser、query-string、http-status、mime-types、dns、http-client、websocket | URL/域名/查询字段、键值参数和请求头表单；HTTP 优先展示响应正文，WebSocket 保持专用连接和消息会话。 |
+| 编码与摘要 | base64、url-codec、hash、hmac、jwt、pem-certificate | 有明确标签的文本/文件输入，密钥使用密码框，按需显示编码与验签参数。 |
+| 编辑、对比与预览 | code-format、code-minify、cookie、curl-convert、markdown、regex、svg、text-case、text-diff、text-lines、text-replace、text-stats | 保留适合文本的编辑器；参数与当前操作相符；代码示例跟随语言，正则展示捕获组，对比突出增删行。 |
+
+## 本轮精简
+
+按用户要求移除压缩与解压、Hex 文本、HTML 实体、字符串转义、Unicode 转义、CSV/TSV、TOML、XML、YAML、Basic Auth，并移除依赖这些格式的数据格式互转。
+
+进一步移除位运算、占位文本、Slug、User Agent，以及圆角、阴影、渐变、缓动曲线、Flex/Grid 五个简单样式生成器，减少零散入口。保留颜色、对比度、CSS 单位及常用数据、文本、网络和图片工具。
 
 ## 扩展规则
 

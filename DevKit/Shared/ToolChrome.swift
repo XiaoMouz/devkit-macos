@@ -2,8 +2,11 @@ import DevKitCore
 import SwiftUI
 
 func primaryToolField<T: ToolModule>(_ type: T.Type) -> OptionField<T.Options>? {
-  guard T.metadata.inputStyle != .generator else { return nil }
-  return T.fields.first { if case .choice = $0.kind { return true }; return false }
+  return T.fields.first {
+    guard ["operation", "mode", "language", "format"].contains($0.id) else { return false }
+    if case .choice = $0.kind { return true }
+    return false
+  }
 }
 
 struct ToolPrimaryControl<T: ToolModule>: View {
@@ -35,7 +38,7 @@ struct ToolFooter<T: ToolModule>: View {
   private var mode: WorkspaceLayoutMode { session.layoutPolicy.mode(width: session.bridge.workspaceWidth) }
   var body: some View {
     HStack(spacing: 10) {
-      Text(T.metadata.network ? "网络工具" : "UTF-8 · 本地处理")
+      Text(T.metadata.network ? "网络工具" : session.inputStyle == .file || T.metadata.id == "data-url" ? "本地处理" : "UTF-8 · 本地处理")
       if session.bridge.running { ProgressView().controlSize(.mini) }
       if !session.status.isEmpty && session.status != "已完成" { Text(session.status).lineLimit(1) }
       Spacer(minLength: 8)

@@ -82,6 +82,8 @@ class WorkerIntegration(unittest.TestCase):
         result=run('http-client',f'http://127.0.0.1:{self.http.server_port}/',{'method':'GET','headers':'{}'})
         self.assertEqual(result['output']['text'],'{"hello":"DevKit"}')
         self.assertTrue(result['output']['rows'][0]['value'].startswith('200'))
+        self.assertEqual(result['output']['artifacts'][0]['name'], 'response.json')
+        self.assertEqual(base64.b64decode(result['output']['artifacts'][0]['data']), b'{"hello":"DevKit"}')
     def test_http_post_preserves_newline(self):
         result=run('http-client',f'http://127.0.0.1:{self.http.server_port}/',{'method':'POST','headers':'{"Content-Type":"text/plain"}'},'hello\n')
         self.assertEqual(result['output']['text'],'hello\n')
@@ -121,6 +123,40 @@ class WorkerIntegration(unittest.TestCase):
         time.sleep(.02);self.assertIsNone(p.poll());start=time.monotonic();p.kill();p.wait(timeout=2)
         p.stdout.close();p.stderr.close()
         self.assertLess(time.monotonic()-start,2)
+    def test_json_workspace_operations(self):
+        value = '{"users":[{"name":"Ada"}],"version":1}'
+        for operation in ['format', 'minify', 'validate', 'tree', 'query', 'diff', 'schema', 'typescript']:
+            options = {'operation': operation, 'syntax': 'jsonpath', 'path': '$.users[0].name', 'name': 'UserData'}
+            secondary = '{"type":"object"}' if operation == 'schema' else '{"version":2}'
+            with self.subTest(operation=operation):
+                result = run('json', value, options, secondary=secondary)
+                self.assertIn('output', result)
+                self.assertTrue(result['output']['text'])
+                if operation == 'typescript': self.assertIn('export type UserData', result['output']['text'])
+    def test_qr_generation_and_image_scan(self):
+        text = 'https://example.test/?q=二维码'
+        options = {'operation': 'generate', 'correction': 'H', 'scale': 10}
+        generated = run('qr-code', text, options)['output']['artifacts'][0]
+        options['operation'] = 'scan'
+        scanned = run('qr-code', options=options, file=base64.b64decode(generated['data']))
+        self.assertEqual(scanned['output']['text'], text)
+    def test_image_data_url_round_trip(self):
+        original = (ROOT / 'DevKit/Resources/Assets.xcassets/AppIcon.appiconset/icon_16x16@1x.png').read_bytes()
+        encoded = run('data-url', options={'operation': 'encode'}, file=original)['output']['text']
+        self.assertTrue(encoded.startswith('data:image/png;base64,'))
+        decoded = run('data-url', encoded, {'operation': 'decode'})['output']['artifacts'][0]
+        self.assertEqual(decoded['mime'], 'image/png')
+        self.assertEqual(decoded['name'], 'image.png')
+        self.assertEqual(base64.b64decode(decoded['data']), original)
+        self.assertIn('error', run('data-url', 'hello', {'operation': 'encode'}))
+        self.assertIn('error', run('data-url', 'data:text/plain;base64,aGVsbG8=', {'operation': 'decode'}))
+    def test_removed_tools_are_not_executable(self):
+        for tool in ['compression', 'hex-text', 'html-entities', 'string-escape', 'unicode-escape',
+                     'csv', 'toml', 'xml', 'yaml', 'basic-auth', 'format-convert', 'bitwise',
+                     'lorem-ipsum', 'slug', 'user-agent', 'border-radius', 'box-shadow',
+                     'css-gradient', 'cubic-bezier', 'flex-grid']:
+            with self.subTest(tool=tool):
+                self.assertEqual(run(tool)['error']['message'], '工具不存在。')
     def test_unknown_tool_is_structured_error(self):
         self.assertIn('error',run('nonexistent'))
 

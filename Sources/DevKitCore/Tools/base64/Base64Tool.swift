@@ -17,6 +17,9 @@ public enum Base64Tool: ToolModule {
       .init("padding", "编码保留填充", \.padding),
     ]
   }
+  public static func visibleFields(for options: Options) -> [OptionField<Options>] {
+    fields.filter { field in options.operation == "encode" || field.id != "padding" }
+  }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
     if options.operation == "encode" {
       var value = input.bytes.base64EncodedString()

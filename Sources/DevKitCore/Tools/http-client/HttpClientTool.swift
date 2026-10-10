@@ -1,4 +1,5 @@
 import Foundation
+import UniformTypeIdentifiers
 
 public enum HttpClientTool: ToolModule {
   public struct Options: ToolOptions {
@@ -49,10 +50,13 @@ public enum HttpClientTool: ToolModule {
     rows += http.allHeaderFields.map {
       ResultRow(String(describing: $0.key), String(describing: $0.value))
     }.sorted { $0.label < $1.label }
-    var output = textOrArtifact(
-      body, name: "response.bin", mime: response.mimeType ?? "application/octet-stream")
+    let mime = response.mimeType ?? "application/octet-stream"
+    let suffix = UTType(mimeType: mime)?.preferredFilenameExtension ?? "bin"
+    let filename = "response." + suffix
+    var output = textOrArtifact(body, name: filename, mime: mime)
+    if !body.isEmpty && output.artifacts.isEmpty { output.artifacts = [Artifact(filename, mime, body)] }
     output.rows = rows
-    output.note = "状态 \(http.statusCode) · \(body.count) 字节。临时会话，无 Cookie 与凭证持久化。"
+    output.note = "状态 \(http.statusCode) · \(body.count) 字节"
     return output
   }
 }

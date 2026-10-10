@@ -15,6 +15,10 @@ public enum UlidTool: ToolModule {
       .init("count", "数量", \.count, range: 1...1000),
     ]
   }
+  public static func visibleFields(for options: Options) -> [OptionField<Options>] {
+    fields.filter { field in options.operation != "parse" || field.id == "operation" }
+  }
+  public static func inputStyle(for options: Options) -> InputStyle { options.operation == "generate" ? .generator : .text }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
     let alphabet = Array("0123456789ABCDEFGHJKMNPQRSTVWXYZ")
     if options.operation == "parse" {

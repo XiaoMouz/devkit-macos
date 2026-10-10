@@ -32,7 +32,7 @@ import SwiftUI
       primaryControl = AnyView(ToolPrimaryControl(session: session))
       configuration = AnyView(ToolConfiguration(session: session))
       footer = AnyView(ToolFooter(session: session))
-      hasConfiguration = T.fields.contains { $0.id != primaryToolField(T.self)?.id }
+      hasConfiguration = false
       sourceClosed = { session.sourceClosed() }
     }
   }

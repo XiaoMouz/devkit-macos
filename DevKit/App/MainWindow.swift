@@ -12,7 +12,7 @@ struct MainWindow: View {
   @FocusState private var searchFocused: Bool
   private var cachedTools: [ToolTab] { workspace.tabs }
   private var active: ToolTab? { workspace.active }
-  private var favoriteIDs: [String] { favorites.split(separator: ",").map(String.init) }
+  private var favoriteIDs: [String] { Array(Set(favorites.split(separator: ",").map { ["json-diff", "json-path", "json-schema", "json-to-model"].contains(String($0)) ? "json" : String($0) })) }
   private var matches: [ToolMetadata] {
     ToolRegistry.all.map { $0.metadata }.filter {
       (section != "favorites" || favoriteIDs.contains($0.id)) &&
@@ -92,7 +92,7 @@ struct MainWindow: View {
   }
   private func runTitle(_ tab: ToolTab) -> String {
     if tab.metadata.id == "websocket" { return tab.bridge.running ? "断开" : "连接" }
-    return tab.bridge.running ? "取消" : tab.metadata.network ? "发送请求" : tab.metadata.inputStyle == .generator ? "生成" : "转换"
+    return tab.bridge.running ? "取消" : tab.bridge.actionTitle
   }
   private var sidebar: some View {
     VStack(spacing: 0) {
@@ -167,7 +167,7 @@ struct MainWindow: View {
   private var commandActions: WorkspaceActions {
     WorkspaceActions(run: { active?.bridge.execute() }, copy: { active?.bridge.copy() }, search: {
       sidebarVisible = true; section = "tools"; searchFocused = true
-    }, selectPane: active?.metadata.inputStyle == .generator || active?.metadata.id == "websocket"
+    }, selectPane: active?.metadata.id == "websocket"
       ? nil : { active?.bridge.selectPane($0) })
   }
   private var home: some View {

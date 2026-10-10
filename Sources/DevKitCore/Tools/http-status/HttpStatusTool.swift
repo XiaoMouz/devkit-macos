@@ -25,7 +25,7 @@ public enum HttpStatusTool: ToolModule {
     let group = [1: "信息响应", 2: "成功", 3: "重定向", 4: "客户端错误", 5: "服务端错误"][code / 100]!
     return ToolOutput(
       "\(code) · \(phrase)\n\(descriptions[code] ?? "系统未提供专门说明，请查阅 IANA 状态码注册表。")",
-      rows: [ResultRow("类别", group), ResultRow("状态", phrase)],
+      rows: [ResultRow("状态码", String(code)), ResultRow("类别", group), ResultRow("状态", phrase), ResultRow("含义", descriptions[code] ?? "未收录专门说明")],
       note: "协议参考：RFC 9110 / IANA HTTP Status Code Registry；名称由当前系统提供。")
   }
 }

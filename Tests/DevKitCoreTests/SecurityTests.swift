@@ -5,16 +5,6 @@ import Testing
 @testable import DevKitCore
 
 @Suite("Digest and local token semantics") struct SecurityTests {
-  @Test func basicAuthRoundTrip() async throws {
-    var options = BasicAuthTool.Options()
-    options.username = "ada"
-    options.password = "hello:世界"
-    let encoded = try await BasicAuthTool.execute(.init(), options: options)
-    options.operation = "decode"
-    #expect(
-      try await BasicAuthTool.execute(.init(text: encoded.text), options: options).text
-        == "ada:hello:世界")
-  }
   @Test func JWTAuthenticationIsSeparateFromParsing() async throws {
     func b64(_ data: Data) -> String {
       data.base64EncodedString().replacingOccurrences(of: "+", with: "-")

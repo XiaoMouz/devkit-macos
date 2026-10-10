@@ -159,10 +159,18 @@ public protocol ToolModule: Sendable {
   associatedtype Options: ToolOptions
   static var metadata: ToolMetadata { get }
   static var fields: [OptionField<Options>] { get }
+  static func inputStyle(for options: Options) -> InputStyle
+  static func visibleFields(for options: Options) -> [OptionField<Options>]
+  static func example(for options: Options) -> ToolInput
   static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput
 }
 extension ToolModule {
   public static var fields: [OptionField<Options>] { [] }
+  public static func inputStyle(for options: Options) -> InputStyle { metadata.inputStyle }
+  public static func visibleFields(for options: Options) -> [OptionField<Options>] { fields }
+  public static func example(for options: Options) -> ToolInput {
+    ToolInput(text: metadata.sample, secondary: metadata.secondary)
+  }
   public static func executeEncoded(_ input: ToolInput, options: Data) async throws -> ToolOutput {
     try await execute(input, options: JSONDecoder().decode(Options.self, from: options))
   }

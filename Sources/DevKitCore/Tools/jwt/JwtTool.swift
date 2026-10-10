@@ -18,6 +18,9 @@ public enum JwtTool: ToolModule {
       .init("key", "HS256 密钥", \.key, secret: true),
     ]
   }
+  public static func visibleFields(for options: Options) -> [OptionField<Options>] {
+    fields.filter { field in options.verify || field.id != "key" }
+  }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
     let parts = input.text.trimmingCharacters(in: .whitespacesAndNewlines).split(
       separator: ".", omittingEmptySubsequences: false)

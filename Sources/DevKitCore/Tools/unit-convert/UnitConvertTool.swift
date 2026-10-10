@@ -2,7 +2,9 @@ import Foundation
 
 public enum UnitConvertTool: ToolModule {
   public struct Options: ToolOptions {
-    public var from: String = "KiB"
+    public var from: String = "KiB" {
+      didSet { if !UnitConvertTool.compatibleUnits(from).contains(to) { to = UnitConvertTool.compatibleUnits(from).first ?? from } }
+    }
     public var to: String = "B"
     public init() {}
   }
@@ -25,6 +27,13 @@ public enum UnitConvertTool: ToolModule {
         ]),
     ]
   }
+  public static func compatibleUnits(_ unit: String) -> [String] {
+    let groups = [["B", "KB", "MB", "GB", "KiB", "MiB", "GiB"], ["ms", "s", "min", "h"], ["bit/s", "Kbit/s", "Mbit/s", "MB/s"]]
+    return groups.first { $0.contains(unit) } ?? []
+  }
+  public static func visibleFields(for options: Options) -> [OptionField<Options>] {
+    [fields[0], .init("to", "目标单位", \.to, choices: compatibleUnits(options.from))]
+  }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
     let units: [String: (String, Decimal)] = [
       "B": ("size", 1), "KB": ("size", 1000), "MB": ("size", 1_000_000),
@@ -40,7 +49,7 @@ public enum UnitConvertTool: ToolModule {
     try require(
       value.range(of: "^[+-]?[0-9]+(?:\\.[0-9]+)?$", options: .regularExpression) != nil,
       "请输入十进制数字。")
-    guard let n = Decimal(string: value), !n.isNaN else { throw ToolFailure("数字无效。") }
+    guard let n = Decimal(string: value, locale: Locale(identifier: "en_US_POSIX")), !n.isNaN else { throw ToolFailure("数字无效。") }
     let result = n * from.1 / to.1
     try require(!result.isNaN, "结果超出范围。")
     return ToolOutput(NSDecimalNumber(decimal: result).stringValue + " " + options.to)

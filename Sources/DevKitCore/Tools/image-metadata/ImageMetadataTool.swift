@@ -17,12 +17,25 @@ public enum ImageMetadataTool: ToolModule {
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
     let source = try ImageCodec.source(input)
     let values = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String: Any] ?? [:]
-    let text =
-      JSONSerialization.isValidJSONObject(values)
-      ? try prettyJSON(values) : String(describing: values)
+    let text = try prettyJSON(jsonValue(values))
     let artifacts =
       options.strip
       ? [try ImageCodec.encode(ImageCodec.decode(input), name: "metadata-removed")] : []
-    return ToolOutput(text, artifacts: artifacts, note: "元数据可能包含定位与设备信息；不会上传。清理导出重新编码首帧，保留必要的色彩信息。")
+    let keys = [(kCGImagePropertyPixelWidth as String, "宽度（px）"), (kCGImagePropertyPixelHeight as String, "高度（px）"),
+      (kCGImagePropertyColorModel as String, "颜色模型"), (kCGImagePropertyDepth as String, "位深度"),
+      (kCGImagePropertyHasAlpha as String, "透明通道")]
+    let rows = keys.compactMap { key, label in values[key].map { ResultRow(label, key == kCGImagePropertyHasAlpha as String ? (($0 as? NSNumber)?.boolValue == true ? "是" : "否") : String(describing: $0)) } }
+    return ToolOutput(text, rows: rows, artifacts: artifacts, note: options.strip ? "已生成移除元数据的 PNG。" : nil)
   }
+  private static func jsonValue(_ value: Any) -> Any {
+    switch value {
+    case let date as Date: return Dates.iso(date)
+    case let data as Data: return data.base64EncodedString()
+    case let dictionary as [String: Any]: return dictionary.mapValues(jsonValue)
+    case let array as [Any]: return array.map(jsonValue)
+    case is String, is NSNumber, is NSNull: return value
+    default: return String(describing: value)
+    }
+  }
+
 }

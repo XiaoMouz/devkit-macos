@@ -21,6 +21,14 @@ public enum CodeFormatTool: ToolModule {
         choices: ["sql", "mysql", "postgresql", "sqlite", "transactsql"]),
     ]
   }
+  public static func visibleFields(for options: Options) -> [OptionField<Options>] {
+    fields.filter { field in options.language == "sql" || field.id != "dialect" }
+  }
+  public static func example(for options: Options) -> ToolInput {
+    let samples = ["javascript": "const user={name:\"Ada\",active:true};", "typescript": "type User={name:string;active:boolean};",
+      "html": "<main><h1>Hello</h1><p>DevKit</p></main>", "css": ".card{display:flex;gap:16px;color:#3478f6;}", "sql": "select id,name from users where active=1 order by id;"]
+    return ToolInput(text: samples[options.language] ?? metadata.sample)
+  }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
     return try ScriptEngine.execute("code-format", input: input, options: options)
   }

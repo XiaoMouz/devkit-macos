@@ -1,56 +1,90 @@
 import Foundation
+import ImageIO
+import UniformTypeIdentifiers
 
 public enum DataUrlTool: ToolModule {
   public struct Options: ToolOptions {
     public var operation: String = "encode"
-    public var mime: String = "text/plain"
     public init() {}
   }
   public static let metadata = ToolMetadata(
-    "data-url", "Data URL", .encoding, "生成或解析 Data URL，支持文件与二进制导出。", sample: "hello", secondary: "",
-    input: .text, network: false)
+    "data-url", "Data URL", .encoding, "图片与 Data URL 互转。", input: .file)
   public static var fields: [OptionField<Options>] {
-    [
-      .init("operation", "操作", \.operation, choices: ["encode", "decode"]),
-      .init("mime", "MIME", \.mime),
-    ]
+    [.init("operation", "操作", \.operation, choices: ["encode", "decode"])]
+  }
+  public static func inputStyle(for options: Options) -> InputStyle {
+    options.operation == "decode" ? .text : .file
   }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
-    if options.operation == "encode" {
-      try require(
-        options.mime.range(of: "^[A-Za-z0-9.+-]+/[A-Za-z0-9.+-]+$", options: .regularExpression)
-          != nil, "MIME 格式无效。")
-      return ToolOutput("data:\(options.mime);base64," + input.bytes.base64EncodedString())
-    }
-    guard input.text.hasPrefix("data:"), let comma = input.text.firstIndex(of: ",") else {
-      throw ToolFailure("Data URL 必须以 data: 开始并包含逗号。")
-    }
-    let header = String(input.text[input.text.index(input.text.startIndex, offsetBy: 5)..<comma])
-    let payload = String(input.text[input.text.index(after: comma)...])
-    let mime = header.split(separator: ";").first.map(String.init) ?? "text/plain"
-    let data: Data
-    if header.hasSuffix(";base64") {
-      data = try Base64Codec.decode(payload)
-    } else {
-      var bytes = [UInt8]()
-      let raw = Array(payload.utf8)
-      var index = 0
-      while index < raw.count {
-        if raw[index] == 37 {
-          try require(index + 2 < raw.count, "百分号编码不完整。")
-          guard
-            let byte = UInt8(
-              String(decoding: raw[(index + 1)...(index + 2)], as: UTF8.self), radix: 16)
-          else { throw ToolFailure("百分号编码无效。") }
-          bytes.append(byte)
-          index += 3
-        } else {
-          bytes.append(raw[index])
-          index += 1
-        }
+    switch options.operation {
+    case "encode":
+      guard let data = input.file else { throw ToolFailure("请选择图片。") }
+      let type = try imageType(data)
+      let text = "data:\(type.mime);base64," + data.base64EncodedString()
+      try require(text.utf8.count <= Limits.textBytes, "图片编码后超过 5 MiB，请选择较小的图片。")
+      return ToolOutput(text)
+    case "decode":
+      let text = input.text.trimmingCharacters(in: .whitespacesAndNewlines)
+      guard text.lowercased().hasPrefix("data:"), let comma = text.firstIndex(of: ",") else {
+        throw ToolFailure("请输入完整的图片 Data URL。")
       }
-      data = Data(bytes)
+      let header = text[text.index(text.startIndex, offsetBy: 5)..<comma]
+        .split(separator: ";", omittingEmptySubsequences: false).map { $0.lowercased() }
+      guard let mime = header.first, mime.hasPrefix("image/") else {
+        throw ToolFailure("Data URL 必须是图片类型。")
+      }
+      let payload = String(text[text.index(after: comma)...])
+      let bytes = try percentDecodedBytes(payload)
+      let data: Data
+      if header.last == "base64" {
+        guard let base64 = String(data: bytes, encoding: .ascii) else {
+          throw ToolFailure("Base64 内容无效。")
+        }
+        data = try Base64Codec.decode(base64)
+      } else {
+        data = bytes
+      }
+      let type = try imageType(data)
+      let declaredType = UTType(mimeType: mime == "image/jpg" ? "image/jpeg" : mime)
+      try require(declaredType == type.type, "Data URL 声明的图片类型与实际内容不一致。")
+      let artifact = Artifact("image.\(type.extensionName)", type.mime, data)
+      return ToolOutput(artifact.name, artifacts: [artifact])
+    default:
+      throw ToolFailure("不支持的 Data URL 操作。")
     }
-    return textOrArtifact(data, name: "payload.bin", mime: mime)
+  }
+
+  private static func imageType(_ data: Data) throws -> (type: UTType, mime: String, extensionName: String) {
+    let source = try ImageCodec.source(ToolInput(file: data))
+    guard let identifier = CGImageSourceGetType(source) as String?,
+      let type = UTType(identifier), type.conforms(to: .image),
+      let mime = type.preferredMIMEType, mime.hasPrefix("image/"),
+      let extensionName = type.preferredFilenameExtension,
+      CGImageSourceCreateImageAtIndex(source, 0, nil) != nil,
+      CGImageSourceGetStatusAtIndex(source, 0) == .statusComplete
+    else { throw ToolFailure("图片无效或格式不受支持。") }
+    return (type, mime, type == .jpeg ? "jpg" : extensionName)
+  }
+
+  private static func percentDecodedBytes(_ payload: String) throws -> Data {
+    var bytes = [UInt8]()
+    let raw = Array(payload.utf8)
+    var index = 0
+    while index < raw.count {
+      if raw[index] == 37 {
+        try require(index + 2 < raw.count, "百分号编码不完整。")
+        try require(raw[(index + 1)...(index + 2)].allSatisfy {
+          (48...57).contains($0) || (65...70).contains($0) || (97...102).contains($0)
+        }, "百分号编码无效。")
+        guard let byte = UInt8(String(decoding: raw[(index + 1)...(index + 2)], as: UTF8.self), radix: 16)
+        else { throw ToolFailure("百分号编码无效。") }
+        bytes.append(byte)
+        index += 3
+      } else {
+        bytes.append(raw[index])
+        index += 1
+      }
+    }
+    return Data(bytes)
   }
 }

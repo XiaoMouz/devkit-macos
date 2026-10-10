@@ -1,8 +1,12 @@
 # DevKit for macOS
 
-使用 Swift / SwiftUI 开发的原生 Web 开发者工具箱，最低 macOS 26。包含 9 类、72 个工具模块，支持搜索、收藏、单工作区与独立窗口、文件导出和系统 Liquid Glass。
+使用 Swift / SwiftUI 开发的原生 Web 开发者工具箱，最低 macOS 26。包含 9 类、48 个工具模块，支持搜索、收藏、单工作区与独立窗口、文件导出和系统 Liquid Glass。
 
-当前 UI 使用统一透明顶部和侧栏、无边框编辑区与右侧配置栏。Spotlight 设置支持总开关、25 个工具逐项启停、命令别名和索引清理，默认关闭。
+JSON 的格式化、查询、对比、Schema 校验和 TypeScript 类型生成共用一个工作台；二维码支持文本生成与选图、拖图或粘贴图片识别。
+
+顶部菜单跟随系统语言，支持简体中文、繁体中文与英文。Data URL 支持图片编码，以及解码后的图片预览、复制和导出。
+
+当前 UI 使用统一透明顶部和侧栏、按场景区分的图片、日期、颜色、数值、参数表单与代码编辑区。Spotlight 设置支持总开关、20 个工具逐项启停、命令别名和索引清理，默认关闭。
 
 当前版本 **0.1.0，自用预览版**。模块均有实际处理逻辑，具体能力和限制见 [实现范围](docs/implementation-status.md)。原设计中的所有进阶选项并非都已覆盖。Spotlight 已实现 App Intents，但系统交互验收仍有阻塞，不能将其视为已完成的发布承诺。
 
@@ -48,7 +52,7 @@ Scripts/package.sh
 
 ```text
 Sources/DevKitCore/Tools/<tool-id>/   每个工具的参数、元数据和引擎
-Sources/DevKitCore/Shared/           编码、图片、压缩、网络与类型契约
+Sources/DevKitCore/Shared/           编码、图片、网络与类型契约
 Sources/DevKitWorker/               可终止的独立处理进程
 DevKit/App/                        原生导航、单工作区、菜单、设置
 DevKit/Shared/                     编辑器、结果、预览、进程客户端

@@ -23,6 +23,9 @@ public enum CssUnitTool: ToolModule {
       .init("height", "视口高度 px", \.height, range: 1...20000),
     ]
   }
+  public static func visibleFields(for options: Options) -> [OptionField<Options>] {
+    fields.filter { field in !(["root": "rem", "parent": "em", "width": "vw", "height": "vh"].keys.contains(field.id)) || [options.from, options.to].contains(["root": "rem", "parent": "em", "width": "vw", "height": "vh"][field.id]!) }
+  }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
     guard let value = Double(input.text.trimmingCharacters(in: .whitespacesAndNewlines)),
       value.isFinite

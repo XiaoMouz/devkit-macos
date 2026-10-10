@@ -1,6 +1,7 @@
 import SwiftUI
 
 @MainActor @Observable final class WorkspaceBridge {
+  var actionTitle = "执行"
   var runRequest = 0
   var copyRequest = 0
   var showOptions = false

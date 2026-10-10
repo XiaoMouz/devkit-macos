@@ -4,7 +4,7 @@ public enum ImageResizeTool: ToolModule {
   public struct Options: ToolOptions {
     public var width: Int = 800
     public var height: Int = 600
-    public var mode: String = "fit"
+    public var mode: String = "scale"
     public init() {}
   }
   public static let metadata = ToolMetadata(
@@ -14,16 +14,21 @@ public enum ImageResizeTool: ToolModule {
     [
       .init("width", "宽 px", \.width, range: 1...10000),
       .init("height", "高 px", \.height, range: 1...10000),
-      .init("mode", "方式", \.mode, choices: ["fit", "fill"]),
+      .init("mode", "方式", \.mode, choices: ["scale", "fit", "fill"]),
     ]
   }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
+    try require((1...10000).contains(options.width) && (1...10000).contains(options.height), "宽高范围为 1–10000。")
+    try require(["scale", "fit", "fill"].contains(options.mode), "缩放方式无效。")
     let image = try ImageCodec.decode(input)
+    let ratio = min(Double(options.width) / Double(image.width), Double(options.height) / Double(image.height))
+    let width = options.mode == "scale" ? max(1, Int((Double(image.width) * ratio).rounded())) : options.width
+    let height = options.mode == "scale" ? max(1, Int((Double(image.height) * ratio).rounded())) : options.height
     let resized = try ImageCodec.resize(
-      image, width: options.width, height: options.height, fill: options.mode == "fill")
+      image, width: width, height: height, fill: options.mode == "fill")
     return ToolOutput(
       "\(image.width) × \(image.height) → \(resized.width) × \(resized.height)",
       artifacts: [try ImageCodec.encode(resized)],
-      note: options.mode == "fill" ? "保持比例填满，居中裁剪超出区域。" : "保持比例完整放入，空白区域透明。")
+      note: options.mode == "scale" ? "保持原图比例，尺寸不超过设定宽高。" : options.mode == "fill" ? "居中裁剪到目标宽高。" : "保持比例放入目标画布，空白区域透明。")
   }
 }

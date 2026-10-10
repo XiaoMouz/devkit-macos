@@ -33,7 +33,7 @@ export default (i, o) => {
   return result(pretty(rows), {
     rows: rows.map((r, n) => ({
       label: "#" + (n + 1) + " · UTF-16 " + r.index,
-      value: r.match,
+      value: r.match + r.groups.map((value, index) => `\n$${index + 1}: ${value ?? "（未匹配）"}`).join("") + (r.named ? "\n" + pretty(r.named) : ""),
     })),
     note: rows.length + " 个匹配；位置以 UTF-16 单元计数",
   });

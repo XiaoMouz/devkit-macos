@@ -29,18 +29,10 @@ struct SettingsView: View {
               Text("磨砂")
             }.font(.caption).foregroundStyle(.secondary)
           }
-          Text(glassMode == GlassMode.custom.rawValue
-            ? "在保持文字清晰的基础上调整磨砂程度。系统开启“减少透明度”时使用不透明背景。"
-            : "跟随“系统设置 → 外观 → Liquid Glass”的变化，同时遵循“减少透明度”设置。")
-            .font(.caption).foregroundStyle(.secondary)
         }
         Section("编辑器") {
           Slider(value: $fontSize, in: 11...22, step: 1) { Text("字号 \(Int(fontSize))") }
           Toggle("自动换行", isOn: $wrap)
-        }
-        Section("数据") {
-          Text("保存外观、收藏和 Spotlight 配置。输入、结果、令牌与请求正文只保留在内存会话中，退出后不恢复。")
-            .foregroundStyle(.secondary)
         }
       }.formStyle(.grouped).tabItem { Label("通用", systemImage: "gearshape") }
       SpotlightSettingsView().tabItem { Label("Spotlight", systemImage: "magnifyingglass") }

@@ -1,5 +1,6 @@
 name: DevKit
 options:
+  developmentLanguage: en
   bundleIdPrefix: app.devkit
   deploymentTarget:
     macOS: '26.0'

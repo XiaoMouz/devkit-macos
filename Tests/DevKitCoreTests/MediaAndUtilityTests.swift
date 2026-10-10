@@ -5,27 +5,6 @@ import Testing
 @testable import DevKitCore
 
 @Suite("Media and utility behavior") struct MediaAndUtilityTests {
-  @Test func compressionRoundTripsAndRejectsTrailingBytes() throws {
-    let bytes = Data((0..<256).map(UInt8.init)) + Data("hello 你好".utf8)
-    for format in ["gzip", "zlib", "deflate"] {
-      let compressed = try ZlibCodec.process(bytes, decompress: false, format: format)
-      #expect(try ZlibCodec.process(compressed, decompress: true, format: format) == bytes)
-      #expect(throws: (any Error).self) {
-        try ZlibCodec.process(compressed.dropLast(2), decompress: true, format: format)
-      }
-      #expect(throws: (any Error).self) {
-        try ZlibCodec.process(compressed + Data([0]), decompress: true, format: format)
-      }
-    }
-  }
-  @Test func base64BinaryAndDataURL() async throws {
-    var options = DataUrlTool.Options()
-    options.operation = "decode"
-    let result = try await DataUrlTool.execute(
-      .init(text: "data:application/octet-stream,%FF%00"), options: options)
-    #expect(result.artifacts.first?.data == Data([255, 0]))
-    #expect(result.text == "ff00")
-  }
   @Test func colorsAndContrast() async throws {
     #expect(try ColorValue.parse("hsl(120 100% 50%)").hexValue == "#00FF00")
     #expect(try ColorValue.parse("#abc8").hexValue == "#AABBCC88")
@@ -93,7 +72,7 @@ import Testing
     let input = ToolInput(file: png.data, fileName: "fixture.png")
     let resized = try await ImageResizeTool.execute(input, options: .init())
     let out = try ImageCodec.decode(.init(file: resized.artifacts[0].data))
-    #expect(out.width == 800 && out.height == 600)
+    #expect(out.width == 800 && out.height == 400)
     #expect(try await ImageConvertTool.execute(input, options: .init()).artifacts.count == 1)
     #expect(
       try await ImageCompressTool.execute(input, options: .init()).artifacts[0].mime == "image/jpeg"

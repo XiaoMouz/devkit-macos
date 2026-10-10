@@ -19,6 +19,9 @@ public enum TextLinesTool: ToolModule {
       .init("suffix", "后缀", \.suffix),
     ]
   }
+  public static func visibleFields(for options: Options) -> [OptionField<Options>] {
+    fields.filter { field in options.mode == "affix" || !["prefix", "suffix"].contains(field.id) }
+  }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
     var lines = input.text.components(separatedBy: "\n")
     switch options.mode {

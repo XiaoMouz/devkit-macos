@@ -24,37 +24,38 @@ public enum SpotlightCatalog {
   public static let tools: [SpotlightTool] = [
     make(Base64Tool.self), make(UrlCodecTool.self), make(JsonTool.self), make(HashTool.self),
     make(UuidTool.self), make(RandomStringTool.self), make(TimestampTool.self), make(ColorTool.self),
-    make(HexTextTool.self), make(HtmlEntitiesTool.self), make(HttpStatusTool.self), make(JwtTool.self),
+    make(HttpStatusTool.self), make(JwtTool.self),
     make(MimeTypesTool.self), make(NanoidTool.self), make(NumberBaseTool.self), make(NumberFormatTool.self),
-    make(SlugTool.self), make(StringEscapeTool.self), make(TextCaseTool.self), make(TextLinesTool.self),
-    make(TextStatsTool.self), make(UlidTool.self), make(UnicodeEscapeTool.self), make(UrlParserTool.self),
+    make(TextCaseTool.self), make(TextLinesTool.self),
+    make(TextStatsTool.self), make(UlidTool.self), make(UrlParserTool.self),
     make(CssUnitTool.self),
   ]
   public static var actions: [SpotlightAction] { tools.flatMap(\.actions) }
   public static func defaultAlias(for id: String) -> String {
     ["base64":"b64", "url-codec":"url", "random-string":"rand", "timestamp":"ts", "text-stats":"stats",
-     "html-entities":"html", "unicode-escape":"unicode", "number-base":"base", "number-format":"num",
-     "http-status":"http", "mime-types":"mime", "css-unit":"css", "hex-text":"hex", "text-case":"case",
-     "text-lines":"lines", "string-escape":"escape", "url-parser":"urlparse"][id] ?? id
+     "number-base":"base", "number-format":"num",
+     "http-status":"http", "mime-types":"mime", "css-unit":"css", "text-case":"case",
+     "text-lines":"lines", "url-parser":"urlparse"][id] ?? id
   }
   private static func make<T: ToolModule>(_ type: T.Type) -> SpotlightTool {
-    let generator = T.metadata.inputStyle == .generator
-    let field = generator ? nil : T.fields.first { if case .choice = $0.kind { return true }; return false }
+    let generator = T.inputStyle(for: .init()) == .generator
+    let field = generator ? T.fields.first { $0.id == "operation" } : T.fields.first { if case .choice = $0.kind { return true }; return false }
     var operations: [String?] = [nil]
-    if let field, case .choice(let choices) = field.kind { operations = choices.map(Optional.some) }
+    if let field, case .choice(let choices) = field.kind { operations = choices.filter { T.metadata.id != "json" || !["query", "schema", "diff"].contains($0) }.map(Optional.some) }
     let actions = operations.map { operation in
       SpotlightAction(id: T.metadata.id + ":" + (operation ?? "run"), toolID: T.metadata.id,
         name: T.metadata.name + (operation.map { " · " + operationTitle($0) } ?? ""), operation: operation,
         request: { payload in
           var options = T.Options()
           if let operation, let field { field.write(&options, operation) }
-          if generator, !payload.isEmpty {
+          let activeGenerator = T.inputStyle(for: options) == .generator
+          if activeGenerator, !payload.isEmpty {
             guard let countField = T.fields.first(where: { $0.id == "count" }),
               case .integer(let range) = countField.kind, let count = Int(payload), range.contains(count)
             else { throw ToolFailure("生成器只接受范围内的数量；其他参数请使用工具箱。") }
             countField.write(&options, String(count))
           }
-          return WorkerRequest(id: T.metadata.id, input: ToolInput(text: generator ? "" : payload), options: try JSONEncoder().encode(options))
+          return WorkerRequest(id: T.metadata.id, input: ToolInput(text: activeGenerator ? "" : payload), options: try JSONEncoder().encode(options))
         })
     }
     return SpotlightTool(id: T.metadata.id, name: T.metadata.name, symbol: T.metadata.symbol,

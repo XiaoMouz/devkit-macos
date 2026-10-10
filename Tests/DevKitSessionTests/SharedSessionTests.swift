@@ -25,6 +25,114 @@ private actor Gate {
     }
     Issue.record("Session did not reach the expected state within one second")
   }
+  @Test func dataURLSwitchingModesClearsIncompatibleInputAndOutput() async throws {
+    let bridge = WorkspaceBridge()
+    let session = ToolSession<DataUrlTool>(id: UUID(), bridge: bridge) { _ in
+      ToolOutput("data:image/png;base64,fixture")
+    }
+    #expect(session.inputStyle == .file)
+    session.input = ToolInput(file: Data([1, 2, 3]), fileName: "fixture.png")
+    session.run()
+    try await waitUntil { session.current }
+    session.options.operation = "decode"
+    #expect(session.inputStyle == .text)
+    #expect(session.input.file == nil)
+    #expect(session.output == nil)
+    #expect(!session.current)
+    session.input.text = "data:image/png;base64,fixture"
+    session.options.operation = "encode"
+    #expect(session.inputStyle == .file)
+    #expect(session.input.text.isEmpty)
+  }
+  @Test func jsonSwitchesPreserveSourceAndSeparateSchemaFromComparison() {
+    let session = ToolSession<JsonTool>(id: UUID(), bridge: WorkspaceBridge())
+    session.input.text = "{\"version\":1}"
+    session.options.operation = "diff"
+    session.input.secondary = "{\"version\":2}"
+    session.options.operation = "schema"
+    #expect(session.input.text == "{\"version\":1}")
+    #expect(session.input.secondary.isEmpty)
+    session.input.secondary = "{\"type\":\"object\"}"
+    session.options.operation = "typescript"
+    #expect(session.input.text == "{\"version\":1}")
+    session.options.operation = "diff"
+    #expect(session.input.secondary == "{\"version\":2}")
+    session.options.operation = "schema"
+    #expect(session.input.secondary == "{\"type\":\"object\"}")
+  }
+  @Test func queryModesTranslateBetweenRowsAndURLWithoutLosingValues() {
+    let session = ToolSession<QueryStringTool>(id: UUID(), bridge: WorkspaceBridge())
+    session.input.text = "https://example.test/?tag=a&tag=b&q=hello%2Bworld"
+    session.options.operation = "build"
+    #expect(session.input.text.contains("hello+world"))
+    session.options.operation = "parse"
+    #expect(session.input.text == "tag=a&tag=b&q=hello%2Bworld")
+  }
+  @Test func qrGenerationPrefersImageAndScanningPrefersRecognizedText() async throws {
+    let bridge = WorkspaceBridge()
+    let session = ToolSession<QrCodeTool>(id: UUID(), bridge: bridge) { request in
+      try await QrCodeTool.executeEncoded(request.input, options: request.options)
+    }
+    session.input.text = "https://example.test"
+    session.run()
+    try await waitUntil { session.current }
+    let png = try #require(session.output?.artifacts.first?.data)
+    #expect(session.recommendedDisplay == "preview")
+    session.options.operation = "scan"
+    #expect(session.inputStyle == .file)
+    #expect(session.input.text.isEmpty)
+    session.input = ToolInput(file: png, fileName: "qr.png")
+    session.run()
+    try await waitUntil { session.current }
+    #expect(session.output?.text == "https://example.test")
+    #expect(session.recommendedDisplay == "rows")
+  }
+  @Test func httpShowsBodyInsteadOfHidingItBehindResponseHeaders() async throws {
+    let bridge = WorkspaceBridge()
+    let session = ToolSession<HttpClientTool>(id: UUID(), bridge: bridge) { _ in
+      ToolOutput("{\"ok\":true}", rows: [ResultRow("状态", "200")],
+        artifacts: [Artifact("response.json", "application/json", Data("{\"ok\":true}".utf8))])
+    }
+    session.run()
+    try await waitUntil { session.current }
+    #expect(session.recommendedDisplay == "text")
+  }
+  @Test func textToolsRejectBinaryImportsAndFileChecksumKeepsTextFilesAsFiles() async throws {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let binary = directory.appendingPathComponent("invalid.bin")
+    try Data([0xFF, 0x00]).write(to: binary)
+    let json = ToolSession<JsonTool>(id: UUID(), bridge: WorkspaceBridge())
+    json.input.text = "{}"
+    json.loadFile(binary)
+    try await waitUntil { json.error != nil }
+    #expect(json.input.file == nil)
+    #expect(json.input.text == "{}")
+    let file = directory.appendingPathComponent("hello.txt")
+    try Data("hello".utf8).write(to: file)
+    let checksum = ToolSession<FileChecksumTool>(id: UUID(), bridge: WorkspaceBridge())
+    checksum.loadFile(file)
+    try await waitUntil { checksum.input.file != nil }
+    #expect(checksum.input.file == Data("hello".utf8))
+  }
+  @Test func base64FileEncodingCanSwitchToDecodeAndRestoreTheFile() async throws {
+    let bridge = WorkspaceBridge()
+    let session = ToolSession<Base64Tool>(id: UUID(), bridge: bridge) { request in
+      try await Base64Tool.executeEncoded(request.input, options: request.options)
+    }
+    let data = Data([0xff, 0x00, 0x80])
+    session.input = ToolInput(file: data, fileName: "fixture.bin")
+    session.run()
+    try await waitUntil { session.current }
+    session.options.operation = "decode"
+    #expect(session.input.file == nil)
+    #expect(session.input.text == data.base64EncodedString())
+    session.run()
+    try await waitUntil { session.current }
+    #expect(session.output?.artifacts.first?.data == data)
+    #expect(session.recommendedDisplay == "files")
+  }
   @Test func detachedViewsShareEditsAndInvalidateResultsWithoutRerunning() async throws {
     let bridge = WorkspaceBridge()
     let session = ToolSession<Base64Tool>(id: UUID(), bridge: bridge) { request in

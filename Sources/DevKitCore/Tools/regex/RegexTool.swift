@@ -19,6 +19,9 @@ public enum RegexTool: ToolModule {
       .init("replacement", "替换文本", \.replacement),
     ]
   }
+  public static func visibleFields(for options: Options) -> [OptionField<Options>] {
+    fields.filter { field in options.operation == "replace" || field.id != "replacement" }
+  }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
     return try ScriptEngine.execute("regex", input: input, options: options)
   }
