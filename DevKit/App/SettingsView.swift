@@ -3,8 +3,6 @@ import SwiftUI
 
 struct SettingsView: View {
   @AppStorage("appearance") private var appearance = "system"
-  @AppStorage("glassMode") private var glassMode = GlassMode.system.rawValue
-  @AppStorage("glassTransparency") private var transparency = 0.55
   @AppStorage("editorFontSize") private var fontSize = 13.0
   @AppStorage("wrapLines") private var wrap = true
   var body: some View {
@@ -16,20 +14,8 @@ struct SettingsView: View {
             Text("浅色").tag("light")
             Text("深色").tag("dark")
           }
-          Picker("Liquid Glass", selection: $glassMode) {
-            Text("跟随系统").tag(GlassMode.system.rawValue)
-            Text("自定义").tag(GlassMode.custom.rawValue)
-          }
-          if glassMode == GlassMode.custom.rawValue {
-            Slider(value: Binding(get: { 1 - transparency }, set: { transparency = 1 - $0 }), in: 0...1, step: 0.01) {
-              Text("磨砂强度 \(Int(((1 - transparency) * 100).rounded()))%")
-            }.accessibilityLabel("玻璃磨砂强度")
-            HStack {
-              Text("通透")
-              Spacer()
-              Text("磨砂")
-            }.font(.caption).foregroundStyle(.secondary)
-          }
+          Text("Liquid Glass 的透明度跟随“系统设置 → 外观”和辅助功能中的“减少透明度”。")
+            .font(.caption).foregroundStyle(.secondary)
         }
         Section("编辑器") {
           Slider(value: $fontSize, in: 11...22, step: 1) { Text("字号 \(Int(fontSize))") }

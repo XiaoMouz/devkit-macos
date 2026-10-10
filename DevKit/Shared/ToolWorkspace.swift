@@ -9,6 +9,8 @@ struct ToolWorkspace<T: ToolModule>: View {
   @State private var display = "text"
   @State private var selectedArtifact = 0
   @AppStorage("editorFontSize") private var fontSize = 13.0
+  @Environment(\.workspaceActive) private var workspaceActive
+  @AppStorage(FavoriteTools.key) private var favorites = FavoriteTools.defaults
   private var form: ToolPresentation { session.presentation }
   private var paired: Bool { session.inputStyle == .pair && !session.metadata.network }
   private var mode: WorkspaceLayoutMode { session.layoutPolicy.mode(width: availableWidth) }
@@ -30,12 +32,12 @@ struct ToolWorkspace<T: ToolModule>: View {
       VStack(spacing: 10) {
         if detachedPane != nil {
           HStack {
-            ToolPrimaryControl(session: session)
+            ToolPrimaryControl(session: session, inToolbar: false)
             Spacer()
             Button(session.bridge.running ? "取消" : form.action) { session.run() }.buttonStyle(.glassProminent)
           }
+          workspaceTools
         }
-        workspaceTools
         WorkspacePaneDeck(roles: roles, visible: visible,
           titles: [.input: form.inputTitle, .secondary: form.secondaryTitle, .output: form.outputTitle]) { role in
           switch role {
@@ -57,17 +59,43 @@ struct ToolWorkspace<T: ToolModule>: View {
                 .strokeBorder(.orange.opacity(0.25), lineWidth: 1)
             }
         }
-        HStack {
+        HStack(spacing: 8) {
+          if session.bridge.running { ProgressView().controlSize(.mini) }
           Text(session.status).lineLimit(1)
+          if session.output != nil && !session.current { Text("· 待更新") }
           Spacer()
-          if session.elapsed > 0 { Text(String(format: "%.0f ms", session.elapsed * 1000)).monospacedDigit() }
+          if let elapsed = elapsedLabel(session.elapsed) { Text(elapsed).monospacedDigit() }
         }.font(.caption).foregroundStyle(.secondary).frame(height: 16)
       }.padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 8)
         .onChange(of: bounds.size.width, initial: true) { _, width in
           availableWidth = max(0, width - 32)
           if detachedPane == nil { session.bridge.workspaceWidth = availableWidth }
         }
-    }.background(Color(nsColor: .textBackgroundColor))
+    }.background(Color(nsColor: .workspaceBase))
+      .toolbar {
+        // In the main window, view switching joins the window toolbar instead of
+        // stacking a second control row above the editors.
+        if workspaceActive && detachedPane == nil {
+          // Separate items in declaration order: view controls, then the favourite,
+          // then the primary action as its own prominent glass item at the far end.
+          ToolbarItem(placement: .primaryAction) { paneSwitch }
+          ToolbarItem(placement: .primaryAction) { windowMenu }
+          ToolbarSpacer(.fixed, placement: .primaryAction)
+          ToolbarItem(placement: .primaryAction) { favoriteButton }
+          ToolbarSpacer(.fixed, placement: .primaryAction)
+          ToolbarItem(placement: .primaryAction) {
+            Button { session.run() } label: {
+              // Verbatim: "执行" is also an en.lproj menu key, which turned this into "Run".
+              Label {
+                Text(verbatim: session.bridge.running ? "取消" : "执行")
+              } icon: {
+                Image(systemName: session.bridge.running ? "stop.fill" : "play.fill")
+              }.labelStyle(.titleAndIcon).padding(.horizontal, 6)
+            }.buttonStyle(.glassProminent)
+              .help(session.bridge.running ? "取消" : "\(form.action) ⌘↩︎")
+          }
+        }
+      }
       .onAppear { display = session.recommendedDisplay }
       .onChange(of: session.operation) { _, _ in focusedPane = .input }
       .onChange(of: session.bridge.paneRequest) { _, _ in
@@ -81,29 +109,40 @@ struct ToolWorkspace<T: ToolModule>: View {
         if detachedPane == nil && (paired || mode == .focused) { focusedPane = .output }
       }
   }
+  /// Shown inside detached windows, which have no shared window toolbar.
   private var workspaceTools: some View {
     HStack(spacing: 12) {
-      if detachedPane == nil {
-        WorkspaceSegments(items: paneChoices, selection: Binding(get: {
-          mode == .split && (!paired || focusedPane != .output) ? "comparison" : focusedPane.rawValue
-        }, set: { value in
-          if value == "comparison" { session.chooseLayout(.split); focusedPane = .input }
-          else { session.chooseLayout(.focused); focusedPane = WorkspacePane(rawValue: value) ?? .input }
-        }))
-      } else { Text(detachedPane?.title ?? "工作区") }
+      Text(detachedPane?.title ?? "工作区")
       Spacer(minLength: 4)
-      if session.bridge.running { ProgressView().controlSize(.mini) }
-      if session.output != nil && !session.current { Text("待更新").foregroundStyle(.secondary) }
-      Menu {
-        Button("在新窗口打开输入") { detach(.input) }
-        if paired { Button("在新窗口打开第二输入") { detach(.secondary) } }
-        Button("在新窗口打开结果") { detach(.output) }
-        Button("打开对照窗口") { detach(.comparison) }
-        Divider()
-        Button("自动适应布局") { session.chooseLayout(.automatic) }
-      } label: { Image(systemName: "rectangle.on.rectangle") }
-        .menuStyle(.button).buttonStyle(.glass).fixedSize().accessibilityLabel("窗口与布局")
+      windowMenu.labelStyle(.iconOnly).menuStyle(.button).buttonStyle(.glass).fixedSize()
     }.font(.system(size: 12)).controlSize(.small).frame(height: 30)
+  }
+  private var favoriteButton: some View {
+    let favorite = FavoriteTools.ids(favorites).contains(session.metadata.id)
+    return Button { favorites = FavoriteTools.toggling(session.metadata.id, in: favorites) } label: {
+      Label("收藏", systemImage: favorite ? "star.fill" : "star").contentTransition(.symbolEffect(.replace))
+    }.help(favorite ? "取消收藏" : "收藏当前工具")
+  }
+  private var paneSwitch: some View {
+    WorkspaceSegments(items: paneChoices, selection: Binding(get: {
+      mode == .split && (!paired || focusedPane != .output) ? "comparison" : focusedPane.rawValue
+    }, set: { value in
+      if value == "comparison" { session.chooseLayout(.split); focusedPane = .input }
+      else { session.chooseLayout(.focused); focusedPane = WorkspacePane(rawValue: value) ?? .input }
+    }), symbols: ["input": session.inputStyle == .generator ? "slider.horizontal.3" : "square.and.pencil",
+      "secondary": "doc.on.doc", "output": "doc.text", "comparison": "rectangle.split.2x1"],
+      inToolbar: true, iconOnly: true)
+  }
+  private var windowMenu: some View {
+    Menu {
+      Button("在新窗口打开输入") { detach(.input) }
+      if paired { Button("在新窗口打开第二输入") { detach(.secondary) } }
+      Button("在新窗口打开结果") { detach(.output) }
+      Button("打开对照窗口") { detach(.comparison) }
+      Divider()
+      Button("自动适应布局") { session.chooseLayout(.automatic) }
+    } label: { Label("窗口与布局", systemImage: "rectangle.on.rectangle") }
+      .help("在新窗口打开或调整布局")
   }
   private var paneChoices: [(String, String)] {
     var items = [(session.inputStyle == .generator ? "参数" : "输入", "input")]
@@ -114,14 +153,16 @@ struct ToolWorkspace<T: ToolModule>: View {
   }
   private var secondaryInput: some View {
     VStack(spacing: 0) {
-      HStack {
-        Button("粘贴") {
+      PaneActions {
+        Button {
           if let text = NSPasteboard.general.string(forType: .string) { session.input.secondary = text; session.refreshLayout() }
-        }
-        Button("导入…") { session.chooseFile(secondary: true) }
-        Spacer()
-        Button { session.input.secondary = "" } label: { Image(systemName: "trash") }.accessibilityLabel("清空第二输入")
-      }.buttonStyle(.glass).controlSize(.small).padding(10)
+        } label: { Label("粘贴", systemImage: "doc.on.clipboard") }.help("粘贴文本")
+        Button { session.chooseFile(secondary: true) } label: { Label("导入…", systemImage: "square.and.arrow.down") }
+          .help("从文件导入")
+        Spacer(minLength: 8)
+        Button { session.input.secondary = "" } label: { Label("清空\(form.secondaryTitle)", systemImage: "trash") }
+          .labelStyle(.iconOnly).help("清空\(form.secondaryTitle)")
+      }
       CodeEditor(text: $session.input.secondary, label: form.secondaryTitle, contentSettled: session.refreshLayout,
         editingBegan: { focusedPane = .secondary })
     }.onDrop(of: [.fileURL], isTargeted: nil) { providers in
@@ -154,34 +195,49 @@ struct ToolWorkspace<T: ToolModule>: View {
       }
     }
   }
+  private func resultViews(_ output: ToolOutput) -> [(String, String, String)] {
+    var views = [(session.metadata.id == "http-client" ? "正文" : "文本", "text", "text.alignleft")]
+    if session.binaryArtifact != nil { views.append(("文件", "files", "doc")) }
+    if !output.rows.isEmpty {
+      views.append((session.metadata.id == "http-client" ? "状态与响应头" : "条目", "rows", "list.bullet"))
+    }
+    if output.html != nil || session.imageArtifact != nil { views.append(("预览", "preview", "eye")) }
+    return views
+  }
   private func resultActions(_ output: ToolOutput) -> some View {
-    HStack(spacing: 8) {
-      Picker("结果视图", selection: $display) {
-        Text(session.metadata.id == "http-client" ? "正文" : "文本").tag("text")
-        if session.binaryArtifact != nil { Text("文件").tag("files") }
-        if !output.rows.isEmpty { Text(session.metadata.id == "http-client" ? "状态与响应头" : "条目").tag("rows") }
-        if output.html != nil || session.imageArtifact != nil { Text("预览").tag("preview") }
-      }.labelsHidden().fixedSize()
-      Spacer(minLength: 4)
+    let views = resultViews(output)
+    return PaneActions {
+      // A single view needs no switch; several read better as segments than a pop-up.
+      if views.count > 1 {
+        Picker("结果视图", selection: $display) {
+          ForEach(views, id: \.1) { view in Label(view.0, systemImage: view.2).tag(view.1) }
+        }.pickerStyle(.segmented).labelsHidden().fixedSize()
+      }
+      Spacer(minLength: 8)
       if session.binaryArtifact == nil || display == "text" {
-      Button { session.copyResult() } label: {
-        Image(systemName: session.copied ? "checkmark" : "doc.on.doc").contentTransition(.symbolEffect(.replace))
-      }.help(session.imageArtifact != nil ? "复制图片" : "复制完整结果").accessibilityLabel(session.imageArtifact != nil ? "复制图片" : "复制结果")
-        .disabled(!session.current)
+        Button { session.copyResult() } label: {
+          Label(session.copied ? "已复制" : session.imageArtifact != nil ? "复制图片" : "复制",
+            systemImage: session.copied ? "checkmark" : "doc.on.doc").contentTransition(.symbolEffect(.replace))
+        }.help(session.imageArtifact != nil ? "复制图片" : "复制完整结果 ⌘⇧C").disabled(!session.current)
       }
       if output.artifacts.isEmpty {
-        Button("导出…") { session.save(session.textArtifact) }.disabled(!session.current)
+        Button { session.save(session.textArtifact) } label: { Label("导出…", systemImage: "square.and.arrow.up") }
+          .help("导出为文件").disabled(!session.current)
       } else if output.artifacts.count == 1 {
-        Button(session.imageArtifact != nil ? "保存图片…" : "保存文件…") { session.save(output.artifacts[0]) }.disabled(!session.current)
+        Button { session.save(output.artifacts[0]) } label: {
+          Label(session.imageArtifact != nil ? "保存图片…" : "保存文件…", systemImage: "square.and.arrow.down")
+        }.help(session.imageArtifact != nil ? "保存图片" : "保存文件").disabled(!session.current)
       } else {
-        Menu("导出文件") {
+        Menu {
           ForEach(output.artifacts.indices, id: \.self) { index in
             Button(output.artifacts[index].name) { session.save(output.artifacts[index]) }
           }
-        }.disabled(!session.current)
+        } label: { Label("导出文件", systemImage: "square.and.arrow.up") }
+          .fixedSize().help("选择要导出的文件").disabled(!session.current)
       }
-    }.font(.system(size: 12)).buttonStyle(.glass).controlSize(.small).padding(.horizontal, 10).padding(.vertical, 9)
+    }
   }
+
   @ViewBuilder private func resultBody(_ output: ToolOutput) -> some View {
     if display == "files", let artifact = session.binaryArtifact {
       VStack(spacing: 16) {
@@ -189,7 +245,8 @@ struct ToolWorkspace<T: ToolModule>: View {
         Text(artifact.name).font(.headline)
         Text(artifact.mime).font(.caption).foregroundStyle(.secondary)
         Text(ByteCountFormatter.string(fromByteCount: Int64(artifact.data.count), countStyle: .file)).foregroundStyle(.secondary)
-        Button("保存文件…") { session.save(artifact) }.buttonStyle(.glassProminent).disabled(!session.current)
+        Button { session.save(artifact) } label: { Label("保存文件…", systemImage: "square.and.arrow.down") }
+          .buttonStyle(.borderedProminent).controlSize(.large).disabled(!session.current)
       }.frame(maxWidth: .infinity, maxHeight: .infinity)
     } else if display == "preview", let html = output.html { SafePreview(html: html) }
     else if display == "preview", session.imageArtifact != nil {

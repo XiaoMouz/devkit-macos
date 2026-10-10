@@ -4,214 +4,227 @@ import SwiftUI
 struct MainWindow: View {
   @State private var workspace = WindowWorkspace()
   @State private var query = ""
-  @State private var sidebarVisible = true
-  @State private var section = "tools"
+  @State private var favoritesExpanded = true
+  /// The sidebar row last chosen, so a favourite stays highlighted where it was clicked
+  /// even though the same tool also appears in its category.
+  @State private var sidebarTag: String?
   @State private var expandedCategories: Set<ToolCategory> = [.encoding]
   @AppStorage("showToolConfiguration") private var configurationVisible = true
-  @AppStorage("favorites") private var favorites = "base64,json,uuid,timestamp,color,hash"
-  @FocusState private var searchFocused: Bool
+  @AppStorage(FavoriteTools.key) private var favorites = FavoriteTools.defaults
+  /// Incremented to move keyboard focus into the sidebar search field.
+  @State private var searchRequest = 0
   private var cachedTools: [ToolTab] { workspace.tabs }
   private var active: ToolTab? { workspace.active }
-  private var favoriteIDs: [String] { Array(Set(favorites.split(separator: ",").map { ["json-diff", "json-path", "json-schema", "json-to-model"].contains(String($0)) ? "json" : String($0) })) }
+  private var favoriteIDs: [String] { FavoriteTools.ids(favorites) }
   private var allTools: [ToolMetadata] { ToolRegistry.all.map { $0.metadata } }
   private var favoriteTools: [ToolMetadata] {
     favoriteIDs.compactMap { id in allTools.first { $0.id == id } }
   }
   private var matches: [ToolMetadata] {
     ToolRegistry.all.map { $0.metadata }.filter {
-      (section != "favorites" || favoriteIDs.contains($0.id)) &&
       (query.isEmpty || "\($0.name) \($0.id) \($0.summary) \($0.category.rawValue)".localizedStandardContains(query))
     }
   }
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  private typealias Metrics = WorkspaceChromeMetrics
+  @State private var columns = NavigationSplitViewVisibility.all
+  // The split view lays out the toolbar, title and inspector and collapses the
+  // sidebar; the sidebar column itself draws an inset floating glass panel.
   var body: some View {
-    // The editor is the base layer. Navigation, inspector and toolbar controls
-    // leave the content plane and float above it as inset Liquid Glass.
-    HStack(spacing: 0) {
-      if sidebarVisible {
-        sidebar.padding(.top, Metrics.headerHeight - Metrics.panelInset)
-          .frame(width: Metrics.sidebarWidth)
-          .frame(maxHeight: .infinity)
-          .floatingPanel()
-          .padding([.leading, .top, .bottom], Metrics.panelInset)
-          .transition(.move(edge: .leading).combined(with: .opacity))
-      }
-      VStack(spacing: 0) {
-        toolbar
-        HStack(spacing: 0) {
-          GeometryReader { bounds in
-            ZStack {
-              if workspace.navigation.selectedID == nil { home }
-              ForEach(cachedTools) { tab in
-                tab.view
-                  .frame(width: bounds.size.width, height: bounds.size.height)
-                  .opacity(tab.id == workspace.navigation.selectedID ? 1 : 0)
-                  .allowsHitTesting(tab.id == workspace.navigation.selectedID)
-                  .accessibilityHidden(tab.id != workspace.navigation.selectedID)
-                  .id(tab.id)
-              }
-            }.frame(width: bounds.size.width, height: bounds.size.height).clipped()
-          }
-          if configurationVisible, let active, active.hasConfiguration {
-            active.configuration.id(active.id)
-              .frame(width: Metrics.inspectorWidth)
-              .frame(maxHeight: .infinity, alignment: .top)
-              .floatingPanel()
-              .padding([.trailing, .bottom], Metrics.panelInset)
-              .accessibilityElement(children: .contain).accessibilityLabel("工具配置")
-              .transition(.move(edge: .trailing).combined(with: .opacity))
-          }
+    NavigationSplitView(columnVisibility: $columns) {
+      sidebar.navigationSplitViewColumnWidth(min: 220, ideal: 248, max: 330)
+        // The system toggle is a standalone glass button; over the glass panel it
+        // stacks glass on glass and sits flush with the panel's top edge.
+        .toolbar(removing: .sidebarToggle)
+        .toolbar {
+          ToolbarItem { sidebarToggle }.sharedBackgroundVisibility(.hidden)
         }
-      }
-    }
-    .overlay(alignment: .topLeading) {
-      WorkspaceSidebarControl(sidebarVisible: sidebarVisible) { animate { sidebarVisible.toggle() } }
-        .frame(width: 140, height: Metrics.headerHeight)
+    } detail: {
+      detail
     }
     .frame(minWidth: 900, minHeight: 580)
-    .ignoresSafeArea(.container, edges: .top)
-    .background { Color(nsColor: .textBackgroundColor).ignoresSafeArea() }
-    .background(WorkspaceWindowChrome())
+    // A distinct base layer lets the floating sidebar and content panes read as
+    // elevated, instead of merging with a window background of the same tone.
+    .containerBackground(Color(nsColor: .workspaceBase), for: .window)
     .focusedSceneValue(\.workspaceActions, commandActions)
     .background(WindowCommandScope(actions: commandActions))
     .onAppear { if cachedTools.isEmpty { open("base64") } }
   }
-  private func animate(_ change: () -> Void) {
-    withAnimation(reduceMotion ? nil : .smooth(duration: 0.28), change)
-  }
-  /// Toolbar items float as grouped glass capsules over the content plane.
-  private var toolbar: some View {
-    HStack(spacing: 10) {
-      if let active {
-        HStack(spacing: 8) {
-          ToolIconTile(symbol: active.metadata.symbol, tint: active.metadata.category.tint, size: 22)
-          Text(active.metadata.name).font(.system(size: 14, weight: .semibold))
-            .lineLimit(1).help(active.metadata.summary)
-          Button { toggleFavorite(active.metadata.id) } label: {
-            Image(systemName: favoriteIDs.contains(active.metadata.id) ? "star.fill" : "star")
-              .font(.system(size: 12))
-              .foregroundStyle(favoriteIDs.contains(active.metadata.id) ? AnyShapeStyle(Color.yellow) : AnyShapeStyle(HierarchicalShapeStyle.secondary))
-              .contentTransition(.symbolEffect(.replace))
-              .frame(width: 22, height: 22).contentShape(Rectangle())
-          }.buttonStyle(.borderless).help("收藏当前工具").accessibilityLabel("收藏当前工具")
-        }.padding(.leading, 6).padding(.trailing, 8).frame(height: 32)
-          .glassEffect(.regular, in: .capsule).layoutPriority(1)
-        active.primaryControl.id(active.id)
-        Spacer(minLength: 10)
-        GlassEffectContainer(spacing: 8) {
-          HStack(spacing: 8) {
-            Button { active.bridge.execute() } label: {
-              Label(runTitle(active), systemImage: active.bridge.running ? "stop.fill" : "play.fill")
-                .font(.system(size: 12, weight: .medium))
-            }.buttonStyle(.glassProminent).help("执行 ⌘↩︎").accessibilityLabel(runTitle(active))
-            if active.hasConfiguration {
-              Button { animate { configurationVisible.toggle() } } label: {
-                Image(systemName: "sidebar.right").font(.system(size: 12))
-                  .symbolVariant(configurationVisible ? .fill : .none)
-              }.buttonStyle(.glass)
-                .accessibilityValue(configurationVisible ? "已展开" : "已收起").help("收放工具配置").accessibilityLabel("收放工具配置")
-            }
-          }
+  private var detail: some View {
+    GeometryReader { bounds in
+      ZStack {
+        if workspace.navigation.selectedID == nil { home }
+        ForEach(cachedTools) { tab in
+          let shown = tab.id == workspace.navigation.selectedID
+          tab.view
+            .environment(\.workspaceActive, shown)
+            .frame(width: bounds.size.width, height: bounds.size.height)
+            .opacity(shown ? 1 : 0)
+            .allowsHitTesting(shown)
+            .accessibilityHidden(!shown)
+            .id(tab.id)
         }
-      } else {
-        Label("工具总览", systemImage: "square.grid.2x2").font(.system(size: 14, weight: .semibold))
-          .padding(.horizontal, 12).frame(height: 32).glassEffect(.regular, in: .capsule)
-        Spacer()
+      }.frame(width: bounds.size.width, height: bounds.size.height).clipped()
+    }
+    .background(Color(nsColor: .workspaceBase))
+    .navigationTitle(active?.metadata.name ?? "工具总览")
+    .toolbar { toolbarContent }
+    .inspector(isPresented: inspectorVisible) {
+      if let active { active.configuration.id(active.id).inspectorColumnWidth(min: 220, ideal: 260, max: 360) }
+    }
+  }
+  private var inspectorVisible: Binding<Bool> {
+    Binding(get: { configurationVisible && active?.hasConfiguration == true },
+      set: { configurationVisible = $0 })
+  }
+  @ToolbarContentBuilder private var toolbarContent: some ToolbarContent {
+    if columns == .detailOnly {
+      // With the panel hidden, the toggle moves to the leading end of the window toolbar.
+      ToolbarItem(placement: .navigation) { sidebarToggle }
+    }
+    if let active {
+      ToolbarItem(placement: .principal) { active.primaryControl.id(active.id) }
+    }
+    // Tool workspaces add their own trailing group so the primary action stays last;
+    // only the WebSocket client, which has no tool workspace, is served from here.
+    if let active, active.metadata.id == "websocket" {
+      ToolbarItem(placement: .primaryAction) {
+        Button { toggleFavorite(active.metadata.id) } label: {
+          Label("收藏", systemImage: favoriteIDs.contains(active.metadata.id) ? "star.fill" : "star")
+            .contentTransition(.symbolEffect(.replace))
+        }.help(favoriteIDs.contains(active.metadata.id) ? "取消收藏" : "收藏当前工具")
+      }
+      ToolbarSpacer(.fixed, placement: .primaryAction)
+      ToolbarItem(placement: .primaryAction) {
+        Button { active.bridge.execute() } label: {
+          Label(runTitle(active), systemImage: active.bridge.running ? "stop.fill" : "play.fill")
+            .labelStyle(.titleAndIcon).padding(.horizontal, 6)
+        }.buttonStyle(.glassProminent)
+          .help(active.bridge.running ? "断开" : "连接 ⌘↩︎")
+      }
+      if active.hasConfiguration {
+        ToolbarSpacer(.fixed, placement: .primaryAction)
+        ToolbarItem(placement: .primaryAction) {
+          Button { configurationVisible.toggle() } label: {
+            Label("检查器", systemImage: "sidebar.right")
+          }.help("显示或隐藏配置")
+        }
       }
     }
-    .padding(.leading, sidebarVisible ? 12 : 140).padding(.trailing, Metrics.panelInset + 4)
-    .frame(height: Metrics.headerHeight)
+  }
+  private var sidebarToggle: some View {
+    let hidden = columns == .detailOnly
+    return Button {
+      withAnimation { columns = hidden ? .all : .detailOnly }
+    } label: {
+      Label(hidden ? "显示侧栏" : "隐藏侧栏", systemImage: "sidebar.left")
+    }.labelStyle(.iconOnly).help(hidden ? "显示侧栏 ⌃⌘S" : "隐藏侧栏 ⌃⌘S")
   }
   private func runTitle(_ tab: ToolTab) -> String {
     if tab.metadata.id == "websocket" { return tab.bridge.running ? "断开" : "连接" }
-    return tab.bridge.running ? "取消" : tab.bridge.actionTitle
+    // The selected operation is already named by the principal control,
+    // so the primary action stays a neutral verb instead of repeating it.
+    return tab.bridge.running ? "取消" : "执行"
+  }
+  private static let favoritePrefix = "favorite:"
+  private static func toolID(_ tag: String) -> String {
+    tag.hasPrefix(favoritePrefix) ? String(tag.dropFirst(favoritePrefix.count)) : tag
+  }
+  private var sidebarSelection: Binding<String?> {
+    Binding(get: {
+      guard let id = workspace.navigation.selectedToolID else { return nil }
+      if let sidebarTag, Self.toolID(sidebarTag) == id { return sidebarTag }
+      return id
+    }, set: { tag in
+      sidebarTag = tag
+      if let tag { open(Self.toolID(tag)) }
+    })
   }
   private var sidebar: some View {
     VStack(spacing: 0) {
-      HStack(spacing: 5) {
-        WorkspaceSegments(items: [("工具", "tools"), ("收藏", "favorites")], selection: $section,
-          symbols: ["tools": "square.grid.2x2", "favorites": "star"], glass: false)
-        Spacer()
-      }.padding(.horizontal, 12).padding(.top, 2).padding(.bottom, 7)
-      HStack(spacing: 8) {
-        Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-        TextField("搜索工具", text: $query).textFieldStyle(.plain).focused($searchFocused)
-          .onSubmit { if let first = matches.first { open(first.id) } }
-        if !query.isEmpty {
-          Button { query = "" } label: { Image(systemName: "xmark.circle.fill") }
-            .buttonStyle(.plain).foregroundStyle(.tertiary).help("清除搜索")
-        }
-      }.font(.system(size: 12)).padding(.horizontal, 10).frame(height: 28)
-        .background(.primary.opacity(searchFocused ? 0.08 : 0.05),
-          in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .padding(.horizontal, 12).padding(.vertical, 4)
+      SidebarSearchField(text: $query, prompt: "搜索工具", focusRequest: searchRequest) {
+        if let first = matches.first { open(first.id) }
+      }.padding(.horizontal, 12).padding(.top, 2).padding(.bottom, 8)
       ScrollViewReader { scroll in
-        ScrollView {
-          LazyVStack(alignment: .leading, spacing: 4) {
-            if section == "favorites" || !query.isEmpty {
-              ForEach(matches) { toolRow($0) }
-            } else {
-              ForEach(ToolCategory.allCases, id: \.self) { category in
-                DisclosureGroup(isExpanded: Binding(get: { expandedCategories.contains(category) }, set: {
-                  if $0 { expandedCategories.insert(category) } else { expandedCategories.remove(category) }
-                })) {
-                  ForEach(matches.filter { $0.category == category }) { toolRow($0) }
-                } label: {
-                  HStack(spacing: 6) {
-                    Image(systemName: category.symbol).font(.system(size: 10, weight: .medium))
-                      .foregroundStyle(category.tint).frame(width: 14)
-                    Text(category.rawValue).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
-                    Spacer(minLength: 6)
-                    CountBadge(count: matches.filter { $0.category == category }.count)
-                  }.contentShape(Rectangle())
-                }.padding(.vertical, 5)
+        List(selection: sidebarSelection) {
+          if !query.isEmpty {
+            ForEach(matches) { toolRow($0) }
+          } else {
+            // Favourites are pinned above the catalogue, as Finder and Music pin theirs,
+            // instead of being a separate mode the list has to switch into.
+            if !favoriteTools.isEmpty {
+              Section(isExpanded: $favoritesExpanded) {
+                ForEach(favoriteTools) { toolRow($0, tag: Self.favoritePrefix + $0.id) }
+              } header: {
+                sectionHeader("收藏", symbol: "star.fill", tint: .yellow, count: favoriteTools.count)
               }
             }
-            if matches.isEmpty {
-              VStack(spacing: 8) {
-                Image(systemName: section == "favorites" && query.isEmpty ? "star" : "magnifyingglass")
-                  .font(.system(size: 20)).foregroundStyle(.tertiary)
-                Text(section == "favorites" && query.isEmpty ? "点击工具标题旁的星标添加收藏" : "没有匹配的工具")
-                  .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
-              }.frame(maxWidth: .infinity).padding(.vertical, 24).padding(.horizontal, 10)
+            ForEach(ToolCategory.allCases, id: \.self) { category in
+              let tools = allTools.filter { $0.category == category }
+              Section(isExpanded: Binding(get: { expandedCategories.contains(category) }, set: {
+                if $0 { expandedCategories.insert(category) } else { expandedCategories.remove(category) }
+              })) {
+                ForEach(tools) { toolRow($0) }
+              } header: {
+                sectionHeader(category.rawValue, symbol: category.symbol, tint: category.tint, count: tools.count)
+              }
             }
-          }.padding(.horizontal, 10).padding(.vertical, 8)
-        }
-        .onChange(of: workspace.navigation.selectedID) { _, _ in
-          if let metadata = active?.metadata {
-            expandedCategories.insert(metadata.category)
-            Task { @MainActor in await Task.yield(); scroll.scrollTo(metadata.id, anchor: .center) }
           }
         }
-      }
-      HStack {
-        Button { workspace.showOverview() } label: { Image(systemName: "square.grid.2x2") }
-          .buttonStyle(.borderless).help("工具总览").accessibilityLabel("工具总览")
-        Text("\(matches.count) 个工具").font(.system(size: 11)).foregroundStyle(.secondary)
-        Spacer()
-        SettingsLink { Image(systemName: "gearshape") }.buttonStyle(.borderless).help("设置").accessibilityLabel("设置")
-      }.foregroundStyle(.secondary).padding(.horizontal, 16).padding(.vertical, 12)
-    }
-  }
-  private func toolRow(_ item: ToolMetadata) -> some View {
-    let selected = workspace.navigation.selectedToolID == item.id
-    return Button { open(item.id) } label: {
-      HStack(spacing: 10) {
-        ToolIconTile(symbol: item.symbol, tint: item.category.tint, emphasized: selected)
-        VStack(alignment: .leading, spacing: 3) {
-          Text(item.name).font(.system(size: 12, weight: selected ? .semibold : .medium)).lineLimit(1)
-          Text(item.summary).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1)
+        .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
+        .overlay {
+          if !query.isEmpty && matches.isEmpty {
+            ContentUnavailableView.search(text: query)
+          }
         }
-        Spacer(minLength: 0)
-      }.padding(.horizontal, 8).padding(.vertical, 7).frame(maxWidth: .infinity, alignment: .leading)
-    }.buttonStyle(HoverSurfaceButtonStyle(selected: selected)).id(item.id).help(item.summary)
-      .accessibilityAddTraits(selected ? .isSelected : [])
-      .contextMenu { Button(favoriteIDs.contains(item.id) ? "取消收藏" : "收藏") { toggleFavorite(item.id) } }
+        // A bar the list scrolls beneath: the hard edge effect separates the footer
+        // from rows passing behind it instead of letting them show through the text.
+        .safeAreaBar(edge: .bottom) {
+          HStack(spacing: 10) {
+            Button { workspace.showOverview() } label: { Label("工具总览", systemImage: "square.grid.2x2") }
+              .help("工具总览")
+            Text("\(ToolRegistry.all.count) 个工具").font(.callout).foregroundStyle(.secondary)
+            Spacer()
+            SettingsLink { Label("设置", systemImage: "gearshape") }.help("设置")
+          }
+          .labelStyle(.iconOnly).buttonStyle(.borderless).controlSize(.large)
+          .padding(.horizontal, 16).padding(.vertical, 10)
+        }
+        .scrollEdgeEffectStyle(.hard, for: .bottom)
+        .onChange(of: workspace.navigation.selectedID) { _, _ in
+          guard let metadata = active?.metadata else { return }
+          // A favourite that was clicked stays in place; otherwise reveal the category row.
+          if sidebarTag == Self.favoritePrefix + metadata.id { return }
+          expandedCategories.insert(metadata.category)
+          Task { @MainActor in await Task.yield(); scroll.scrollTo(metadata.id, anchor: .center) }
+        }
+      }
+    }
+    .floatingSidebarPanel()
+  }
+  private func sectionHeader(_ title: String, symbol: String, tint: Color, count: Int) -> some View {
+    HStack(spacing: 6) {
+      Image(systemName: symbol).foregroundStyle(tint)
+      Text(title)
+      Spacer(minLength: 6)
+      Text("\(count)").monospacedDigit().foregroundStyle(.tertiary)
+    }
+    // Room above separates sections; the smaller gap below ties the title to its rows.
+    .padding(.top, 12).padding(.bottom, 4)
+  }
+  private func toolRow(_ item: ToolMetadata, tag: String? = nil) -> some View {
+    // Names only; the description stays available as the row's tooltip.
+    Label {
+      Text(item.name).lineLimit(1)
+    } icon: {
+      ToolIconTile(symbol: item.symbol, tint: item.category.tint, size: 22)
+    }
+    .padding(.vertical, 3)
+    .tag(tag ?? item.id).id(tag ?? item.id).help(item.summary)
+    .contextMenu { Button(favoriteIDs.contains(item.id) ? "取消收藏" : "收藏") { toggleFavorite(item.id) } }
   }
   private var commandActions: WorkspaceActions {
     WorkspaceActions(run: { active?.bridge.execute() }, copy: { active?.bridge.copy() }, search: {
-      sidebarVisible = true; section = "tools"; searchFocused = true
+      columns = .all; searchRequest += 1
     }, selectPane: active?.metadata.id == "websocket"
       ? nil : { active?.bridge.selectPane($0) })
   }
@@ -267,9 +280,65 @@ struct MainWindow: View {
   private func open(_ id: String) {
     workspace.open(id)
   }
-  private func toggleFavorite(_ id: String) {
-    var ids = favoriteIDs
-    if ids.contains(id) { ids.removeAll { $0 == id } } else { ids.append(id) }
-    favorites = ids.joined(separator: ",")
+  private func toggleFavorite(_ id: String) { favorites = FavoriteTools.toggling(id, in: favorites) }
+}
+
+/// Favourites persist as a comma-separated list; retired JSON tool IDs map to `json`.
+enum FavoriteTools {
+  static let key = "favorites"
+  static let defaults = "base64,json,uuid,timestamp,color,hash"
+  static func ids(_ raw: String) -> [String] {
+    var seen = Set<String>()
+    return raw.split(separator: ",").map {
+      ["json-diff", "json-path", "json-schema", "json-to-model"].contains(String($0)) ? "json" : String($0)
+    }.filter { seen.insert($0).inserted }
+  }
+  static func toggling(_ id: String, in raw: String) -> String {
+    var list = ids(raw)
+    if list.contains(id) { list.removeAll { $0 == id } } else { list.append(id) }
+    return list.joined(separator: ",")
+  }
+}
+
+/// The native search field, placed inside the floating sidebar panel. SwiftUI's
+/// sidebar `.searchable` decides its own position in the column, outside the panel.
+private struct SidebarSearchField: NSViewRepresentable {
+  @Binding var text: String
+  let prompt: String
+  let focusRequest: Int
+  let submit: () -> Void
+  func makeNSView(context: Context) -> NSSearchField {
+    let field = NSSearchField()
+    field.placeholderString = prompt
+    field.controlSize = .large
+    field.delegate = context.coordinator
+    field.setAccessibilityLabel(prompt)
+    return field
+  }
+  func updateNSView(_ field: NSSearchField, context: Context) {
+    context.coordinator.parent = self
+    if field.stringValue != text { field.stringValue = text }
+    if context.coordinator.focusRequest != focusRequest {
+      context.coordinator.focusRequest = focusRequest
+      field.window?.makeFirstResponder(field)
+    }
+  }
+  func makeCoordinator() -> Coordinator { Coordinator(self) }
+  @MainActor final class Coordinator: NSObject, NSSearchFieldDelegate {
+    var parent: SidebarSearchField
+    var focusRequest: Int
+    init(_ parent: SidebarSearchField) {
+      self.parent = parent
+      focusRequest = parent.focusRequest
+    }
+    func controlTextDidChange(_ notification: Notification) {
+      guard let field = notification.object as? NSSearchField else { return }
+      parent.text = field.stringValue
+    }
+    func control(_ control: NSControl, textView: NSTextView, doCommandBy selector: Selector) -> Bool {
+      guard selector == #selector(NSResponder.insertNewline(_:)) else { return false }
+      parent.submit()
+      return true
+    }
   }
 }

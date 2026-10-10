@@ -120,25 +120,27 @@ struct WebSocketWorkspace: View {
       HStack {
         TextField("wss:// 或 ws:// 地址", text: $model.url).textFieldStyle(.roundedBorder).disabled(
           model.connected || model.connecting)
-        Button("发送消息") { model.send() }.buttonStyle(.glass).disabled(!model.connected)
+        Button { model.send() } label: { Label("发送消息", systemImage: "paperplane") }
+          .buttonStyle(.bordered).disabled(!model.connected)
         Menu {
           Button("复制全部消息") { copy() }
           Button("清空消息") { model.clear() }
-        } label: { Image(systemName: "ellipsis") }.menuStyle(.button).buttonStyle(.glass).fixedSize()
+        } label: { Label("更多", systemImage: "ellipsis") }.labelStyle(.iconOnly).menuStyle(.button)
+          .buttonStyle(.bordered).fixedSize().help("更多操作")
       }.padding(.bottom, 8)
       GeometryReader { bounds in
         if bounds.size.width >= 720 {
           WorkspaceColumns {
-            sendPane
+            sendPane.floatingPane()
           } second: {
-            messagesPane
+            messagesPane.floatingPane()
           }
         } else {
           VStack(spacing: 0) {
             WorkspaceSegments(items: [("发送", "send"), ("消息（\(model.messages.count)）", "messages")], selection: $pane)
               .padding(10)
             if pane == "send" { sendPane } else { messagesPane }
-          }.frame(maxWidth: .infinity, maxHeight: .infinity)
+          }.frame(maxWidth: .infinity, maxHeight: .infinity).floatingPane()
         }
       }
       HStack {
@@ -151,7 +153,7 @@ struct WebSocketWorkspace: View {
           maxWidth: .infinity, alignment: .leading)
       }
     }
-    .padding(16).background(Color(nsColor: .textBackgroundColor))
+    .padding(16).background(Color(nsColor: .workspaceBase))
     .onChange(of: bridge.runRequest) { toggle() }
     .onChange(of: bridge.copyRequest) { copy() }
     .onChange(of: model.connected || model.connecting) { _, active in bridge.running = active }

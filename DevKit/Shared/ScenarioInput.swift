@@ -9,6 +9,17 @@ struct ScenarioInput<T: ToolModule>: View {
   private var fields: [OptionField<T.Options>] {
     session.visibleFields.filter { $0.id != primaryToolField(T.self)?.id }
   }
+  private var usesEditor: Bool {
+    !form.isForm && session.input.file == nil && session.inputStyle != .file && form.control != .request
+  }
+  /// A few switches fit the action row, so input and result editors start at the
+  /// same height and stay aligned in the comparison view.
+  private var inlineToggles: Bool {
+    usesEditor && !fields.isEmpty && fields.count <= 3 && fields.allSatisfy {
+      if case .toggle = $0.kind { return true }
+      return false
+    }
+  }
   var body: some View {
     VStack(spacing: 0) {
       inputActions
@@ -17,8 +28,10 @@ struct ScenarioInput<T: ToolModule>: View {
           VStack(alignment: .leading, spacing: 22) {
             formInput
             ToolParameterFields(options: $session.options, fields: fields)
-            Button(session.bridge.running ? "取消" : form.action) { session.run() }
-              .buttonStyle(.glassProminent)
+            Button { session.run() } label: {
+              Label(session.bridge.running ? "取消" : form.action,
+                systemImage: session.bridge.running ? "stop.fill" : "play.fill")
+            }.buttonStyle(.borderedProminent).controlSize(.large)
           }.padding(20).frame(maxWidth: 660, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
@@ -27,7 +40,7 @@ struct ScenarioInput<T: ToolModule>: View {
       } else if form.control == .request {
         requestInput
       } else {
-        if !fields.isEmpty {
+        if !fields.isEmpty && !inlineToggles {
           ScrollView { ToolParameterFields(options: $session.options, fields: fields).padding(16) }
             .frame(height: min(CGFloat(fields.count) * 64 + 16, 250))
           Divider()
@@ -51,26 +64,42 @@ struct ScenarioInput<T: ToolModule>: View {
       }
   }
   private var inputActions: some View {
-    HStack(spacing: 10) {
+    PaneActions {
       if form.control != .generator {
         if !form.isImage && session.inputStyle != .file {
           if !T.example(for: session.options).text.isEmpty {
-            Button("示例") { session.useExample() }
+            Button { session.useExample() } label: { Label("示例", systemImage: "lightbulb") }.help("填入示例")
           }
-          if ![.pairs, .template].contains(form.control) { Button("粘贴") { session.paste() } }
+          if ![.pairs, .template].contains(form.control) {
+            Button { session.paste() } label: { Label("粘贴", systemImage: "doc.on.clipboard") }.help("粘贴文本")
+          }
         }
-        if form.isImage { Button("粘贴图片") { session.paste() } }
+        if form.isImage {
+          Button { session.paste() } label: { Label("粘贴图片", systemImage: "doc.on.clipboard") }.help("粘贴图片")
+        }
         if !form.isForm || [.pairs, .template].contains(form.control) {
-          Button(form.isImage ? "选择图片…" : session.inputStyle == .file ? "选择文件…" : "导入…") { session.chooseFile() }
+          Button { session.chooseFile() } label: {
+            Label(form.isImage ? "选择图片…" : session.inputStyle == .file ? "选择文件…" : "导入…",
+              systemImage: form.isImage ? "photo" : session.inputStyle == .file ? "folder" : "square.and.arrow.down")
+          }.help(form.isImage ? "选择图片" : session.inputStyle == .file ? "选择文件" : "从文件导入")
         }
-        Spacer()
-        Button { session.clearInput() } label: { Image(systemName: "trash") }
-          .help("清空输入").accessibilityLabel("清空输入")
+        if inlineToggles {
+          Divider().frame(height: 16).padding(.horizontal, 2)
+          ForEach(fields) { field in
+            Toggle(field.label, isOn: Binding(get: { field.read(session.options) == "true" },
+              set: { field.write(&session.options, String($0)) }))
+              .toggleStyle(.checkbox).fixedSize()
+          }
+        }
+        Spacer(minLength: 8)
+        Button { session.clearInput() } label: { Label("清空输入", systemImage: "trash") }
+          .labelStyle(.iconOnly).help("清空输入")
       } else {
-        Spacer()
-        Button("重置") { session.options = T.Options() }
+        Spacer(minLength: 8)
+        Button { session.options = T.Options() } label: { Label("重置", systemImage: "arrow.counterclockwise") }
+          .help("恢复默认参数")
       }
-    }.font(.system(size: 12)).buttonStyle(.glass).controlSize(.small).padding(.horizontal, 14).padding(.vertical, 9)
+    }
   }
   @ViewBuilder private var formInput: some View {
     switch form.control {
@@ -103,10 +132,10 @@ struct ScenarioInput<T: ToolModule>: View {
       else {
         HStack {
           TextField("Unix 时间戳", text: $session.input.text).textFieldStyle(.roundedBorder)
-          Button("现在") {
+          Button {
             let scale = session.optionValues["unit"] == "milliseconds" ? 1000.0 : 1.0
             session.input.text = String(Int64((Date().timeIntervalSince1970 * scale).rounded()))
-          }.buttonStyle(.glass)
+          } label: { Label("现在", systemImage: "clock") }.buttonStyle(.bordered)
         }
       }
     case .pairs: KeyValueEditor(text: $session.input.text)
@@ -119,7 +148,7 @@ struct ScenarioInput<T: ToolModule>: View {
           .accessibilityLabel(form.inputTitle)
         if session.metadata.id == "http-status" {
           LazyVGrid(columns: [GridItem(.adaptive(minimum: 52))], alignment: .leading) { ForEach([200, 201, 301, 400, 401, 404, 500], id: \.self) { code in
-            Button(String(code)) { session.input.text = String(code); session.run() }.buttonStyle(.glass)
+            Button(String(code)) { session.input.text = String(code); session.run() }.buttonStyle(.bordered)
           } }
         }
       }
@@ -136,17 +165,23 @@ struct ScenarioInput<T: ToolModule>: View {
           Text(session.input.fileName ?? "文件").font(.headline).textSelection(.enabled)
           Text(ByteCountFormatter.string(fromByteCount: Int64(data.count), countStyle: .file))
             .font(.caption).foregroundStyle(.secondary)
-          Button(form.isImage ? "更换图片…" : "更换文件…") { session.chooseFile() }.buttonStyle(.glass)
+          Button { session.chooseFile() } label: {
+            Label(form.isImage ? "更换图片…" : "更换文件…", systemImage: form.isImage ? "photo" : "folder")
+          }.buttonStyle(.bordered)
         } else {
           VStack(spacing: 16) {
             Image(systemName: form.isImage ? "photo.badge.plus" : "doc.badge.plus").font(.system(size: 36)).foregroundStyle(.tertiary)
             Text(form.isImage ? "拖入图片，或选择图片" : "拖入文件，或选择文件").foregroundStyle(.secondary)
-            Button(form.isImage ? "选择图片…" : "选择文件…") { session.chooseFile() }.buttonStyle(.glass)
+            Button { session.chooseFile() } label: {
+              Label(form.isImage ? "选择图片…" : "选择文件…", systemImage: form.isImage ? "photo" : "folder")
+            }.buttonStyle(.bordered).controlSize(.large)
           }.frame(maxWidth: .infinity).padding(.vertical, 38)
         }
         ToolParameterFields(options: $session.options, fields: fields)
-        Button(session.bridge.running ? "取消" : form.action) { session.run() }
-          .buttonStyle(.glassProminent).disabled(session.input.file == nil)
+        Button { session.run() } label: {
+          Label(session.bridge.running ? "取消" : form.action,
+            systemImage: session.bridge.running ? "stop.fill" : "play.fill")
+        }.buttonStyle(.borderedProminent).controlSize(.large).disabled(session.input.file == nil)
       }.padding(20)
     }
   }

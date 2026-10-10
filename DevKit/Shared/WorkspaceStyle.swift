@@ -24,13 +24,15 @@ struct ToolIconTile: View {
   var tint: Color = .accentColor
   var size: CGFloat = 24
   var emphasized = false
+  @Environment(\.colorScheme) private var colorScheme
   var body: some View {
     Image(systemName: symbol)
       .font(.system(size: size * 0.52, weight: .medium))
       .symbolRenderingMode(.hierarchical)
       .foregroundStyle(tint)
       .frame(width: size, height: size)
-      .background(tint.opacity(emphasized ? 0.2 : 0.12),
+      // Dark surfaces need more tint for the tile to read as a shape at all.
+      .background(tint.opacity((emphasized ? 0.2 : 0.12) + (colorScheme == .dark ? 0.06 : 0)),
         in: RoundedRectangle(cornerRadius: size * 0.3, style: .continuous))
       .accessibilityHidden(true)
   }
@@ -81,48 +83,145 @@ private struct HoverSurface: View {
   }
 }
 
-struct WorkspaceCard: ViewModifier {
+extension NSColor {
+  /// The window's base layer, beneath the floating sidebar and content panes.
+  static var workspaceBase: NSColor {
+    NSColor(name: "workspaceBase") { appearance in
+      appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? .textBackgroundColor : .windowBackgroundColor
+    }
+  }
+  /// Elevated content panes: white on the light window grey, and a lighter
+  /// surface than the base in dark mode, as elevated dark surfaces are.
+  static var workspaceCard: NSColor {
+    NSColor(name: "workspaceCard") { appearance in
+      appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? NSColor(white: 0.17, alpha: 1) : .textBackgroundColor
+    }
+  }
+}
+
+/// Lifts a content pane off the base layer. Content stays on an opaque surface;
+/// Liquid Glass is reserved for controls and navigation, not for text being edited.
+private struct FloatingPane: ViewModifier {
+  @Environment(\.colorScheme) private var colorScheme
+  @Environment(\.colorSchemeContrast) private var contrast
   func body(content: Content) -> some View {
+    let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
+    let dark = colorScheme == .dark
     content
-      .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 9))
-      .clipShape(RoundedRectangle(cornerRadius: 9))
+      .clipShape(shape)
       .overlay {
-        RoundedRectangle(cornerRadius: 9).strokeBorder(.primary.opacity(0.08), lineWidth: 1)
+        shape.strokeBorder(.primary.opacity(contrast == .increased ? 0.3 : dark ? 0.1 : 0.07), lineWidth: 1)
+          .allowsHitTesting(false)
+      }
+      .background {
+        shape.fill(Color(nsColor: .workspaceCard))
+          .shadow(color: .black.opacity(dark ? 0.35 : 0.08), radius: dark ? 10 : 8, y: 2)
       }
   }
 }
+/// The sidebar as an inset, floating Liquid Glass panel. The column behind it is
+/// painted with the window base, so the panel floats whatever the system would
+/// otherwise draw for a sidebar column.
+private struct FloatingSidebarPanel: ViewModifier {
+  private let inset: CGFloat = 8
+  private let radius: CGFloat = 18
+  @Environment(\.colorScheme) private var colorScheme
+  func body(content: Content) -> some View {
+    let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
+    content
+      // Rows scroll to the panel's bottom edge, so they follow its rounded corners.
+      .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: radius, bottomTrailingRadius: radius,
+        style: .continuous))
+      .background {
+        ZStack {
+          shape.fill(Color(nsColor: .workspaceBase))
+            .shadow(color: .black.opacity(colorScheme == .dark ? 0.4 : 0.12), radius: 14, y: 3)
+          Color.clear.glassEffect(.regular, in: shape)
+        }
+        // Reach up beneath the toolbar so the traffic lights sit inside the panel.
+        .padding(.top, inset).ignoresSafeArea(.container, edges: .top)
+      }
+      .padding(.leading, inset).padding(.bottom, inset)
+      .background { Color(nsColor: .workspaceBase).ignoresSafeArea() }
+  }
+}
 extension View {
-  func workspaceCard() -> some View { modifier(WorkspaceCard()) }
+  func floatingPane() -> some View { modifier(FloatingPane()) }
+  func floatingSidebarPanel() -> some View { modifier(FloatingSidebarPanel()) }
 }
 
 extension View {
-  /// Lifts secondary content (navigation, inspector) off the content plane onto a
-  /// rounded Liquid Glass panel that follows the user's glass and accessibility settings.
-  func floatingPanel() -> some View {
-    let shape = RoundedRectangle(cornerRadius: WorkspaceChromeMetrics.panelRadius, style: .continuous)
-    return background { WorkspaceGlass(cornerRadius: WorkspaceChromeMetrics.panelRadius) }
-      .clipShape(shape)
-      .overlay { shape.strokeBorder(.primary.opacity(0.06), lineWidth: 1).allowsHitTesting(false) }
+  /// Every pane's action row shares one height and inset, so the editors below
+  /// start on the same line in the comparison view.
+  func paneActionRow() -> some View {
+    padding(.horizontal, 16).frame(height: 44)
   }
+}
+
+/// A pane's action row: regular-size bordered buttons with symbol and title, falling
+/// back to symbols alone when a narrow split pane cannot fit the titles. Buttons on
+/// content surfaces use the standard bordered style; glass is for floating controls.
+struct PaneActions<Content: View>: View {
+  @ViewBuilder let content: () -> Content
+  var body: some View {
+    ViewThatFits(in: .horizontal) {
+      HStack(spacing: 8) { content() }.labelStyle(.titleAndIcon)
+      HStack(spacing: 8) { content() }.labelStyle(.iconOnly)
+    }
+    .buttonStyle(.bordered).buttonBorderShape(.capsule).controlSize(.regular)
+    .paneActionRow()
+  }
+}
+
+/// Run time worth showing: short runs are dominated by worker start-up, so they
+/// are omitted rather than presented as the tool's own cost.
+func elapsedLabel(_ seconds: Double) -> String? {
+  guard seconds >= 0.25 else { return nil }
+  return seconds < 1 ? String(format: "%.0f ms", seconds * 1000) : String(format: "%.1f s", seconds)
+}
+
+extension EnvironmentValues {
+  /// False for tools kept alive in the background, so only the visible tool
+  /// contributes items to the shared window toolbar.
+  @Entry var workspaceActive = true
 }
 
 struct WorkspaceSegments<Value: Hashable>: View {
   let items: [(String, Value)]
   @Binding var selection: Value
   var symbols: [Value: String] = [:]
-  /// Controls already placed on a glass panel must not add a second glass layer.
-  var glass = true
+  /// In a window toolbar the system supplies the glass and sizing; adding a small
+  /// control size or another glass capsule nests a cramped control inside the item.
+  var inToolbar = false
+  /// View switchers show symbols only (as Finder's view modes do); titles remain
+  /// the accessibility labels.
+  var iconOnly = false
   var body: some View {
     Picker("切换", selection: $selection) {
       ForEach(items.indices, id: \.self) { index in
         Group {
-          if let symbol = symbols[items[index].1] { Label(items[index].0, systemImage: symbol) }
-          else { Text(items[index].0) }
+          if let symbol = symbols[items[index].1] {
+            if iconOnly {
+              Label(items[index].0, systemImage: symbol).labelStyle(.iconOnly).help(items[index].0)
+            } else {
+              Label(items[index].0, systemImage: symbol).labelStyle(.titleAndIcon)
+            }
+          } else { Text(items[index].0) }
         }.tag(items[index].1)
       }
     }
-    .labelsHidden().pickerStyle(.segmented).controlSize(.small)
-    .fixedSize().glassEffect(glass ? .regular : .identity, in: .capsule)
+    .labelsHidden().pickerStyle(.segmented)
+    .modifier(SegmentsChrome(inToolbar: inToolbar))
+  }
+}
+private struct SegmentsChrome: ViewModifier {
+  let inToolbar: Bool
+  func body(content: Content) -> some View {
+    if inToolbar {
+      content.fixedSize()
+    } else {
+      content.controlSize(.small).fixedSize().glassEffect(.regular, in: .capsule)
+    }
   }
 }
 
@@ -168,14 +267,14 @@ struct WorkspacePaneDeck<Pane: View>: View {
               if role == .output {
                 Label("只读", systemImage: "lock").font(.system(size: 10)).labelStyle(.titleAndIcon)
               }
-            }.foregroundStyle(.secondary).padding(.horizontal, 16).frame(height: 24)
+            }.foregroundStyle(.secondary).padding(.horizontal, 16).padding(.top, 6).frame(height: 30)
             pane(role).frame(maxWidth: .infinity, maxHeight: .infinity)
           }
             .frame(
               width: split && shown ? (second ? space - left : left) : bounds.size.width,
               height: bounds.size.height, alignment: .topLeading
             )
-            .background(Color(nsColor: .textBackgroundColor))
+            .floatingPane()
             .offset(x: second ? left + 16 : 0)
             .opacity(shown ? 1 : 0)
             .allowsHitTesting(shown).disabled(!shown)
@@ -184,7 +283,7 @@ struct WorkspacePaneDeck<Pane: View>: View {
         if split {
           Rectangle().fill(.clear).frame(width: 16, height: bounds.size.height)
             .overlay {
-              Rectangle().fill(.primary.opacity(0.09)).frame(width: 1)
+              // The gap between floating panes is the divider; only a grip remains.
               Capsule().fill(.secondary.opacity(hovering ? 0.55 : 0.25)).frame(width: 3, height: 24)
             }
             .contentShape(Rectangle()).offset(x: left)
@@ -206,8 +305,8 @@ struct WorkspacePaneDeck<Pane: View>: View {
               fraction = min(max(fraction + (direction == .increment ? 0.05 : -0.05), 0.25), 0.75)
             }
         }
+      // Not clipped: pane shadows fall outside the deck; hidden panes stay within it.
       }.frame(width: bounds.size.width, height: bounds.size.height, alignment: .topLeading)
-        .clipped()
     }
     .onChange(of: visible) { _, _ in
       if hovering {

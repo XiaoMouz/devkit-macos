@@ -40,7 +40,7 @@ struct DateValueControl: View {
       HStack {
         TextField("ISO 8601（含时区）", text: $text).textFieldStyle(.roundedBorder)
           .font(.system(.body, design: .monospaced)).accessibilityLabel(title + " ISO 日期")
-        Button("现在") { text = Dates.iso(Date()) }.buttonStyle(.glass)
+        Button { text = Dates.iso(Date()) } label: { Label("现在", systemImage: "clock") }.buttonStyle(.bordered)
       }
     }
   }
@@ -84,7 +84,7 @@ struct KeyValueEditor: View {
       }
       Button { rows.append(Entry(value: kind == .template ? "name" : "")) } label: {
         Label(kind == .headers ? "添加请求头" : "添加字段", systemImage: "plus")
-      }.buttonStyle(.glass)
+      }.buttonStyle(.bordered)
       if let error { Text(error).font(.caption).foregroundStyle(.orange) }
     }
     .onAppear { read() }

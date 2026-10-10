@@ -11,15 +11,34 @@ func primaryToolField<T: ToolModule>(_ type: T.Type) -> OptionField<T.Options>? 
 
 struct ToolPrimaryControl<T: ToolModule>: View {
   @Bindable var session: ToolSession<T>
+  var inToolbar = true
   @ViewBuilder var body: some View {
     if let field = primaryToolField(T.self), case .choice(let choices) = field.kind {
       let binding = Binding(get: { field.read(session.options) }, set: { field.write(&session.options, $0) })
       if choices.count <= 3 {
-        WorkspaceSegments(items: choices.map { (ToolOptionLabels.title($0), $0) }, selection: binding)
+        WorkspaceSegments(items: choices.map { (ToolOptionLabels.title($0), $0) }, selection: binding,
+          symbols: Dictionary(uniqueKeysWithValues: choices.compactMap { value in
+            ToolOptionLabels.symbol(value).map { (value, $0) }
+          }), inToolbar: inToolbar)
+      } else if inToolbar {
+        // A toolbar pull-down: one glass item with a disclosure chevron. A pop-up
+        // button here would nest its own bezel and stepper arrows inside the glass.
+        Menu {
+          Picker(field.label, selection: binding) {
+            ForEach(choices, id: \.self) { value in
+              Label(ToolOptionLabels.title(value), systemImage: ToolOptionLabels.symbol(value) ?? "circle")
+                .tag(value)
+            }
+          }.pickerStyle(.inline).labelsHidden()
+        } label: {
+          Label(ToolOptionLabels.title(binding.wrappedValue),
+            systemImage: ToolOptionLabels.symbol(binding.wrappedValue) ?? "slider.horizontal.3")
+            .labelStyle(.titleAndIcon).padding(.horizontal, 8)
+        }.menuIndicator(.visible).fixedSize().help(field.label)
       } else {
         Picker(field.label, selection: binding) {
           ForEach(choices, id: \.self) { Text(ToolOptionLabels.title($0)).tag($0) }
-        }.labelsHidden().fixedSize().frame(maxWidth: 180)
+        }.labelsHidden().fixedSize()
       }
     }
   }
@@ -42,7 +61,7 @@ struct ToolFooter<T: ToolModule>: View {
       if session.bridge.running { ProgressView().controlSize(.mini) }
       if !session.status.isEmpty && session.status != "已完成" { Text(session.status).lineLimit(1) }
       Spacer(minLength: 8)
-      if session.elapsed > 0 { Text(String(format: "%.0f ms", session.elapsed * 1000)).monospacedDigit() }
+      if let elapsed = elapsedLabel(session.elapsed) { Text(elapsed).monospacedDigit() }
       if T.metadata.inputStyle != .generator {
         Menu {
           ForEach(WorkspaceLayoutPreference.allCases, id: \.self) { value in
