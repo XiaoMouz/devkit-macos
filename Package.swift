@@ -33,7 +33,7 @@ let package = Package(
       name: "DevKitSession", dependencies: ["DevKitCore"], path: "DevKit/Shared",
       exclude: [
         "CodeEditor.swift", "SafePreview.swift", "ToolOptionsForm.swift", "ToolWorkspace.swift",
-        "WorkspaceColumns.swift", "WorkspaceStyle.swift", "ToolChrome.swift", "ScenarioInput.swift", "ScenarioControls.swift", "ResultReportView.swift",
+        "WorkspaceColumns.swift", "WorkspaceStyle.swift", "ToolChrome.swift", "ScenarioInput.swift", "ScenarioControls.swift", "ResultReportView.swift", "WorkspaceParameters.swift",
       ],
       sources: [
         "ToolSession.swift", "WorkspaceBridge.swift", "WorkerRunner.swift", "Clipboard.swift",

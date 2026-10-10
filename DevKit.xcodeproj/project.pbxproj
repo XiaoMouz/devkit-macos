@@ -32,6 +32,7 @@
 		64B564A81829B82B82BADB1C /* Base64Intents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25F807B4DB6992B24C425A68 /* Base64Intents.swift */; };
 		6C8102FE3210D45BF06ECE03 /* SHA256Intent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20FBA14E71BDA7B107E16BE8 /* SHA256Intent.swift */; };
 		6D47F193A8F3C126111F91CF /* NumberBaseIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D1A9F97CC93CB3FEADCD493 /* NumberBaseIntent.swift */; };
+		6EF473EC1236956AEF4F6DF2 /* WorkspaceParameters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D9C6C66FCD09F8847406EDF /* WorkspaceParameters.swift */; };
 		6FE120AF12F3EA268542AFAD /* HTTPStatusIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = F95F7E2797029FC4C4A580C4 /* HTTPStatusIntent.swift */; };
 		718FEF3C205C1016A1DC55DF /* SpotlightRuntimeStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11D4EC543C8291FEF8AF2833 /* SpotlightRuntimeStatus.swift */; };
 		79B064BA41CCA4B78572FD23 /* UUIDIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15062207977D420DB874FFDE /* UUIDIntent.swift */; };
@@ -100,6 +101,7 @@
 		5B1DE5FC88B44B81D3630796 /* WorkerRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerRunner.swift; sourceTree = "<group>"; };
 		5BD01BF592F0F876E001598F /* DevKitWorker */ = {isa = PBXFileReference; includeInIndex = 0; path = DevKitWorker; sourceTree = BUILT_PRODUCTS_DIR; };
 		5CFACDCF8743C295797CA12A /* WebSocketWorkspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSocketWorkspace.swift; sourceTree = "<group>"; };
+		5D9C6C66FCD09F8847406EDF /* WorkspaceParameters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceParameters.swift; sourceTree = "<group>"; };
 		6220B963E0FF18CAB805A04D /* devkit-macos */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "devkit-macos"; path = .; sourceTree = SOURCE_ROOT; };
 		628786DF75321944F702040F /* TimestampIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimestampIntent.swift; sourceTree = "<group>"; };
 		62B809C1F0BE00F8A665B9C1 /* RandomStringIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RandomStringIntent.swift; sourceTree = "<group>"; };
@@ -636,6 +638,7 @@
 				5B1DE5FC88B44B81D3630796 /* WorkerRunner.swift */,
 				A4D3BBE63C78C0BD4C2387EA /* WorkspaceBridge.swift */,
 				B1CA8134DA3AC641106BAC9B /* WorkspaceColumns.swift */,
+				5D9C6C66FCD09F8847406EDF /* WorkspaceParameters.swift */,
 				853CF334BF0CA11C7797CBFF /* WorkspaceStyle.swift */,
 			);
 			path = Shared;
@@ -824,6 +827,7 @@
 				52EC760C9CE1F8EC58A3D510 /* WorkerRunner.swift in Sources */,
 				4707AE9D792E79949622DCCB /* WorkspaceBridge.swift in Sources */,
 				2C1EB54DAA6D59A7E99164E2 /* WorkspaceColumns.swift in Sources */,
+				6EF473EC1236956AEF4F6DF2 /* WorkspaceParameters.swift in Sources */,
 				1B49102D26A936C2452C4AFE /* WorkspaceStyle.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

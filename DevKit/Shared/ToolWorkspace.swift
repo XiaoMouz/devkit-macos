@@ -10,6 +10,7 @@ struct ToolWorkspace<T: ToolModule>: View {
   @State private var selectedArtifact = 0
   @AppStorage("editorFontSize") private var fontSize = 13.0
   @Environment(\.workspaceActive) private var workspaceActive
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @AppStorage(FavoriteTools.key) private var favorites = FavoriteTools.defaults
   private var form: ToolPresentation { session.presentation }
   private var paired: Bool { session.inputStyle == .pair && !session.metadata.network }
@@ -74,6 +75,9 @@ struct ToolWorkspace<T: ToolModule>: View {
           }
           workspaceTools
         }
+        if session.usesWorkspaceParameters && !session.workspaceParameterPlan.fieldIDs.isEmpty {
+          WorkspaceParameterBar(session: session, availableWidth: max(0, bounds.size.width - WorkspaceMetrics.inset * 2)).transition(.opacity)
+        }
         WorkspacePaneDeck(roles: roles, visible: visible,
           titles: [.input: form.inputTitle, .secondary: form.secondaryTitle, .output: form.outputTitle], formats: formats, actions: paneActions) { role in
           switch role {
@@ -83,6 +87,7 @@ struct ToolWorkspace<T: ToolModule>: View {
           }
         }.frame(maxWidth: .infinity, maxHeight: .infinity).layoutPriority(1)
       }.padding(WorkspaceMetrics.inset)
+        .animation(WorkspaceMotion.layout(reduceMotion: reduceMotion), value: session.workspaceParameterPlan.fieldIDs)
         .onChange(of: bounds.size.width, initial: true) { _, width in
           availableWidth = max(0, width - WorkspaceMetrics.inset * 2)
           if detachedPane == nil { session.bridge.workspaceWidth = availableWidth }

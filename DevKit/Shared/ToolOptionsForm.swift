@@ -83,6 +83,8 @@ enum ToolOptionLabels {
   }
   static func title(_ value: String) -> String {
     [
+      "utf8": "UTF-8", "hex": "Hex", "base64": "Base64",
+      "mysql": "MySQL", "postgresql": "PostgreSQL", "sqlite": "SQLite", "transactsql": "T-SQL",
       "encode": "编码", "decode": "解码", "format": "格式化", "minify": "压缩", "validate": "校验",
       "tree": "路径列表", "parse": "解析", "build": "生成", "sort": "排序", "component": "参数组件",
       "url": "完整 URL", "form": "表单参数", "seconds": "秒", "milliseconds": "毫秒", "match": "匹配",

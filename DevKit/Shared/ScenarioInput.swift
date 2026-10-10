@@ -1,29 +1,10 @@
 import DevKitCore
 import SwiftUI
 
-/// Lives in the pane header. Editor options open without taking height from text.
+/// Pane-local actions. Core task parameters live above both editor panes.
 struct ScenarioInputActions<T: ToolModule>: View {
   @Bindable var session: ToolSession<T>
-  @State private var optionsPresented = false
   private var form: ToolPresentation { session.presentation }
-  private var fields: [OptionField<T.Options>] {
-    session.visibleFields.filter { $0.id != primaryToolField(T.self)?.id
-      && !(session.metadata.id == "json" && session.operation == "query" && ["syntax", "path"].contains($0.id)) }
-  }
-  private var hasEditorOptions: Bool {
-    !form.isForm && !form.isImage && form.control != .request && session.inputStyle != .file
-      && session.input.file == nil && !fields.isEmpty
-  }
-  private var optionsHeight: CGFloat {
-    let controls = fields.reduce(CGFloat.zero) { height, field in
-      switch field.kind {
-      case .toggle: return height + 24
-      case .choice, .integer: return height + 30
-      default: return height + 64
-      }
-    }
-    return min(controls + CGFloat(max(0, fields.count - 1)) * 16 + 4, 320)
-  }
   var body: some View {
     if form.control != .generator {
       if !form.isImage && session.inputStyle != .file {
@@ -47,23 +28,6 @@ struct ScenarioInputActions<T: ToolModule>: View {
             systemImage: form.isImage ? "photo" : "square.and.arrow.down")
         }.foregroundStyle(.blue).help("从文件导入")
       }
-      if hasEditorOptions {
-        Button { optionsPresented.toggle() } label: {
-          Label("选项", systemImage: "slider.horizontal.3")
-        }.help("配置工具参数")
-          .popover(isPresented: $optionsPresented, arrowEdge: .bottom) {
-            VStack(alignment: .leading, spacing: 14) {
-              HStack {
-                Text("工具参数").font(.headline)
-                Spacer()
-                Button("完成") { optionsPresented = false }.buttonStyle(.borderless)
-              }
-              ScrollView {
-                ToolParameterFields(options: $session.options, fields: fields).padding(.vertical, 2)
-              }.frame(height: optionsHeight)
-            }.padding(18).frame(width: 320)
-          }
-      }
       Button { session.clearInput() } label: { Label("清空输入", systemImage: "trash") }
         .labelStyle(.iconOnly).help("清空输入")
     } else {
@@ -84,14 +48,6 @@ struct ScenarioInput<T: ToolModule>: View {
   }
   var body: some View {
     VStack(spacing: 0) {
-      if session.metadata.id == "json", session.operation == "query" {
-        VStack(alignment: .leading, spacing: 8) {
-          ToolParameterFields(options: $session.options, fields: fields.filter { ["syntax", "path"].contains($0.id) })
-          Text(session.optionValues["syntax"] == "pointer" ? "例如 /users/0/name；留空表示整个文档。" : "例如 $.users[0].name；$ 表示整个文档。")
-            .font(.caption).foregroundStyle(.secondary)
-        }.padding(14)
-        Divider()
-      }
       if form.isForm {
         ScrollView {
           VStack(alignment: .leading, spacing: 22) {
