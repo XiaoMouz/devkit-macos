@@ -6,5 +6,6 @@ Vendor/node_modules/
 .DS_Store
 xcuserdata/
 *.xcuserstate
+Config/Signing.local.xcconfig
 
 __pycache__/

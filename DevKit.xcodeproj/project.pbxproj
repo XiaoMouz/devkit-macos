@@ -127,6 +127,7 @@
 		A921C10EF36ADFADDBC9A7E7 /* ULIDIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ULIDIntent.swift; sourceTree = "<group>"; };
 		A9FBCAA91D65B3F4253E869C /* ToolWorkspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolWorkspace.swift; sourceTree = "<group>"; };
 		B1CA8134DA3AC641106BAC9B /* WorkspaceColumns.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceColumns.swift; sourceTree = "<group>"; };
+		B9304776B0B0F2CB0B480ED4 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
 		BDC99B3BEC0A0849561AF9ED /* ToolChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolChrome.swift; sourceTree = "<group>"; };
 		BF05E3A64472EAA81DC2B975 /* WorkspaceChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceChrome.swift; sourceTree = "<group>"; };
 		C073BE278198051E34CF79AE /* ResultSnippet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultSnippet.swift; sourceTree = "<group>"; };
@@ -174,6 +175,14 @@
 				C6E6E4CD9FBE639EE7CC4A08 /* NanoIDIntent.swift */,
 			);
 			path = Spotlight;
+			sourceTree = "<group>";
+		};
+		08A22687483B31C0A03E356E /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				B9304776B0B0F2CB0B480ED4 /* Signing.xcconfig */,
+			);
+			path = Config;
 			sourceTree = "<group>";
 		};
 		09437E65E77A7424BD2775E6 /* timestamp */ = {
@@ -589,6 +598,7 @@
 		F250E52967BA8E98C4D9F46B = {
 			isa = PBXGroup;
 			children = (
+				08A22687483B31C0A03E356E /* Config */,
 				664D08A372BDED361FDA472A /* DevKit */,
 				EDC701E33A69139863F81F83 /* DevKitWorker */,
 				6B28C70BCA12FBC4222CDEEF /* Packages */,
@@ -866,6 +876,7 @@
 		};
 		69D22ACBD85AC41BC311ABA6 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = B9304776B0B0F2CB0B480ED4 /* Signing.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -897,7 +908,6 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
@@ -978,6 +988,7 @@
 		};
 		F3D5F8281D1B0D4E07CF420A /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = B9304776B0B0F2CB0B480ED4 /* Signing.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -1009,7 +1020,6 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";

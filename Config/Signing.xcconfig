@@ -1,0 +1,5 @@
+// Keep previews buildable on Macs without a development certificate.
+CODE_SIGN_IDENTITY = -
+
+// Machine-specific team and identity survive XcodeGen regeneration.
+#include? "Signing.local.xcconfig"

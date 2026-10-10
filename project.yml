@@ -5,12 +5,14 @@ options:
   deploymentTarget:
     macOS: '26.0'
   xcodeVersion: '27.0'
+configFiles:
+  Debug: Config/Signing.xcconfig
+  Release: Config/Signing.xcconfig
 settings:
   base:
     SWIFT_VERSION: '6.0'
     MACOSX_DEPLOYMENT_TARGET: '26.0'
     CODE_SIGN_STYLE: Automatic
-    CODE_SIGN_IDENTITY: '-'
     ENABLE_HARDENED_RUNTIME: YES
 packages:
   DevKitCore:

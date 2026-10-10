@@ -22,6 +22,17 @@ open build/Build/Products/Release/DevKit.app
 
 也可以打开 `DevKit.xcodeproj`，运行 `DevKit` scheme。工程由 `project.yml` 生成。
 
+Xcode 中选择 `DevKit → My Mac`，按 `⌘R` 运行；`Product → Archive` 使用 Release 配置归档。若出现 `Missing package product 'DevKitCore'`，并提示本地包已被另一工程打开，先关闭单独打开的 `Package.swift` / Swift Package 窗口；必要时退出 Xcode，再只打开 `DevKit.xcodeproj`。
+
+Xcode 的本机签名配置写入 `Config/Signing.local.xcconfig`（已被 Git 忽略）：
+
+```xcconfig
+DEVELOPMENT_TEAM = 你的开发团队ID
+CODE_SIGN_IDENTITY = Apple Development
+```
+
+Debug 和 Release 共用此配置，重新运行 XcodeGen 后仍会保留；没有本机配置时使用临时签名。
+
 **Spotlight 需要开发者签名。** 本机 macOS 27 的系统日志确认：临时签名缺少 Team ID，动作虽然能被搜索到，系统仍会拒绝执行。构建脚本会使用钥匙串中唯一的有效 Apple 开发签名；无证书时只生成带提示的工具箱预览版，多个证书时要求明确选择。证书准备好后，使用：
 
 ```sh
