@@ -43,7 +43,7 @@ public enum QrCodeTool: ToolModule {
     guard let filter = CIFilter(name: "CIQRCodeGenerator") else { throw ToolFailure("QR 生成器不可用。") }
     filter.setValue(Data(input.text.utf8), forKey: "inputMessage")
     filter.setValue(options.correction, forKey: "inputCorrectionLevel")
-    guard let raw = filter.outputImage else { throw ToolFailure("文本过长或二维码参数无效。") }
+    guard let raw = filter.outputImage else { throw ToolFailure("内容超出当前 \(options.correction) 纠错级别的二维码容量。请减少内容或降低纠错级别；2000 字节是工具总上限。") }
     let quiet = raw.extent.insetBy(dx: -4, dy: -4)
     let background = CIImage(color: CIColor.white).cropped(to: quiet)
     let image = raw.composited(over: background).transformed(

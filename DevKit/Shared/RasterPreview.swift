@@ -7,7 +7,10 @@ enum RasterPreview {
     "image/tiff", "image/bmp", "image/x-icon",
   ]
   static func image(_ data: Data) -> NSImage? {
-    guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+    thumbnail(data).map { NSImage(cgImage: $0, size: .zero) }
+  }
+  static func thumbnail(_ data: Data) -> CGImage? {
+    guard let source = CGImageSourceCreateWithData(data as CFData, [kCGImageSourceShouldCache: false] as CFDictionary),
       let type = CGImageSourceGetType(source) as String?,
       [
         "public.png", "public.jpeg", "public.heic", "public.heif", "org.webmproject.webp",
@@ -25,6 +28,16 @@ enum RasterPreview {
           kCGImageSourceThumbnailMaxPixelSize: 1600,
         ] as CFDictionary)
     else { return nil }
-    return NSImage(cgImage: image, size: .zero)
+    return image
+  }
+}
+
+/// Serialize decoding so rapid tool/image switches cannot start an unbounded
+/// number of full raster decodes. Cancelled queued views are skipped.
+actor RasterThumbnailLoader {
+  static let shared = RasterThumbnailLoader()
+  func thumbnail(_ data: Data) -> CGImage? {
+    guard !Task.isCancelled else { return nil }
+    return autoreleasepool { RasterPreview.thumbnail(data) }
   }
 }

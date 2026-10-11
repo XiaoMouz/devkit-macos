@@ -63,12 +63,19 @@ import SwiftUI
           }
         } catch {
           guard generation == current else { return }
-          self.error = error.localizedDescription
+          let code = socket.closeCode
+          let reason = socket.closeReason.flatMap { String(data: $0, encoding: .utf8) } ?? ""
           disconnect()
-          status = "连接已结束"
+          if code == .normalClosure || code == .goingAway {
+            self.error = nil
+            status = "远端正常关闭（\(code.rawValue)）" + (reason.isEmpty ? "" : "：" + reason)
+          } else {
+            self.error = NetworkSupport.message(for: error)
+            status = code == .invalid ? "连接意外中断" : "远端关闭（\(code.rawValue)）" + (reason.isEmpty ? "" : "：" + reason)
+          }
         }
       }
-    } catch { self.error = error.localizedDescription }
+    } catch { self.error = NetworkSupport.message(for: error) }
   }
   func send() {
     guard connected, let socket else { return }
@@ -83,7 +90,7 @@ import SwiftUI
         try await socket.send(.string(text))
         guard generation == current else { return }
         try append("发送", text)
-      } catch { if generation == current { self.error = error.localizedDescription } }
+      } catch { if generation == current { self.error = NetworkSupport.message(for: error) } }
     }
   }
   func disconnect() {

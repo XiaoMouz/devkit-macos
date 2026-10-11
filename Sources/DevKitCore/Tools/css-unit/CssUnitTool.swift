@@ -31,8 +31,9 @@ public enum CssUnitTool: ToolModule {
       value.isFinite
     else { throw ToolFailure("请输入有限数字。") }
     try require(
-      options.root > 0 && options.parent > 0 && options.width > 0 && options.height > 0,
-      "所有基准尺寸必须大于零。")
+      (1...256).contains(options.root) && (1...256).contains(options.parent)
+        && (1...20000).contains(options.width) && (1...20000).contains(options.height),
+      "根字号和父字号范围为 1–256 px，视口宽高范围为 1–20000 px。")
     let scales = [
       "px": 1.0, "rem": Double(options.root), "em": Double(options.parent),
       "vw": Double(options.width) / 100, "vh": Double(options.height) / 100,

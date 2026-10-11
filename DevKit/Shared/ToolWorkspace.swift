@@ -47,7 +47,9 @@ struct ToolWorkspace<T: ToolModule>: View {
     return labels
   }
   private var resultStatus: PaneStatus {
-    if session.bridge.running { return PaneStatus(title: "处理中", symbol: "hourglass", tint: .blue) }
+    if session.bridge.running {
+      return PaneStatus(title: session.status.hasPrefix("已读取") ? session.status : "处理中", symbol: "hourglass", tint: .blue)
+    }
     if let error = session.error {
       return PaneStatus(title: "需要检查", symbol: "exclamationmark.circle", tint: .red, detail: error)
     }
@@ -59,9 +61,9 @@ struct ToolWorkspace<T: ToolModule>: View {
     }
     guard session.output != nil else { return PaneStatus(title: "待生成", symbol: "text.alignleft", tint: .secondary) }
     if session.current, let report = session.output?.report {
-      return PaneStatus(title: report.state == "failure" ? "未通过" : report.state == "difference" ? "存在差异" : "已通过",
-        symbol: report.state == "failure" ? "exclamationmark.circle" : report.state == "difference" ? "plusminus.circle" : "checkmark.circle",
-        tint: report.state == "failure" ? .red : report.state == "difference" ? .orange : .green, elapsed: elapsedLabel(session.elapsed))
+      return PaneStatus(title: report.state == "failure" ? "未通过" : report.state == "warning" ? "请留意" : report.state == "difference" ? "存在差异" : "已通过",
+        symbol: ["failure", "warning"].contains(report.state) ? "exclamationmark.circle" : report.state == "difference" ? "plusminus.circle" : "checkmark.circle",
+        tint: report.state == "failure" ? .red : ["difference", "warning"].contains(report.state) ? .orange : .green, elapsed: elapsedLabel(session.elapsed))
     }
     return session.current
       ? PaneStatus(title: "已完成", symbol: "checkmark.circle", tint: .green, elapsed: elapsedLabel(session.elapsed))
@@ -149,6 +151,8 @@ struct ToolWorkspace<T: ToolModule>: View {
     viewState.completedRun = session.completedRun
     display = session.recommendedDisplay
     selectedArtifact = 0
+    viewState.outputEditor.page = EditorPage()
+    viewState.outputEditor.pageRevision += 1
     if session.output != nil && detachedPane == nil && (paired || mode == .focused) { focusedPane = .output }
   }
   /// Shown inside detached windows, which have no shared window toolbar.
@@ -232,20 +236,22 @@ struct ToolWorkspace<T: ToolModule>: View {
     VStack(spacing: 0) {
       if let error = session.error {
         ResultReportView(report: ResultReport("failure", "未能完成处理", error))
-        WorkspaceEmptyState(title: "请检查输入后重新执行", detail: error, symbol: "exclamationmark.circle", tint: .red) { EmptyView() }
+        WorkspaceEmptyState(title: "修正输入后可重新执行", detail: "输入内容已保留。", symbol: "square.and.pencil", tint: .secondary) { EmptyView() }
       } else if let output = session.output {
+        if !session.current {
+          Text("以下为上次结果，当前输入尚未完成处理。").font(.caption).foregroundStyle(.orange)
+            .frame(maxWidth: .infinity, alignment: .leading).padding(10)
+        }
         if let report = output.report { ResultReportView(report: report) }
         resultBody(output).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         if let note = output.note {
           Text(note).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading).padding(12)
         }
-        if output.text.count > 500_000 {
-          Text("显示前 500,000 字符；复制或导出可获取完整结果").font(.caption).foregroundStyle(.secondary).padding(8)
-        }
+
       } else {
-        WorkspaceEmptyState(title: session.error == nil ? "结果会显示在这里" : "输入需要检查",
-          detail: session.error ?? "准备好输入后，点击顶部“\(form.action)”",
+        WorkspaceEmptyState(title: session.bridge.running ? "正在处理" : "结果会显示在这里",
+          detail: session.bridge.running ? "可点击顶部的取消按钮停止处理。" : "准备好输入后，点击顶部“\(form.action)”",
           symbol: session.error != nil ? "exclamationmark.circle" : form.isImage || session.metadata.id == "qr-code" ? "photo" : "arrow.right",
           tint: session.error == nil ? .purple : .red) {
           EmptyView()
@@ -255,15 +261,18 @@ struct ToolWorkspace<T: ToolModule>: View {
         HStack(spacing: 8) {
           PaneStatusLabel(status: resultStatus)
           Spacer(minLength: 8)
-          if let output = session.output, !output.text.isEmpty {
-            Text("\(output.text.count) 字符").monospacedDigit()
+          if session.error == nil, let output = session.output, !output.text.isEmpty {
+            if display == "preview", session.imageArtifact != nil,
+              output.artifacts.indices.contains(selectedArtifact) {
+              Text(ByteCountFormatter.string(fromByteCount: Int64(output.artifacts[selectedArtifact].data.count), countStyle: .file)).monospacedDigit()
+            } else { Text("\(output.text.count) 字符").monospacedDigit() }
           }
         }.font(.system(size: 10)).foregroundStyle(.secondary)
           .padding(.horizontal, 16).frame(height: 28)
           .background(.primary.opacity(0.025))
           .overlay(alignment: .top) { Divider().opacity(0.5) }
       }
-    }
+    }.id(session.completedRun)
   }
   private var resultUsesEditor: Bool {
     if session.error != nil { return false }
@@ -275,7 +284,7 @@ struct ToolWorkspace<T: ToolModule>: View {
     return session.metadata.id != "text-diff"
   }
   private func resultViews(_ output: ToolOutput) -> [(String, String, String)] {
-    if output.report != nil {
+    if output.report != nil && session.imageArtifact == nil {
       var views = [(session.metadata.id == "json" ? "路径列表" : "问题明细", "rows", "list.bullet")]
       if output.html != nil { views.append(("高亮对照", "preview", "rectangle.split.2x1")) }
       views.append(("文本", "text", "text.alignleft"))
@@ -322,6 +331,8 @@ struct ToolWorkspace<T: ToolModule>: View {
         }.help(session.imageArtifact != nil ? "保存图片" : "保存文件").disabled(!session.current)
       } else {
         Menu {
+          Button("全部导出到文件夹…") { session.saveAllArtifacts() }
+          Divider()
           ForEach(output.artifacts.indices, id: \.self) { index in
             Button(output.artifacts[index].name) { session.save(output.artifacts[index]) }
           }
@@ -341,7 +352,7 @@ struct ToolWorkspace<T: ToolModule>: View {
         Button { session.save(artifact) } label: { Label("保存文件…", systemImage: "square.and.arrow.down") }
           .buttonStyle(.borderedProminent).controlSize(.large).disabled(!session.current)
       }.frame(maxWidth: .infinity, maxHeight: .infinity)
-    } else if display == "preview", let html = output.html { SafePreview(html: html) }
+    } else if display == "preview", let html = output.html { SafePreview(html: html, toolID: session.metadata.id) }
     else if display == "preview", session.imageArtifact != nil {
       VStack(spacing: 10) {
         if output.artifacts.count > 1 {
@@ -349,15 +360,22 @@ struct ToolWorkspace<T: ToolModule>: View {
             ForEach(output.artifacts.indices, id: \.self) { index in Text(output.artifacts[index].name).tag(index) }
           }.padding(12)
         }
-        if output.artifacts.indices.contains(selectedArtifact), let image = RasterPreview.image(output.artifacts[selectedArtifact].data) {
-          Image(nsImage: image).resizable().interpolation(session.metadata.id == "qr-code" ? .none : .high)
-            .scaledToFit().padding(24).frame(maxWidth: .infinity, maxHeight: .infinity)
+        if output.artifacts.indices.contains(selectedArtifact) {
+          if output.report == nil {
+            Text(output.text).font(.system(.callout, design: .monospaced)).textSelection(.enabled)
+              .padding(.horizontal, 16).padding(.top, 8)
+          }
+          let artifact = output.artifacts[selectedArtifact]
+          Text(artifact.name + " · " + ByteCountFormatter.string(fromByteCount: Int64(artifact.data.count), countStyle: .file))
+            .font(.caption).foregroundStyle(.secondary)
+          RasterImagePreview(data: artifact.data, pixelated: session.metadata.id == "qr-code")
+            .padding(24).frame(maxWidth: .infinity, maxHeight: .infinity)
         } else { Text("此文件可通过导出菜单保存").foregroundStyle(.secondary) }
       }
     } else if display == "rows", output.rows.isEmpty, output.report != nil {
-      if let html = output.html { SafePreview(html: html) }
+      if let html = output.html { SafePreview(html: html, toolID: session.metadata.id) }
       else {
-        CodeEditor(text: .constant(output.text), editable: false, label: "校验详情", language: outputLanguage, status: resultStatus, state: viewState.outputEditor)
+        CodeEditor(text: .constant(output.text), editable: false, label: "校验详情", language: outputLanguage, status: resultStatus, state: viewState.outputEditor, contentID: session.completedRun)
       }
     } else if display == "rows", !output.rows.isEmpty {
       ScrollView {
@@ -391,8 +409,8 @@ struct ToolWorkspace<T: ToolModule>: View {
         }.padding(14)
       }
     } else {
-      CodeEditor(text: .constant(String(output.text.prefix(500_000))), editable: false, label: form.outputTitle,
-        language: outputLanguage, status: resultStatus, state: viewState.outputEditor)
+      CodeEditor(text: .constant(output.text), editable: false, label: form.outputTitle,
+        language: outputLanguage, status: resultStatus, state: viewState.outputEditor, contentID: session.completedRun)
     }
   }
   private func rowTint(_ row: ResultRow, report: ResultReport?) -> Color {

@@ -11,20 +11,52 @@ struct CodeEditor: View {
   var contentSettled: () -> Void = {}
   var editingBegan: () -> Void = {}
   var state: EditorViewState? = nil
+  var contentID = 0
   @State private var localState = EditorViewState()
+  @AppStorage("wrapLines") private var requestedWrap = true
   private var editorState: EditorViewState { state ?? localState }
   private var effectiveLanguage: SyntaxLanguage { editorState.languageOverride ?? language }
+  private var paged: Bool { text.utf16.count > 131_072 }
+  private func replaceLarge(_ range: NSRange, _ replacement: String) -> Bool {
+    guard editable, NSMaxRange(range) <= (text as NSString).length else { return false }
+    let updated = (text as NSString).replacingCharacters(in: range, with: replacement)
+    editorState.largeUndo = text; editorState.largeRedo = nil; editorState.largeExpected = updated
+    editorState.page = EditorPage(); editorState.pageRevision += 1
+    text = updated
+    contentSettled()
+    return true
+  }
+  private func restoreLarge(redo: Bool) {
+    guard editorState.largeExpected == text,
+      let value = redo ? editorState.largeRedo : editorState.largeUndo else { return }
+    if redo { editorState.largeUndo = text; editorState.largeRedo = nil }
+    else { editorState.largeRedo = text; editorState.largeUndo = nil }
+    editorState.largeExpected = value
+    editorState.page = EditorPage(); editorState.pageRevision += 1
+    text = value
+    contentSettled()
+  }
   var body: some View {
     VStack(spacing: 0) {
-      NativeCodeEditor(text: $text, editable: editable, label: label, language: effectiveLanguage,
-        contentSettled: contentSettled, editingBegan: editingBegan, state: editorState).clipped()
+      if paged {
+        PagedCodeEditor(text: $text, editable: editable, label: label, state: editorState,
+          contentSettled: contentSettled, editingBegan: editingBegan,
+          undoLarge: { restoreLarge(redo: false) }, redoLarge: { restoreLarge(redo: true) })
+      } else {
+        NativeCodeEditor(text: $text, editable: editable, label: label, language: effectiveLanguage,
+          contentSettled: contentSettled, editingBegan: editingBegan, state: editorState, contentID: contentID,
+          replaceLarge: replaceLarge, undoLarge: { restoreLarge(redo: false) }, redoLarge: { restoreLarge(redo: true) },
+          canUndoLarge: { editorState.largeExpected == text && editorState.largeUndo != nil },
+          canRedoLarge: { editorState.largeExpected == text && editorState.largeRedo != nil }).clipped()
+      }
       HStack(spacing: 8) {
         if let status {
           PaneStatusLabel(status: status)
         } else { Text("\(text.count) 字符").monospacedDigit() }
         Spacer(minLength: 8)
         if status != nil { Text("\(text.count) 字符").monospacedDigit() }
-        if text.utf16.count > SyntaxHighlighter.maximumLength { Text("大文本 · 纯文本显示") }
+        if !paged && requestedWrap && !EditorTextPolicy.shouldWrap(text) { Text("超长行 · 横向滚动") }
+        if paged { Text("分段编辑 · 纯文本") }
         else {
           Menu {
             Button("跟随工具") { editorState.languageOverride = nil }
@@ -44,6 +76,68 @@ struct CodeEditor: View {
         .background(.primary.opacity(0.025))
         .overlay(alignment: .top) { Divider().opacity(0.5) }
     }.onChange(of: language) { _, _ in editorState.languageOverride = nil }
+      .onChange(of: text) { _, value in
+        if let expected = editorState.largeExpected, expected != value { editorState.clearLargeUndo() }
+      }
+  }
+}
+
+/// Only the current fragment is laid out. Editing patches the full document,
+/// so execution/export never operate on a truncated preview.
+private struct PagedCodeEditor: View {
+  @Binding var text: String
+  let editable: Bool
+  let label: String
+  @Bindable var state: EditorViewState
+  let contentSettled: () -> Void
+  let editingBegan: () -> Void
+  let undoLarge: () -> Void
+  let redoLarge: () -> Void
+  @State private var expected = ""
+  private var fragment: Binding<String> {
+    Binding(get: { state.page.content(in: text) }, set: { value in
+      let updated = state.page.replace(with: value, in: text)
+      expected = updated
+      text = updated
+    })
+  }
+  private func move(back: Bool) {
+    if back { state.page.previous() } else { state.page.next(in: text) }
+    state.pageRevision += 1
+    state.selection = NSRange(location: 0, length: 0); state.scrollOrigin = .zero
+  }
+  private func replaceLarge(_ range: NSRange, _ replacement: String) -> Bool {
+    let current = state.page.resolvedRange(in: text)
+    guard editable, NSMaxRange(range) <= current.length else { return false }
+    let fullRange = NSRange(location: current.location + range.location, length: range.length)
+    let updated = (text as NSString).replacingCharacters(in: fullRange, with: replacement)
+    state.largeUndo = text; state.largeRedo = nil; state.largeExpected = updated
+    state.page.range = NSRange(location: current.location, length: EditorPage.size)
+    state.pageRevision += 1
+    expected = updated; text = updated
+    contentSettled()
+    return true
+  }
+  var body: some View {
+    VStack(spacing: 0) {
+      HStack(spacing: 10) {
+        Button("上一段") { move(back: true) }.disabled(state.page.previousRanges.isEmpty)
+        Text("第 \(state.page.previousRanges.count + 1) 段").monospacedDigit()
+        Button("下一段") { move(back: false) }.disabled(!state.page.hasNext(in: text))
+        Spacer()
+        Button("复制全文") { Clipboard.copy(text) }
+        Text(editable ? "修改同步到全文" : "全文保留，可逐段查看")
+      }.font(.caption).padding(8).background(.primary.opacity(0.025))
+      NativeCodeEditor(text: fragment, editable: editable, label: label + "（当前片段）", language: .plain,
+        contentSettled: contentSettled, editingBegan: editingBegan, state: state,
+        contentID: -(state.pageRevision + 1), replaceLarge: replaceLarge,
+        undoLarge: undoLarge, redoLarge: redoLarge,
+        canUndoLarge: { state.largeExpected == text && state.largeUndo != nil },
+        canRedoLarge: { state.largeExpected == text && state.largeRedo != nil }).clipped()
+    }.onAppear { expected = text }
+      .onChange(of: text) { _, value in
+        if expected != value { state.page = EditorPage(); state.pageRevision += 1; expected = value }
+      }
   }
 }
 
@@ -55,27 +149,46 @@ private struct NativeCodeEditor: NSViewRepresentable {
   let contentSettled: () -> Void
   let editingBegan: () -> Void
   let state: EditorViewState
+  let contentID: Int
+  var replaceLarge: ((NSRange, String) -> Bool)? = nil
+  var undoLarge: (() -> Void)? = nil
+  var redoLarge: (() -> Void)? = nil
+  var canUndoLarge: (() -> Bool)? = nil
+  var canRedoLarge: (() -> Bool)? = nil
   @Environment(\.isEnabled) private var isEnabled
   @Environment(\.workspaceActive) private var workspaceActive
   @AppStorage("editorFontSize") private var fontSize = 13.0
   @AppStorage("wrapLines") private var wrap = true
 
-  func makeNSView(context: Context) -> NSScrollView {
+  func makeNSView(context: Context) -> EditorContainer {
     // Explicit TextKit 1: temporary layout attributes never enter undo or clipboard data.
     let storage = NSTextStorage()
     let manager = NSLayoutManager()
+    manager.allowsNonContiguousLayout = true
+    // A process-wide typesetter retains its largest paragraph buffers even
+    // after an editor closes. Give this editor a concrete, owned typesetter.
+    let typesetter = NSATSTypesetter()
+    typesetter.usesFontLeading = manager.usesFontLeading
+    typesetter.typesetterBehavior = manager.typesetterBehavior
+    manager.typesetter = typesetter
     storage.addLayoutManager(manager)
     let container = NSTextContainer(size: NSSize(width: 320, height: CGFloat.greatestFiniteMagnitude))
     manager.addTextContainer(container)
     let view = WorkspaceTextView(frame: NSRect(x: 0, y: 0, width: 320, height: 320), textContainer: container)
     let scroll = EditorScrollView()
+    let host = EditorContainer(scroll: scroll)
     scroll.wantsLayer = true
     scroll.layer?.masksToBounds = true
     scroll.documentView = view
     scroll.hasVerticalScroller = true
     scroll.drawsBackground = false
+    scroll.automaticallyAdjustsContentInsets = false
     scroll.borderType = .noBorder
     view.delegate = context.coordinator
+    view.undoLarge = { [weak coordinator = context.coordinator] in coordinator?.parent.undoLarge?() }
+    view.redoLarge = { [weak coordinator = context.coordinator] in coordinator?.parent.redoLarge?() }
+    view.canUndoLarge = { [weak coordinator = context.coordinator] in coordinator?.parent.canUndoLarge?() ?? false }
+    view.canRedoLarge = { [weak coordinator = context.coordinator] in coordinator?.parent.canRedoLarge?() ?? false }
     view.isRichText = false
     view.isAutomaticQuoteSubstitutionEnabled = false
     view.isAutomaticDashSubstitutionEnabled = false
@@ -95,60 +208,98 @@ private struct NativeCodeEditor: NSViewRepresentable {
     view.textColor = NSColor.textColor
     view.insertionPointColor = NSColor.controlAccentColor
     view.setAccessibilityLabel(label)
-    scroll.verticalRulerView = EditorLineRuler(scrollView: scroll, orientation: .verticalRuler)
-    scroll.hasVerticalRuler = true
-    scroll.rulersVisible = true
     configure(view, scroll: scroll)
-    view.string = text
+    // A binding can change before SwiftUI removes the previous (unpaged)
+    // branch. Never give that transient native view the full large document.
+    let visibleText = text.utf16.count > 131_072 ? EditorPage().content(in: text) : text
+    view.string = visibleText
     view.rebuildLines()
-    let length = (text as NSString).length
+    if state.contentID != contentID {
+      state.contentID = contentID
+      state.selection = NSRange(location: 0, length: 0)
+      state.scrollOrigin = .zero
+    }
+    let length = (visibleText as NSString).length
     let location = min(state.selection.location, length)
     view.setSelectedRange(NSRange(location: location, length: min(state.selection.length, length - location)))
     scroll.pendingScrollOrigin = state.scrollOrigin
     context.coordinator.schedule(view)
-    return scroll
+    return host
   }
-  private func configure(_ view: WorkspaceTextView, scroll: NSScrollView) {
+  private func configure(_ view: WorkspaceTextView, scroll: EditorScrollView, forceUnwrapped: Bool = false) {
+    let wrap = !forceUnwrapped && self.wrap && EditorTextPolicy.shouldWrap(text)
     view.isEditable = editable && isEnabled
     if !isEnabled && view.window?.firstResponder === view { view.window?.makeFirstResponder(nil) }
     view.isSelectable = isEnabled
     scroll.setAccessibilityHidden(!isEnabled)
     let font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
-    if view.font != font { view.font = font; view.needsDisplay = true; scroll.verticalRulerView?.needsDisplay = true }
+    if view.font != font { view.font = font; view.needsDisplay = true; scroll.lineRuler?.needsDisplay = true }
     view.isHorizontallyResizable = !wrap
-    (scroll as? EditorScrollView)?.wrapLines = wrap
+    scroll.wrapLines = wrap
     view.autoresizingMask = wrap ? [.width] : []
     view.textContainer?.widthTracksTextView = wrap
-    view.textContainer?.containerSize = NSSize(
+    let containerSize = NSSize(
       width: wrap ? max(0, scroll.contentView.bounds.width - view.textContainerInset.width * 2) : .greatestFiniteMagnitude,
       height: CGFloat.greatestFiniteMagnitude)
+    if view.textContainer?.containerSize != containerSize { view.textContainer?.containerSize = containerSize }
     scroll.hasHorizontalScroller = !wrap
     scroll.tile()
   }
-  func updateNSView(_ scroll: NSScrollView, context: Context) {
+  func updateNSView(_ host: EditorContainer, context: Context) {
+    let scroll = host.scroll
     context.coordinator.parent = self
     guard let view = scroll.documentView as? WorkspaceTextView else { return }
+    guard text.utf16.count <= 131_072 else { return }
     context.coordinator.updatingView = true
     defer { context.coordinator.updatingView = false }
-    configure(view, scroll: scroll)
+    let changedPage = state.contentID != contentID
+    if changedPage {
+      state.contentID = contentID
+      state.selection = NSRange(location: 0, length: 0); state.scrollOrigin = .zero
+      view.undoManager?.removeAllActions()
+      view.setSelectedRange(NSRange(location: 0, length: 0))
+      scroll.pendingScrollOrigin = .zero
+      scroll.contentView.scroll(to: .zero)
+      scroll.reflectScrolledClipView(scroll.contentView)
+    }
     if view.string != text && !view.hasMarkedText() {
+      // Stop wrapping before inserting a huge paragraph; when clearing it,
+      // replace the text before restoring normal wrapping.
+      if !EditorTextPolicy.shouldWrap(text) { configure(view, scroll: scroll, forceUnwrapped: true) }
       let range = view.selectedRange()
       view.string = text
-      view.setSelectedRange(NSRange(location: min(range.location, (text as NSString).length), length: 0))
+      view.setSelectedRange(NSRange(location: editable ? min(range.location, (text as NSString).length) : 0, length: 0))
+      if !editable || text.isEmpty { view.undoManager?.removeAllActions() }
       view.rebuildLines()
+      if !editable || changedPage {
+        state.selection = NSRange(location: 0, length: 0)
+        state.scrollOrigin = .zero
+        scroll.pendingScrollOrigin = .zero
+        scroll.contentView.scroll(to: .zero)
+        scroll.reflectScrolledClipView(scroll.contentView)
+      }
     }
+    configure(view, scroll: scroll)
     context.coordinator.schedule(view)
   }
-  static func dismantleNSView(_ scroll: NSScrollView, coordinator: Coordinator) {
-    coordinator.highlightTask?.cancel()
+  static func dismantleNSView(_ host: EditorContainer, coordinator: Coordinator) {
+    let scroll = host.scroll
+    coordinator.release()
     if let view = scroll.documentView as? NSTextView {
-      coordinator.parent.state.selection = view.selectedRange()
-      coordinator.parent.state.scrollOrigin = scroll.contentView.bounds.origin
+      if coordinator.parent.state.contentID == coordinator.parent.contentID {
+        coordinator.parent.state.selection = view.selectedRange()
+        coordinator.parent.state.scrollOrigin = scroll.contentView.bounds.origin
+      }
       view.delegate = nil
+      view.undoManager?.removeAllActions()
+      view.string = ""
     }
+    scroll.documentView = nil
+    scroll.lineRuler = nil
+    host.ruler.scrollView = nil
   }
   func makeCoordinator() -> Coordinator { Coordinator(self) }
-  func sizeThatFits(_ proposal: ProposedViewSize, nsView: NSScrollView, context: Context) -> CGSize? {
+  func sizeThatFits(_ proposal: ProposedViewSize, nsView: EditorContainer, context: Context) -> CGSize? {
     CGSize(width: max(0, proposal.width.flatMap { $0.isFinite ? $0 : nil } ?? 320),
       height: max(0, proposal.height.flatMap { $0.isFinite ? $0 : nil } ?? 320))
   }
@@ -161,6 +312,16 @@ private struct NativeCodeEditor: NSViewRepresentable {
     private var scheduledLanguage: SyntaxLanguage?
     private var revision = 0
     init(_ parent: NativeCodeEditor) { self.parent = parent }
+    func release() {
+      if (scheduledText?.utf8.count ?? 0) > 256 * 1024 {
+        Task { await IdleMemoryCleanup.shared.schedule() }
+      }
+      highlightTask?.cancel()
+      highlightTask = nil
+      scheduledText = nil
+      scheduledLanguage = nil
+      revision += 1
+    }
     func schedule(_ view: WorkspaceTextView) {
       guard parent.isEnabled && parent.workspaceActive else {
         highlightTask?.cancel(); scheduledText = nil; return
@@ -195,6 +356,7 @@ private struct NativeCodeEditor: NSViewRepresentable {
     }
     func textDidChange(_ notification: Notification) {
       guard !updatingView else { return }
+      guard parent.text.utf16.count <= 131_072 else { return }
       guard let view = notification.object as? WorkspaceTextView else { return }
       view.rebuildLines()
       parent.text = view.string
@@ -203,13 +365,19 @@ private struct NativeCodeEditor: NSViewRepresentable {
     }
     func textView(_ textView: NSTextView, shouldChangeTextIn affectedCharRange: NSRange,
       replacementString: String?) -> Bool {
+      if let replacementString, textView.string.utf16.count - affectedCharRange.length + replacementString.utf16.count > 131_072,
+        parent.replaceLarge?(affectedCharRange, replacementString) == true { return false }
       bulkEdit = (replacementString?.utf8.count ?? 0) > 128 || affectedCharRange.length > 128
+      if let replacementString, !EditorTextPolicy.shouldWrap(replacementString),
+        let view = textView as? WorkspaceTextView, let scroll = view.enclosingScrollView as? EditorScrollView {
+        parent.configure(view, scroll: scroll, forceUnwrapped: true)
+      }
       return true
     }
     func textViewDidChangeSelection(_ notification: Notification) {
       guard let view = notification.object as? WorkspaceTextView else { return }
       view.needsDisplay = true
-      view.enclosingScrollView?.verticalRulerView?.needsDisplay = true
+      (view.enclosingScrollView as? EditorScrollView)?.lineRuler?.needsDisplay = true
     }
     func textDidEndEditing(_ notification: Notification) {
       guard !updatingView else { return }
@@ -222,35 +390,109 @@ private struct NativeCodeEditor: NSViewRepresentable {
   }
 }
 
+private final class EditorContainer: NSView {
+  let scroll: EditorScrollView
+  let ruler = EditorLineRuler(frame: .zero)
+  override var isFlipped: Bool { true }
+  init(scroll: EditorScrollView) {
+    self.scroll = scroll
+    super.init(frame: NSRect(x: 0, y: 0, width: 320, height: 320))
+    ruler.scrollView = scroll
+    scroll.lineRuler = ruler
+    ruler.setAccessibilityHidden(true)
+    addSubview(ruler)
+    addSubview(scroll)
+    ruler.frame = NSRect(x: 0, y: 0, width: 34, height: 320)
+    scroll.frame = NSRect(x: 34, y: 0, width: 286, height: 320)
+  }
+  required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+  override func setFrameSize(_ newSize: NSSize) {
+    guard newSize != frame.size else { return }
+    super.setFrameSize(newSize)
+    needsLayout = true
+  }
+  override func layout() {
+    super.layout()
+    let gutter = min(ruler.ruleThickness, bounds.width)
+    let rulerFrame = NSRect(x: 0, y: 0, width: gutter, height: bounds.height)
+    let scrollFrame = NSRect(x: gutter, y: 0, width: max(0, bounds.width - gutter), height: bounds.height)
+    if ruler.frame != rulerFrame { ruler.frame = rulerFrame }
+    if scroll.frame != scrollFrame { scroll.frame = scrollFrame }
+  }
+}
+
 private final class EditorScrollView: NSScrollView {
+  weak var lineRuler: EditorLineRuler?
+  override func reflectScrolledClipView(_ clipView: NSClipView) {
+    super.reflectScrolledClipView(clipView)
+    lineRuler?.needsDisplay = true
+  }
   var wrapLines = true
   var pendingScrollOrigin: CGPoint?
   private var adjustingDocument = false
   override func layout() {
     super.layout()
+    synchronizeDocumentGeometry()
     if let origin = pendingScrollOrigin, window != nil, contentView.bounds.height > 0 {
       pendingScrollOrigin = nil
-      contentView.scroll(to: origin)
+      if let view = documentView as? NSTextView, let manager = view.layoutManager, !view.string.isEmpty {
+        manager.ensureLayout(forCharacterRange: NSRange(location: 0, length: 1))
+      }
+      let target = CGPoint(x: wrapLines ? 0 : max(0, origin.x),
+        y: min(max(0, origin.y), max(0, (documentView?.frame.height ?? 0) - contentView.bounds.height)))
+      contentView.scroll(to: target)
       reflectScrolledClipView(contentView)
     }
   }
   override func tile() {
     super.tile()
+    synchronizeDocumentGeometry()
+  }
+  private func synchronizeDocumentGeometry() {
     guard !adjustingDocument, let view = documentView as? NSTextView else { return }
     adjustingDocument = true
     defer { adjustingDocument = false }
-    view.minSize = NSSize(width: 0, height: contentView.bounds.height)
+    let minimum = NSSize(width: 0, height: contentView.bounds.height)
+    if view.minSize != minimum { view.minSize = minimum }
     if wrapLines {
       let width = max(0, contentView.bounds.width)
       if abs(view.frame.width - width) > 0.5 {
         view.setFrameSize(NSSize(width: width, height: max(view.frame.height, contentView.bounds.height)))
       }
-      view.textContainer?.containerSize.width = max(0, width - view.textContainerInset.width * 2)
+      let containerWidth = max(0, width - view.textContainerInset.width * 2)
+      if view.textContainer?.containerSize.width != containerWidth { view.textContainer?.containerSize.width = containerWidth }
+      if contentView.bounds.origin.x != 0 {
+        contentView.scroll(to: CGPoint(x: 0, y: contentView.bounds.origin.y))
+        reflectScrolledClipView(contentView)
+      }
     }
   }
+
 }
 
 private final class WorkspaceTextView: NSTextView {
+  // Do not retain closed editors through the window's shared undo history.
+  private let editorUndoManager: UndoManager = {
+    let manager = UndoManager()
+    manager.levelsOfUndo = 50
+    return manager
+  }()
+  override var undoManager: UndoManager? { editorUndoManager }
+  var undoLarge: (() -> Void)?
+  var redoLarge: (() -> Void)?
+  var canUndoLarge: (() -> Bool)?
+  var canRedoLarge: (() -> Bool)?
+  @objc func undo(_ sender: Any?) {
+    if editorUndoManager.canUndo { editorUndoManager.undo() } else { undoLarge?() }
+  }
+  @objc func redo(_ sender: Any?) {
+    if editorUndoManager.canRedo { editorUndoManager.redo() } else { redoLarge?() }
+  }
+  override func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+    if menuItem.action == #selector(undo(_:)) { return isEditable && (editorUndoManager.canUndo || canUndoLarge?() == true) }
+    if menuItem.action == #selector(redo(_:)) { return isEditable && (editorUndoManager.canRedo || canRedoLarge?() == true) }
+    return super.validateMenuItem(menuItem)
+  }
   var lineStarts = [0]
   func rebuildLines() {
     lineStarts = [0]
@@ -260,9 +502,9 @@ private final class WorkspaceTextView: NSTextView {
       else if unit == 10 || unit == 13 || unit == 0x2028 || unit == 0x2029 { lineStarts.append(index + 1) }
       previous = unit
     }
-    if let ruler = enclosingScrollView?.verticalRulerView {
+    if let ruler = (enclosingScrollView as? EditorScrollView)?.lineRuler {
       let width = max(34, CGFloat(String(lineStarts.count).count) * 7 + 16)
-      if ruler.ruleThickness != width { ruler.ruleThickness = width }
+      if ruler.ruleThickness != width { ruler.ruleThickness = width; ruler.superview?.needsLayout = true }
       ruler.needsDisplay = true
     }
     needsDisplay = true
@@ -279,7 +521,7 @@ private final class WorkspaceTextView: NSTextView {
   override func resignFirstResponder() -> Bool { let result = super.resignFirstResponder(); needsDisplay = true; return result }
   override func viewDidChangeEffectiveAppearance() {
     super.viewDidChangeEffectiveAppearance()
-    needsDisplay = true; enclosingScrollView?.verticalRulerView?.needsDisplay = true
+    needsDisplay = true; (enclosingScrollView as? EditorScrollView)?.lineRuler?.needsDisplay = true
   }
   override func drawBackground(in rect: NSRect) {
     super.drawBackground(in: rect)
@@ -302,9 +544,13 @@ private final class WorkspaceTextView: NSTextView {
   }
 }
 
-private final class EditorLineRuler: NSRulerView {
+private final class EditorLineRuler: NSView {
+  weak var scrollView: EditorScrollView?
+  var ruleThickness: CGFloat = 34
   override var isFlipped: Bool { true }
-  override func drawHashMarksAndLabels(in rect: NSRect) {
+  override func draw(_ rect: NSRect) {
+    NSColor.separatorColor.withAlphaComponent(0.5).setFill()
+    NSRect(x: bounds.maxX - 0.5, y: bounds.minY, width: 0.5, height: bounds.height).fill()
     guard let view = scrollView?.documentView as? WorkspaceTextView,
       let manager = view.layoutManager, let container = view.textContainer else { return }
     let origin = view.textContainerOrigin

@@ -39,7 +39,7 @@ public enum CronTool: ToolModule {
       return ResultRow("第 \(row.label) 次", Dates.display(date, timeZone: zone) + " · " + Dates.offsetLabel(zone, at: date))
     }
     output.text = output.rows.map(\.value).joined(separator: "\n")
-    output.note = "按 \(zone.identifier) 计算并显示，自动处理夏令时；不创建系统任务。"
+    output.note = "按 \(zone.identifier) 计算并显示，夏令时跳过时段按 cron-parser 平移（例如 02:30 → 03:30），重复时段只取第一次；不创建系统任务。"
     return output
   }
 }

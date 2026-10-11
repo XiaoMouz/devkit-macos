@@ -48,6 +48,12 @@ struct ScenarioInput<T: ToolModule>: View {
   }
   var body: some View {
     VStack(spacing: 0) {
+      if let failure = session.importFailure {
+        VStack(alignment: .leading, spacing: 8) {
+          Label(failure, systemImage: "exclamationmark.triangle").foregroundStyle(.orange)
+          Button("继续使用当前输入") { session.importFailure = nil; session.error = nil; session.status = "" }
+        }.font(.callout).padding(12).frame(maxWidth: .infinity, alignment: .leading)
+      }
       if form.isForm {
         ScrollView {
           VStack(alignment: .leading, spacing: 22) {
@@ -145,12 +151,13 @@ struct ScenarioInput<T: ToolModule>: View {
       ScrollView {
         VStack(alignment: .leading, spacing: 18) {
           if let data = session.input.file {
-            if let image = RasterPreview.image(data), form.isImage {
-              Image(nsImage: image).resizable().interpolation(session.metadata.id == "qr-code" ? .none : .high)
-                .scaledToFit().frame(maxWidth: .infinity).frame(height: 230)
+            if form.isImage {
+              RasterImagePreview(data: data, pixelated: session.metadata.id == "qr-code")
+                .frame(maxWidth: .infinity).frame(height: 230)
             } else { Image(systemName: "doc.fill").font(.system(size: 44)).foregroundStyle(.secondary) }
             Text(session.input.fileName ?? "文件").font(.headline).textSelection(.enabled)
-            Text(ByteCountFormatter.string(fromByteCount: Int64(data.count), countStyle: .file))
+              .id(session.input.fileName)
+            Text(ByteCountFormatter.string(fromByteCount: session.checksumURL != nil ? session.checksumFileSize : Int64(data.count), countStyle: .file))
               .font(.caption).foregroundStyle(.secondary)
             Button { session.chooseFile() } label: {
               Label(form.isImage ? "更换图片…" : "更换文件…", systemImage: form.isImage ? "photo" : "folder")

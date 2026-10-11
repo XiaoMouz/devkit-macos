@@ -117,7 +117,7 @@ private struct CompactParameterField<Options: ToolOptions>: View {
       HStack(spacing: 6) {
         Text(label).foregroundStyle(.secondary).fixedSize()
         TextField(label, value: Binding(get: { Int(field.read(options)) ?? range.lowerBound },
-          set: { field.write(&options, String(min(max($0, range.lowerBound), range.upperBound))) }),
+          set: { field.write(&options, String($0)) }),
           format: .number.grouping(.never))
           .textFieldStyle(.roundedBorder).frame(width: 46).accessibilityLabel(field.label)
         Stepper(label, value: Binding(get: { Int(field.read(options)) ?? range.lowerBound },

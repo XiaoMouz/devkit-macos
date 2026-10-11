@@ -3,7 +3,7 @@ import SwiftUI
 
 struct ResultReportView: View {
   let report: ResultReport
-  private var tint: Color { report.state == "success" ? .green : report.state == "difference" ? .orange : .red }
+  private var tint: Color { report.state == "success" ? .green : ["difference", "warning"].contains(report.state) ? .orange : .red }
   private var symbol: String { report.state == "success" ? "checkmark.seal.fill" : report.state == "difference" ? "plusminus.circle.fill" : "exclamationmark.circle.fill" }
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {

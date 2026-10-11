@@ -17,6 +17,7 @@ final class WorkerControl: @unchecked Sendable {
     lock.withLock {
       stopped = true
       if let process, process.isRunning { kill(process.processIdentifier, SIGKILL) }
+      process = nil
     }
   }
 }
@@ -25,6 +26,7 @@ enum WorkerRunner {
     let control = WorkerControl()
     return try await withTaskCancellationHandler {
       try await Task.detached(priority: .userInitiated) {
+        return try autoreleasepool {
         let executable = Bundle.main.bundleURL.appendingPathComponent(
           "Contents/Helpers/DevKitWorker")
         let process = Process()
@@ -55,6 +57,7 @@ enum WorkerRunner {
         if let error = result.error { throw error }
         guard let output = result.output else { throw ToolFailure("没有收到处理结果。", code: "internal") }
         return output
+        }
       }.value
     } onCancel: {
       control.stop()

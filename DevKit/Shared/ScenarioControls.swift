@@ -43,11 +43,52 @@ struct ToolFormRow<Content: View>: View {
 
 /// Native menu items are created only when the menu opens, not as hundreds of
 /// SwiftUI subgraphs in every date/time tool and every hidden layout candidate.
-struct TimeZoneControl: NSViewRepresentable {
+struct TimeZoneControl: View {
+  let title: String
+  @Binding var selection: String
+  @State private var searching = false
+  @State private var query = ""
+  var body: some View {
+    HStack(spacing: 6) {
+      NativeTimeZoneMenu(title: title, selection: $selection)
+      Button { searching = true; query = "" } label: { Image(systemName: "magnifyingglass") }
+        .accessibilityLabel("搜索" + title).help("按城市、时区标识或偏移搜索")
+        .popover(isPresented: $searching) {
+          VStack(spacing: 10) {
+            TextField("搜索城市、标识或 UTC 偏移", text: $query).textFieldStyle(.roundedBorder)
+            let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
+            let now = Date()
+            let matches = NativeTimeZoneMenu.entries.filter { entry in
+              let offset = Dates.offsetLabel(TimeZone(identifier: entry.0)!, at: now)
+              if term.uppercased() == "UTC" { return offset == "UTC" }
+              return term.isEmpty || (entry.1 + " " + offset).localizedCaseInsensitiveContains(term)
+            }.sorted { lhs, rhs in
+              let leftExact = lhs.0.caseInsensitiveCompare(term) == .orderedSame
+              let rightExact = rhs.0.caseInsensitiveCompare(term) == .orderedSame
+              if leftExact != rightExact { return leftExact }
+              return lhs.0 < rhs.0
+            }
+            ScrollView {
+              LazyVStack(alignment: .leading) {
+                ForEach(matches, id: \.0) { entry in
+                  Button { selection = entry.0; searching = false } label: {
+                    Text(entry.1).frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 4)
+                  }.buttonStyle(.plain)
+                }
+                if matches.isEmpty { Text("没有匹配的时区").foregroundStyle(.secondary) }
+              }
+            }
+          }.padding(14).frame(width: 380, height: 360)
+        }
+    }
+  }
+}
+
+private struct NativeTimeZoneMenu: NSViewRepresentable {
   let title: String
   @Binding var selection: String
   @Environment(\.isEnabled) private var isEnabled
-  private static let entries = Dates.timeZoneIdentifiers.map { identifier in
+  static let entries = Dates.timeZoneIdentifiers.map { identifier in
     let zone = TimeZone(identifier: identifier)!
     let name = zone.localizedName(for: .generic, locale: Locale(identifier: "zh_CN")) ?? identifier
     return (identifier, name + " · " + identifier)
@@ -84,9 +125,9 @@ struct TimeZoneControl: NSViewRepresentable {
     CGSize(width: max(160, proposal.width ?? 240), height: nsView.intrinsicContentSize.height)
   }
   @MainActor final class Coordinator: NSObject, NSMenuDelegate {
-    var parent: TimeZoneControl
+    var parent: NativeTimeZoneMenu
     weak var button: NSPopUpButton?
-    init(_ parent: TimeZoneControl) { self.parent = parent }
+    init(_ parent: NativeTimeZoneMenu) { self.parent = parent }
     func menuNeedsUpdate(_ menu: NSMenu) {
       guard menu.items.count <= 1, let button else { return }
       menu.removeAllItems()
@@ -94,7 +135,7 @@ struct TimeZoneControl: NSViewRepresentable {
         let section = NSMenuItem(title: heading, action: nil, keyEquivalent: "")
         section.isEnabled = false
         menu.addItem(section)
-        for entry in TimeZoneControl.entries where TimeZoneControl.common.contains(entry.0) == common {
+        for entry in NativeTimeZoneMenu.entries where NativeTimeZoneMenu.common.contains(entry.0) == common {
           let item = NSMenuItem(title: entry.1, action: #selector(selected(_:)), keyEquivalent: "")
           item.target = self
           item.representedObject = entry.0
@@ -157,7 +198,13 @@ struct DateValueControl: View {
         if !text.isEmpty && Dates.parse(text, timeZone: timeZone) == nil {
           Text("日期无效，请重新选择日期时间。").font(.caption).foregroundStyle(.red)
         }
+        Text(Dates.display(date.wrappedValue, timeZone: timeZone, milliseconds: true))
+          .font(.system(.caption, design: .monospaced)).foregroundStyle(.secondary)
+          .accessibilityLabel("完整日期时间（含毫秒）")
+          .accessibilityValue(Dates.display(date.wrappedValue, timeZone: timeZone, milliseconds: true))
         Text(Dates.zoneLabel(timeZone, at: date.wrappedValue)).font(.caption).foregroundStyle(.secondary)
+        Text("夏令时不存在的时刻不接受；重复时刻默认取第一次。编辑日期控件会将毫秒归零。")
+          .font(.caption).foregroundStyle(.tertiary)
       }
     }
     .onAppear { if text.isEmpty && !allowsCurrent { text = Dates.iso(fallback) } }
@@ -201,7 +248,10 @@ private struct NativeDateTimePicker: NSViewRepresentable {
   @MainActor final class Coordinator: NSObject {
     var parent: NativeDateTimePicker
     init(_ parent: NativeDateTimePicker) { self.parent = parent }
-    @objc func changed(_ sender: NSDatePicker) { parent.date = sender.dateValue }
+    @objc func changed(_ sender: NSDatePicker) {
+      // This control edits whole seconds. Do not preserve invisible fractions.
+      parent.date = Date(timeIntervalSince1970: floor(sender.dateValue.timeIntervalSince1970))
+    }
   }
 }
 
@@ -256,7 +306,7 @@ struct KeyValueEditor: View {
     guard !text.isEmpty else { rows = []; error = nil; return }
     do {
       let object = try JSONSerialization.jsonObject(with: Data(text.utf8))
-      if kind == .query, let values = object as? [[String: Any]] {
+      if let values = object as? [[String: Any]] {
         rows = values.map { Entry(name: $0["name"] as? String ?? "", value: $0["value"] as? String ?? "", hasValue: $0["value"] is String) }
       } else if kind != .query, let values = object as? [String: String] {
         rows = values.keys.sorted().map { Entry(name: $0, value: values[$0]!) }
@@ -267,25 +317,17 @@ struct KeyValueEditor: View {
   private func write() {
     let active = rows.filter { !$0.name.isEmpty || !$0.value.isEmpty }
     let names = active.map { kind == .headers ? $0.name.lowercased() : $0.name }
-    if kind != .query && Set(names).count != active.count {
-      error = "名称不能重复。"
-      // Keep the execution input invalid until the duplicate is fixed.
-      serialized = "[重复字段]"; text = serialized
-      return
-    }
-    if kind != .query && active.contains(where: { $0.name.isEmpty }) {
-      error = "请填写名称。"; serialized = "[缺少字段名称]"; text = serialized
-      return
-    }
-    let value: Any
-    if kind == .query {
-      value = active.map { ["name": $0.name, "value": $0.hasValue ? $0.value as Any : NSNull()] }
-    } else { value = Dictionary(uniqueKeysWithValues: active.map { ($0.name, $0.value) }) }
+    let validationError: String? = kind == .query ? nil
+      : Set(names).count != active.count ? "名称不能重复。"
+      : active.contains(where: { $0.name.isEmpty }) ? "请填写名称。" : nil
+    // Keep the editable rows even when invalid. The core validates these rows
+    // before generating data or sending a request; never serialize error prose.
+    let value: Any = active.map { ["name": $0.name, "value": $0.hasValue ? $0.value as Any : NSNull()] }
     if let data = try? JSONSerialization.data(withJSONObject: value, options: [.sortedKeys]),
       let string = String(data: data, encoding: .utf8) {
       serialized = string
       if text != string { text = string }
-      error = nil
+      error = validationError
     }
   }
 }
@@ -344,5 +386,29 @@ struct ToolParameterFields<Options: ToolOptions>: View {
   }
   private func binding(_ field: OptionField<Options>) -> Binding<String> {
     Binding(get: { field.read(options) }, set: { field.write(&options, $0) })
+  }
+}
+
+/// Decode each image revision once off the main actor, at preview resolution.
+struct RasterImagePreview: View {
+  let data: Data
+  var pixelated = false
+  @State private var image: CGImage?
+  @State private var completed = false
+  var body: some View {
+    Group {
+      if let image { Image(decorative: image, scale: 1).resizable().interpolation(pixelated ? .none : .high).scaledToFit() }
+      else if completed { Text("预览不可用，仍可导出原文件。").foregroundStyle(.secondary) }
+      else { ProgressView().controlSize(.small) }
+    }.task(id: data) {
+      completed = false
+      let thumbnail = await RasterThumbnailLoader.shared.thumbnail(data)
+      guard !Task.isCancelled else { return }
+      image = thumbnail
+      completed = true
+    }.onDisappear {
+      image = nil
+      Task { await IdleMemoryCleanup.shared.schedule() }
+    }
   }
 }

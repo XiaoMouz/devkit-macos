@@ -1,0 +1,4 @@
+# Generated vendor bundles contain template literals with meaningful whitespace.
+# Review their engine sources; regenerate them through Vendor/build.mjs.
+Sources/DevKitCore/Resources/engines.js -whitespace linguist-generated=true
+Sources/DevKitCore/Resources/syntax.js -whitespace linguist-generated=true

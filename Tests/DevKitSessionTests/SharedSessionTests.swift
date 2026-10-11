@@ -20,6 +20,32 @@ private actor Gate {
 }
 
 @Suite("Shared workspace session") @MainActor struct SharedSessionTests {
+  @Test func identicalParameterCommitDoesNotInvalidateFinishedResult() async throws {
+    let session = ToolSession<NumberFormatTool>(id: UUID(), bridge: WorkspaceBridge()) { request in
+      try await NumberFormatTool.executeEncoded(request.input, options: request.options)
+    }
+    session.input.text = "1.12345678901234567890"
+    session.options.scale = 20
+    session.run()
+    try await waitUntil { session.current }
+    let originalRevision = session.revision
+    let committed = session.options
+    session.options = committed
+    #expect(session.current)
+    #expect(session.revision == originalRevision)
+  }
+  @Test func rejectedParameterDoesNotRunUsingSilentlyClampedValue() async throws {
+    let session = ToolSession<QrCodeTool>(id: UUID(), bridge: WorkspaceBridge()) { _ in
+      Issue.record("Invalid scale must be rejected before execution")
+      return ToolOutput("unexpected")
+    }
+    session.input.text = "sample"
+    session.options.scale = 31
+    session.run()
+    #expect(session.error?.contains("2–30") == true)
+    #expect(session.output == nil)
+    #expect(!session.bridge.running)
+  }
   @Test func repeatedLayoutEvaluationOnlyPublishesActualChanges() {
     let session = ToolSession<Base64Tool>(id: UUID(), bridge: WorkspaceBridge())
     let updates = Mutex(0)
@@ -148,7 +174,9 @@ private actor Gate {
     let checksum = ToolSession<FileChecksumTool>(id: UUID(), bridge: WorkspaceBridge())
     checksum.loadFile(file)
     try await waitUntil { checksum.input.file != nil }
-    #expect(checksum.input.file == Data("hello".utf8))
+    #expect(checksum.checksumURL == file)
+    #expect(checksum.checksumFileSize == 5)
+    #expect(checksum.input.file?.isEmpty == true)
   }
   @Test func base64TextRoundTripUsesTextViewAndTextExport() async throws {
     let session = ToolSession<Base64Tool>(id: UUID(), bridge: WorkspaceBridge()) { request in

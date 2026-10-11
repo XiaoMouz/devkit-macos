@@ -2,6 +2,7 @@ import AppKit
 import DevKitCore
 import SwiftUI
 import UniformTypeIdentifiers
+import OSLog
 
 /// All presentations of a tool share this in-memory session, never copies of its text.
 @MainActor @Observable final class ToolSession<T: ToolModule> {
@@ -14,11 +15,13 @@ import UniformTypeIdentifiers
         input.text != oldValue.text || input.secondary != oldValue.secondary
           || input.file != oldValue.file || input.fileName != oldValue.fileName
       else { return }
+      importFailure = nil
       invalidate()
     }
   }
   var options = T.Options() {
     didSet {
+      guard T.fields.contains(where: { $0.read(options) != $0.read(oldValue) }) else { return }
       let oldOperation = T.fields.first { $0.id == "operation" }?.read(oldValue) ?? ""
       if metadata.id == "query-string", oldOperation != operation {
         var conversion = QueryStringTool.Options()
@@ -58,6 +61,9 @@ import UniformTypeIdentifiers
   private var task: Task<Void, Never>?
   private let execute: @Sendable (WorkerRequest) async throws -> ToolOutput
   var error: String?
+  var importFailure: String?
+  private(set) var checksumURL: URL?
+  private(set) var checksumFileSize: Int64 = 0
   var status = ""
   var copied = false
   private(set) var timestampSource = "timestamp"
@@ -96,6 +102,7 @@ import UniformTypeIdentifiers
   var current: Bool { output != nil && resultRevision == revision && !bridge.running }
   var recommendedDisplay: String {
     guard let output else { return "text" }
+    if presentation.isImage && metadata.id != "image-metadata" && imageArtifact != nil { return "preview" }
     if output.report != nil { return "rows" }
     if ["color", "contrast"].contains(metadata.id) { return "rows" }
     if metadata.id == "image-metadata" { return "rows" }
@@ -168,7 +175,17 @@ import UniformTypeIdentifiers
       return
     }
     refreshLayout()
+    // Commit the active number/date field before taking the execution snapshot.
+    NSApp?.keyWindow?.makeFirstResponder(nil)
     do {
+      if let importFailure { throw ToolFailure(importFailure) }
+      for field in visibleFields {
+        if case .integer(let range) = field.kind {
+          guard let value = Int(field.read(options)), range.contains(value) else {
+            throw ToolFailure("\(field.label)范围为 \(range.lowerBound)–\(range.upperBound)。")
+          }
+        }
+      }
       try Limits.check(input)
       let request = WorkerRequest(
         id: metadata.id, input: input, options: try JSONEncoder().encode(options))
@@ -177,24 +194,38 @@ import UniformTypeIdentifiers
       error = nil
       copied = false
       status = "处理中…"
+      let fileURL = checksumURL
+      let checksumOptions = options as? FileChecksumTool.Options
+      let progress: @Sendable (Int64, Int64) -> Void = { [weak self] read, total in
+        Task { @MainActor [weak self] in
+          guard let self, self.revision == version, self.bridge.running else { return }
+          self.status = "已读取 \(ByteCountFormatter.string(fromByteCount: read, countStyle: .file)) / \(ByteCountFormatter.string(fromByteCount: total, countStyle: .file))"
+        }
+      }
       task = Task { @MainActor in
         let start = Date()
         do {
-          let result = try await execute(request)
+          let result: ToolOutput
+          if let fileURL, let checksumOptions {
+            result = try await FileChecksumTool.stream(fileURL, options: checksumOptions, progress: progress)
+          } else { result = try await execute(request) }
           guard !Task.isCancelled && version == revision else { return }
           output = result
           resultRevision = version
           elapsed = Date().timeIntervalSince(start)
           bridge.running = false
           status = "已完成"
+          task = nil
           completedRun += 1
           refreshLayout()
         } catch {
           guard !Task.isCancelled && version == revision else { return }
-          self.error = error.localizedDescription
+          self.error = metadata.network ? NetworkSupport.message(for: error) : error.localizedDescription
+          output = nil
           resultRevision = -1
           bridge.running = false
           status = "需要检查输入"
+          task = nil
         }
       }
     } catch { self.error = error.localizedDescription }
@@ -243,6 +274,13 @@ import UniformTypeIdentifiers
     }
   }
   func clearInput() {
+    let large = input.text.utf8.count + input.secondary.utf8.count + (input.file?.count ?? 0)
+      + (output?.text.utf8.count ?? 0) > 256 * 1024
+    if large { Task { await IdleMemoryCleanup.shared.schedule() } }
+    viewState.inputEditor.clearLargeUndo(); viewState.secondaryEditor.clearLargeUndo(); viewState.outputEditor.clearLargeUndo()
+    viewState.inputEditor.page = EditorPage(); viewState.secondaryEditor.page = EditorPage(); viewState.outputEditor.page = EditorPage()
+    checksumURL = nil
+    checksumFileSize = 0
     switch presentation.control {
     case .date: input = ToolInput(text: Dates.iso(Date()))
     case .timestamp: input = ToolInput(text: timestampSource == "date" ? Dates.iso(Date()) : "")
@@ -252,6 +290,9 @@ import UniformTypeIdentifiers
     default: input = ToolInput()
     }
     output = nil
+    secondaryDrafts.removeAll()
+    importFailure = nil
+    error = nil
     status = ""
     elapsed = 0
     refreshLayout()
@@ -262,11 +303,36 @@ import UniformTypeIdentifiers
     panel.allowsMultipleSelection = false
     if presentation.isImage { panel.allowedContentTypes = [.image] }
     else if inputStyle != .file && !presentation.acceptsBinary { panel.allowedContentTypes = [.text, .json, .xml, .sourceCode] }
-    panel.begin { [weak self] response in
+    present(panel) { [weak self] response in
       if response == .OK, let url = panel.url { self?.loadFile(url, secondary: secondary) }
     }
   }
   func loadFile(_ url: URL, secondary: Bool = false) {
+    if metadata.id == "file-checksum" && !secondary {
+      invalidate()
+      let version = revision
+      Task { @MainActor in
+        do {
+          let size = try await Task.detached {
+            let access = url.startAccessingSecurityScopedResource()
+            defer { if access { url.stopAccessingSecurityScopedResource() } }
+            let info = try url.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
+            try require(info.isRegularFile == true, "请选择普通文件。")
+            return Int64(info.fileSize ?? 0)
+          }.value
+          guard version == revision else { return }
+          checksumURL = url
+          checksumFileSize = size
+          input = ToolInput(file: Data(), fileName: url.lastPathComponent)
+          refreshLayout()
+        } catch {
+          guard version == revision else { return }
+          importFailure = "文件未替换：" + error.localizedDescription
+          self.error = importFailure
+        }
+      }
+      return
+    }
     invalidate()
     status = "读取文件…"
     let version = revision
@@ -296,21 +362,70 @@ import UniformTypeIdentifiers
         refreshLayout()
       } catch {
         guard version == revision else { return }
-        self.error = error.localizedDescription
+        let message = "未导入“\(url.lastPathComponent)”：\(error.localizedDescription) 当前输入未替换；请重新导入或确认继续使用当前输入。"
+        importFailure = message
+        self.error = message
         status = "读取失败"
       }
     }
+  }
+  private func present(_ panel: NSSavePanel, completion: @escaping @MainActor (NSApplication.ModalResponse) -> Void) {
+    let log = Logger(subsystem: "app.devkit.macos", category: "FilePanels")
+    let tool = metadata.id
+    log.debug("present tool=\(tool, privacy: .public)")
+    let finished: (NSApplication.ModalResponse) -> Void = { response in
+      log.debug("dismiss tool=\(tool, privacy: .public) accepted=\(response == .OK)")
+      completion(response)
+    }
+    if let window = NSApp?.keyWindow { panel.beginSheetModal(for: window, completionHandler: finished) }
+    else { panel.begin(completionHandler: finished) }
   }
   func save(_ artifact: Artifact) {
     let panel = NSSavePanel()
     panel.nameFieldStringValue = artifact.name
     panel.canCreateDirectories = true
-    panel.begin { [weak self] response in
+    present(panel) { [weak self] response in
       guard response == .OK, let url = panel.url else { return }
-      do {
-        try artifact.data.write(to: url, options: .atomic)
-        self?.status = "已导出 \(url.lastPathComponent)"
-      } catch { self?.error = error.localizedDescription }
+      self?.status = "正在导出…"
+      Task { @MainActor in
+        do {
+          try await Task.detached(priority: .utility) {
+            let access = url.startAccessingSecurityScopedResource()
+            defer { if access { url.stopAccessingSecurityScopedResource() } }
+            try autoreleasepool { try artifact.data.write(to: url, options: .atomic) }
+          }.value
+          self?.status = "已导出 \(url.lastPathComponent)"
+        } catch { self?.error = error.localizedDescription }
+      }
+    }
+  }
+  func saveAllArtifacts() {
+    guard current, let artifacts = output?.artifacts, !artifacts.isEmpty else { return }
+    let panel = NSOpenPanel()
+    panel.canChooseDirectories = true
+    panel.canChooseFiles = false
+    panel.canCreateDirectories = true
+    panel.allowsMultipleSelection = false
+    panel.prompt = "导出全部"
+    let folderName = "DevKit-\(metadata.id)-\(UUID().uuidString.prefix(8))"
+    present(panel) { [weak self] response in
+      guard response == .OK, let destination = panel.url else { return }
+      self?.status = "正在导出…"
+      Task { @MainActor in
+        do {
+          try await Task.detached(priority: .utility) {
+            let access = destination.startAccessingSecurityScopedResource()
+            defer { if access { destination.stopAccessingSecurityScopedResource() } }
+            let folder = destination.appendingPathComponent(folderName, isDirectory: true)
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: false)
+            for artifact in artifacts {
+              let name = URL(fileURLWithPath: artifact.name).lastPathComponent
+              try artifact.data.write(to: folder.appendingPathComponent(name), options: .atomic)
+            }
+          }.value
+          self?.status = "已导出 \(artifacts.count) 个文件到 \(folderName)"
+        } catch { self?.error = error.localizedDescription }
+      }
     }
   }
 }

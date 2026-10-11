@@ -15,19 +15,35 @@ public enum CookieTool: ToolModule {
     ]
   }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
-    let parts = input.text.components(separatedBy: ";")
+    try require(["set-cookie", "cookie"].contains(options.mode), "Cookie 类型无效。")
+    let lines = input.text.components(separatedBy: .newlines)
+      .map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+    try require(!lines.isEmpty, "请输入 Cookie 字段。")
     var rows = [ResultRow]()
-    for (index, part) in parts.enumerated() {
-      let item = part.trimmingCharacters(in: .whitespaces)
-      if let equals = item.firstIndex(of: "=") {
-        rows.append(ResultRow(String(item[..<equals]), String(item[item.index(after: equals)...])))
-      } else if !item.isEmpty {
-        rows.append(ResultRow(item, options.mode == "set-cookie" && index > 0 ? "true" : ""))
+    var values = [[String: String]]()
+    for (lineIndex, line) in lines.enumerated() {
+      let prefix = options.mode == "set-cookie" ? "Set-Cookie:" : "Cookie:"
+      let content = line.lowercased().hasPrefix(prefix.lowercased()) ? String(line.dropFirst(prefix.count)) : line
+      let parts = content.components(separatedBy: ";")
+      for (index, part) in parts.enumerated() {
+        let item = part.trimmingCharacters(in: .whitespaces)
+        guard !item.isEmpty else { continue }
+        let pair = item.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
+        let name = String(pair[0]).trimmingCharacters(in: .whitespaces)
+        try require(!name.isEmpty, "Cookie 名称不能为空。")
+        if options.mode == "set-cookie" && index == 0 {
+          try require(pair.count == 2, "每条 Set-Cookie 必须以名称=值开始。")
+        }
+        let value = pair.count == 2 ? String(pair[1]) : options.mode == "set-cookie" && index > 0 ? "true" : ""
+        let label = lines.count > 1 ? "第 \(lineIndex + 1) 条 · \(name)" : name
+        rows.append(ResultRow(label, value))
+        var entry = ["name": name, "value": value]
+        if lines.count > 1 { entry["header"] = String(lineIndex + 1) }
+        values.append(entry)
       }
     }
-    try require(!rows.isEmpty, "请输入 Cookie 字段；多个 Set-Cookie 请逐条处理。")
-    return ToolOutput(
-      try prettyJSON(rows.map { ["name": $0.label, "value": $0.value] }), rows: rows,
-      note: "值不自动 URL 解码；重复键按原顺序保留。")
+    try require(!rows.isEmpty, "请输入 Cookie 字段。")
+    return ToolOutput(try prettyJSON(values), rows: rows,
+      note: "每行独立解析；Expires 中的逗号保持原样。值不自动 URL 解码，重复键按原顺序保留。")
   }
 }

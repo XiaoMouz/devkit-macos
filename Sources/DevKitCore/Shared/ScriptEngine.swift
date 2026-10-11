@@ -33,7 +33,13 @@ public enum ScriptEngine {
     if let exception { throw ToolFailure(exception) }
     guard let response else { throw ToolFailure("解析超时。请减少输入。", code: "timeout") }
     let result = try JSONDecoder().decode(WorkerResponse.self, from: Data(response.utf8))
-    if let error = result.error { throw error }
+    if let error = result.error {
+      if ["code-format", "code-minify", "svg", "text-replace"].contains(id),
+        error.message.range(of: "[一-龥]", options: .regularExpression) == nil {
+        throw ToolFailure("输入语法无效，请根据下面的位置或说明修正。\n" + error.message, code: error.code)
+      }
+      throw error
+    }
     guard let output = result.output else { throw ToolFailure("解析器未返回结果。", code: "internal") }
     return output
   }

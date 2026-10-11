@@ -1,0 +1,55 @@
+[
+  {
+    "name": "favicon.ico",
+    "bytes": 1074,
+    "entries": 3
+  },
+  {
+    "name": "icon-16.png",
+    "bytes": 268,
+    "dimensions": [
+      16,
+      16
+    ]
+  },
+  {
+    "name": "icon-180.png",
+    "bytes": 1633,
+    "dimensions": [
+      180,
+      180
+    ]
+  },
+  {
+    "name": "icon-192.png",
+    "bytes": 1806,
+    "dimensions": [
+      192,
+      192
+    ]
+  },
+  {
+    "name": "icon-32.png",
+    "bytes": 341,
+    "dimensions": [
+      32,
+      32
+    ]
+  },
+  {
+    "name": "icon-48.png",
+    "bytes": 411,
+    "dimensions": [
+      48,
+      48
+    ]
+  },
+  {
+    "name": "icon-512.png",
+    "bytes": 6648,
+    "dimensions": [
+      512,
+      512
+    ]
+  }
+]

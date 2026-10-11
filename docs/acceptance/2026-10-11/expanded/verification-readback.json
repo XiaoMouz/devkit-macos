@@ -1,0 +1,174 @@
+[
+  {
+    "file": "expanded-uuid-v4.txt",
+    "rows": 1000,
+    "unique": 1000,
+    "versions": [
+      4
+    ],
+    "rfc_variant": true
+  },
+  {
+    "file": "expanded-uuid-v7.txt",
+    "rows": 1000,
+    "unique": 1000,
+    "versions": [
+      7
+    ],
+    "rfc_variant": true
+  },
+  {
+    "file": "expanded-convert-png.png",
+    "bytes": 7711,
+    "dimensions": [
+      800,
+      400
+    ]
+  },
+  {
+    "file": "expanded-icon-16.png",
+    "bytes": 268,
+    "dimensions": [
+      16,
+      16
+    ]
+  },
+  {
+    "file": "expanded-icon-180.png",
+    "bytes": 1633,
+    "dimensions": [
+      180,
+      180
+    ]
+  },
+  {
+    "file": "expanded-icon-192.png",
+    "bytes": 1806,
+    "dimensions": [
+      192,
+      192
+    ]
+  },
+  {
+    "file": "expanded-icon-32.png",
+    "bytes": 341,
+    "dimensions": [
+      32,
+      32
+    ]
+  },
+  {
+    "file": "expanded-icon-48.png",
+    "bytes": 411,
+    "dimensions": [
+      48,
+      48
+    ]
+  },
+  {
+    "file": "expanded-icon-512.png",
+    "bytes": 6648,
+    "dimensions": [
+      512,
+      512
+    ]
+  },
+  {
+    "file": "expanded-qr-H.png",
+    "bytes": 6358,
+    "dimensions": [
+      430,
+      430
+    ]
+  },
+  {
+    "file": "expanded-qr-L.png",
+    "bytes": 4399,
+    "dimensions": [
+      350,
+      350
+    ]
+  },
+  {
+    "file": "expanded-qr-M.png",
+    "bytes": 4354,
+    "dimensions": [
+      350,
+      350
+    ]
+  },
+  {
+    "file": "expanded-qr-Q.png",
+    "bytes": 5289,
+    "dimensions": [
+      390,
+      390
+    ]
+  },
+  {
+    "file": "expanded-qr-scale30.png",
+    "bytes": 24161,
+    "dimensions": [
+      1050,
+      1050
+    ]
+  },
+  {
+    "file": "expanded-qr-scale31.png",
+    "bytes": 24161,
+    "dimensions": [
+      1050,
+      1050
+    ]
+  },
+  {
+    "file": "expanded-qr-two.png",
+    "bytes": 3547,
+    "dimensions": [
+      310,
+      310
+    ]
+  },
+  {
+    "file": "expanded-resize-20mp.png",
+    "bytes": 373570,
+    "dimensions": [
+      5000,
+      4000
+    ]
+  },
+  {
+    "file": "expanded-stripped-orientation.png",
+    "bytes": 135913,
+    "dimensions": [
+      400,
+      800
+    ]
+  },
+  {
+    "file": "expanded-favicon.ico",
+    "dimensions": [
+      [
+        16,
+        16
+      ],
+      [
+        32,
+        32
+      ],
+      [
+        48,
+        48
+      ]
+    ]
+  },
+  {
+    "file": "expanded-dataurl-max.txt",
+    "bytes": 5242878,
+    "decoded_matches_input": true
+  },
+  {
+    "typed_qr_scale_30_vs_31": "byte-identical",
+    "equal": true
+  }
+]

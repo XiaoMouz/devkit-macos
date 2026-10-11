@@ -1,0 +1,24 @@
+{
+  "finalAppPID": 54188,
+  "samplingStart": "2026-10-11T18:03:13.558+08:00",
+  "samplingEnd": "2026-10-11T18:10:58.723+08:00",
+  "samplesMain": 834,
+  "peakMainRSSMiB": 284.0,
+  "lastMainRSSMiB": 130.72,
+  "lastMainCPUPercent": 0.0,
+  "peakTrackedRSSMiB": 531.41,
+  "xcodeFootprintMB": {
+    "afterStress": 173.9,
+    "graphAfterNegativePaths": 179.0,
+    "finalIdle": 155.3,
+    "peakFromGraph": 230.0
+  },
+  "heapMiBFromGraph": 87.9,
+  "glyphAdvancesKiBFromGraph": 1952,
+  "limitations": [
+    "Final runtime data is Debug on M3/macOS27.0.1.",
+    "RSS is not footprint; tracked total excludes untracked WebKit GPU/network processes and may miss short-lived peaks.",
+    "Do not infer isolated tool memory from stage labels: some labels persisted into later actions; final metrics use PID and time range.",
+    "Final stress sequence differs from the original full-submode acceptance; do not report an exact before/after percentage."
+  ]
+}

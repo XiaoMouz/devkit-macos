@@ -20,8 +20,15 @@ enum WorkspacePane: String, CaseIterable, Identifiable {
 
 @MainActor @Observable final class EditorViewState {
   var languageOverride: SyntaxLanguage?
+  var page = EditorPage()
+  var pageRevision = 0
+  var largeUndo: String?
+  var largeRedo: String?
+  var largeExpected: String?
+  func clearLargeUndo() { largeUndo = nil; largeRedo = nil; largeExpected = nil }
   @ObservationIgnored var selection = NSRange(location: 0, length: 0)
   @ObservationIgnored var scrollOrigin = CGPoint.zero
+  @ObservationIgnored var contentID = -1
 }
 
 @MainActor @Observable final class WorkspaceBridge {

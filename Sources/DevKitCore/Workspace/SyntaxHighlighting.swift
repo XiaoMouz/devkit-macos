@@ -1,4 +1,5 @@
 import Foundation
+import Darwin
 import JavaScriptCore
 
 public enum SyntaxLanguage: String, Sendable, CaseIterable {
@@ -74,11 +75,23 @@ public actor SyntaxHighlighter {
   public static let maximumLength = 200_000
   private var context: JSContext?
   private var loadAttempted = false
+  private var idleRelease: Task<Void, Never>?
+  public func releaseResources() {
+    idleRelease?.cancel(); idleRelease = nil
+    context = nil; loadAttempted = false
+    Task { await IdleMemoryCleanup.shared.schedule() }
+  }
 
   public func tokens(for text: String, language: SyntaxLanguage) -> [SyntaxToken] {
     let resolved = language.resolved(for: text)
     guard resolved != .plain, !text.isEmpty, text.utf16.count <= Self.maximumLength,
       !Task.isCancelled else { return [] }
+    idleRelease?.cancel()
+    idleRelease = Task { [weak self] in
+      do { try await Task.sleep(for: .seconds(15)) } catch { return }
+      await self?.releaseResources()
+    }
+    return autoreleasepool {
     if !loadAttempted {
       loadAttempted = true
       if let url = Bundle.module.url(forResource: "syntax", withExtension: "js", subdirectory: "Resources"),
@@ -94,5 +107,24 @@ public actor SyntaxHighlighter {
     else { return [] }
     let length = text.utf16.count
     return tokens.filter { $0.location >= 0 && $0.length > 0 && $0.location <= length && $0.length <= length - $0.location }
+    }
+  }
+}
+
+/// Debounced reclamation of unused allocator pages after large UI resources
+/// have been released. This never evicts a user's input or completed result.
+public actor IdleMemoryCleanup {
+  public static let shared = IdleMemoryCleanup()
+  private var pending: Task<Void, Never>?
+  public func schedule() {
+    pending?.cancel()
+    pending = Task { [weak self] in
+      do { try await Task.sleep(for: .seconds(2)) } catch { return }
+      await self?.reclaim()
+    }
+  }
+  private func reclaim() {
+    pending = nil
+    malloc_zone_pressure_relief(nil, 0)
   }
 }

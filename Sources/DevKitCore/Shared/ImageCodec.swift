@@ -10,8 +10,10 @@ public enum ImageCodec {
     guard let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String: Any],
       let w = properties[kCGImagePropertyPixelWidth as String] as? Int,
       let h = properties[kCGImagePropertyPixelHeight as String] as? Int,
-      w > 0, h > 0, w <= 20000, h <= 20000, w * h <= 40_000_000
-    else { throw ToolFailure("图片尺寸无效或超过 4000 万像素。") }
+      w > 0, h > 0
+    else { throw ToolFailure("图片格式不受支持、文件损坏或缺少有效尺寸；SVG 请使用 SVG 工作台。") }
+    try require(w <= 20000 && h <= 20000 && Int64(w) * Int64(h) <= 40_000_000,
+      "图片超过 4000 万像素或单边超过 20000 像素。")
     return source
   }
   public static func decode(_ input: ToolInput) throws -> CGImage {

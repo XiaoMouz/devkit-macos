@@ -37,7 +37,11 @@ export default async (i, o) => {
             removeComments: true,
             conservativeCollapse: true,
           });
+  const discarded = o.language === "css" && !out.trim() && i.text.replace(/\/\*[\s\S]*?\*\//g, "").trim();
+  const note = o.language === "html" ? " HTML 按浏览器语法解析，可能自动补齐或修复标签；请核对结果。"
+    : o.language === "css" ? " CSS 使用容错解析；无效声明可能被丢弃，请核对结果。" : "";
   return result(out, {
-    note: "原文 " + i.text.length + " 字符 → " + out.length + " 字符",
+    note: "原文 " + i.text.length + " 字符 → " + out.length + " 字符" + note,
+    ...(discarded ? {report: {state: "warning", title: "没有可保留的 CSS 内容", detail: "输入中的无效或空规则已被解析器丢弃。请检查语法后重试。", metrics: []}} : {}),
   });
 };

@@ -19,6 +19,11 @@ public enum HttpClientTool: ToolModule {
     ]
   }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
+    do { return try await request(input, options: options) }
+    catch is CancellationError { throw CancellationError() }
+    catch { throw ToolFailure(NetworkSupport.message(for: error)) }
+  }
+  private static func request(_ input: ToolInput, options: Options) async throws -> ToolOutput {
     guard let url = URL(string: input.text.trimmingCharacters(in: .whitespacesAndNewlines)),
       ["http", "https"].contains(url.scheme?.lowercased() ?? ""), url.host != nil, url.user == nil,
       url.password == nil
@@ -43,7 +48,7 @@ public enum HttpClientTool: ToolModule {
     var rows = [
       ResultRow(
         "状态",
-        "\(http.statusCode) \(HTTPURLResponse.localizedString(forStatusCode: http.statusCode))"),
+        "\(http.statusCode) \(HttpStatusTool.phrase(http.statusCode))"),
       ResultRow("耗时", String(format: "%.0f ms", Date().timeIntervalSince(start) * 1000)),
       ResultRow("最终 URL", response.url?.absoluteString ?? ""),
     ]

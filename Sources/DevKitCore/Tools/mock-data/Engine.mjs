@@ -5,9 +5,16 @@ import {
   result,
 } from "../../../../Vendor/common.mjs";
 export default (i, o) => {
-  const schema = safeJSON(i.text);
-  if (!schema || Array.isArray(schema) || typeof schema !== "object")
-    throw Error("模板必须为字段到类型的对象");
+  const input = safeJSON(i.text);
+  if (!input || typeof input !== "object") throw Error("模板必须为字段到类型的对象或字段列表");
+  const entries = Array.isArray(input)
+    ? input.map((row) => [row?.name, row?.value])
+    : Object.entries(input).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0);
+  if (!entries.length) throw Error("请至少添加一个字段。");
+  if (entries.some(([name]) => typeof name !== "string" || !name.trim())) throw Error("请填写字段名称。");
+  if (new Set(entries.map(([name]) => name)).size !== entries.length) throw Error("字段名称不能重复。");
+  const schema = Object.fromEntries(entries);
+  if (!Number.isInteger(o.seed) || o.seed < 0 || o.seed > 2147483647) throw Error("种子范围为 0–2147483647。");
   if (o.count < 1 || o.count > 10000) throw Error("数量必须为 1–10000");
   let seed = o.seed >>> 0;
   const rng = () => {

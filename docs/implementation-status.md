@@ -14,7 +14,7 @@ Spotlight 现有 2 个可发现通用入口与 2 个内部结果/复制动作；
 
 | ID / 源码 | 工具 | 当前能力与边界 |
 | --- | --- | --- |
-| [base64](../Sources/DevKitCore/Tools/base64/Base64Tool.swift) | Base64 | 标准 / URL Safe；二进制需导出；Spotlight 系统链路待实测。 |
+| [base64](../Sources/DevKitCore/Tools/base64/Base64Tool.swift) | Base64 | 标准 / URL Safe 的 UTF-8 文本；非 UTF-8 明确拒绝；Spotlight 系统链路待实测。 |
 | [code-format](../Sources/DevKitCore/Tools/code-format/CodeFormatTool.swift) | 代码格式化 | Prettier JS/TS/HTML/CSS，SQL Formatter 多方言；不执行输入程序。 |
 | [code-minify](../Sources/DevKitCore/Tools/code-minify/CodeMinifyTool.swift) | 代码压缩 | Terser 保守去空白/注释，CSSO，parse5 保守 HTML 压缩；不改名 JS 标识符。 |
 | [color](../Sources/DevKitCore/Tools/color/ColorTool.swift) | 颜色转换 | sRGB HEX/RGB/HSL/透明度；逐格式复制；未实现色板保存。 |
@@ -27,7 +27,7 @@ Spotlight 现有 2 个可发现通用入口与 2 个内部结果/复制动作；
 | [date-time](../Sources/DevKitCore/Tools/date-time/DateTimeTool.swift) | 日期与时区 | 原生日期时间选择、输入/目标时区选择；日历加天和实际时间差，结果按所选时区显示。 |
 | [dns](../Sources/DevKitCore/Tools/dns/DnsTool.swift) | DNS 查询 | 系统 dig，八类记录，自定义解析器 IP/端口，3 秒单次超时。 |
 | [favicon](../Sources/DevKitCore/Tools/favicon/FaviconTool.swift) | 网站图标 | PNG 尺寸集与 ICO，逐文件导出；无一键 ZIP 导出。 |
-| [file-checksum](../Sources/DevKitCore/Tools/file-checksum/FileChecksumTool.swift) | 文件校验 | 单文件 32 MiB 内摘要和比较；当前通过有界文件读入，不支持大文件流式进度。 |
+| [file-checksum](../Sources/DevKitCore/Tools/file-checksum/FileChecksumTool.swift) | 文件校验 | 原生选取文件使用流式摘要和比较，无 32 MiB 整体读入限制；显示读取进度并支持取消。 |
 | [hash](../Sources/DevKitCore/Tools/hash/HashTool.swift) | 哈希摘要 | MD5/SHA-1/SHA-256/SHA-512；旧算法标识为兼容用途。 |
 | [hmac](../Sources/DevKitCore/Tools/hmac/HmacTool.swift) | HMAC | SHA-256/SHA-512；UTF-8/Hex/Base64 密钥；Hex/Base64 输出。 |
 | [http-client](../Sources/DevKitCore/Tools/http-client/HttpClientTool.swift) | HTTP 调试 | HTTP/HTTPS 方法、头、正文、状态；临时会话，响应上限 5 MiB。 |

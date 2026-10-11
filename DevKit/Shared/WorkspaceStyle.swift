@@ -394,7 +394,8 @@ enum DetachedWorkspacePane: String {
   }
 }
 
-/// Stable pane identity keeps editor selection and scroll position when switching layout.
+/// Mount only visible panes. EditorViewState restores cursor/scroll positions
+/// without retaining hidden native editors, image buffers, or web renderers.
 struct WorkspacePaneDeck<Pane: View, Actions: View>: View {
   let roles: [WorkspacePane]
   let visible: [WorkspacePane]
@@ -414,22 +415,19 @@ struct WorkspacePaneDeck<Pane: View, Actions: View>: View {
       let left = min(
         max(space * fraction, min(320, space * 0.4)), max(0, space - min(320, space * 0.4)))
       ZStack(alignment: .topLeading) {
-        ForEach(roles) { role in
-          let shown = visible.contains(role)
+        ForEach(visible) { role in
           let second = split && visible.last == role
           VStack(alignment: .leading, spacing: 0) {
             PaneActions(title: titles[role] ?? role.rawValue, role: role, format: formats[role]) { actions(role) }
             pane(role).frame(maxWidth: .infinity, maxHeight: .infinity)
           }
             .frame(
-              width: split && shown ? (second ? space - left : left) : bounds.size.width,
+              width: split ? (second ? space - left : left) : bounds.size.width,
               height: bounds.size.height, alignment: .topLeading
             )
             .floatingPane()
             .offset(x: second ? left + gap : 0)
-            .opacity(shown ? 1 : 0)
-            .allowsHitTesting(shown).disabled(!shown)
-            .accessibilityElement(children: .contain).accessibilityHidden(!shown)
+            .accessibilityElement(children: .contain)
         }
         if split {
           Rectangle().fill(.clear).frame(width: gap, height: bounds.size.height)
@@ -460,7 +458,7 @@ struct WorkspacePaneDeck<Pane: View, Actions: View>: View {
               }
             }
         }
-      // Not clipped: pane shadows fall outside the deck; hidden panes stay within it.
+      // Pane shadows may extend outside the deck.
       }.frame(width: bounds.size.width, height: bounds.size.height, alignment: .topLeading)
         .animation(WorkspaceMotion.layout(reduceMotion: reduceMotion), value: visible)
     }

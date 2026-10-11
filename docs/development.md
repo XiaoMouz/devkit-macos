@@ -69,7 +69,7 @@
 
 应用自身的工具索引通过“设置 → Spotlight → 清空索引并关闭”管理。静态 App Intents 由系统管理；测试时复用原 bundle ID，不创建带同名动作的应用副本。
 
-历史重复包的 ZIP 备份保留在已忽略的 `build/retired-spotlight-apps.noindex/` 中，日常验收不恢复或启动这些旧包。
+历史重复包、源码快照和原始验收资料已移至仓库外的本地归档，保留原相对路径；日常验收不恢复或启动旧包。`build/` 只保存可重新生成的临时产物。验收资料的入库范围见[资料管理说明](acceptance/README.md)。
 
 ## 窗口结构与 Liquid Glass
 

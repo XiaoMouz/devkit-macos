@@ -1,6 +1,8 @@
 import { result, pretty } from "../../../../Vendor/common.mjs";
 export default (i, o) => {
-  const r = new RegExp(o.pattern, o.flags);
+  let r;
+  try { r = new RegExp(o.pattern, o.flags); }
+  catch (error) { throw Error("正则表达式或标志无效；标志不能重复，u 与 v 不能同时使用。\n" + error.message); }
   if (o.operation === "replace")
     return result(i.text.replace(r, o.replacement));
   const rows = [];
@@ -22,9 +24,9 @@ export default (i, o) => {
         groups: m.slice(1),
         named: m.groups,
       });
-      if (rows.length >= 10000) throw Error("匹配超过 10000 项");
+      if (rows.length > 10000) throw Error("匹配超过 10000 项");
       if (m[0] === "") {
-        if (r.unicode && i.text.codePointAt(r.lastIndex) > 0xffff)
+        if ((r.unicode || r.unicodeSets) && i.text.codePointAt(r.lastIndex) > 0xffff)
           r.lastIndex += 2;
         else r.lastIndex++;
       }

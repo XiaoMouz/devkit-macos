@@ -27,6 +27,17 @@ public enum JwtTool: ToolModule {
     try require(parts.count == 3, "JWT 必须由三个以 . 分隔的部分组成。")
     let header = try jsonObject(utf8(Base64Codec.decode(String(parts[0]), urlSafe: true)))
     let payload = try jsonObject(utf8(Base64Codec.decode(String(parts[1]), urlSafe: true)))
+    guard let headerValues = header as? [String: Any], let values = payload as? [String: Any] else {
+      throw ToolFailure("JWT Header 和 Payload 必须是 JSON 对象。")
+    }
+    let now = Date().timeIntervalSince1970
+    var temporalIssues = [String]()
+    for key in ["iat", "exp", "nbf"] where values[key] != nil {
+      guard let number = values[key] as? NSNumber, CFGetTypeID(number) != CFBooleanGetTypeID(),
+        number.doubleValue.isFinite else { throw ToolFailure("\(key) 必须是数值时间戳。") }
+      if key == "exp", now >= number.doubleValue { temporalIssues.append("已过期") }
+      if key == "nbf", now < number.doubleValue { temporalIssues.append("尚未生效") }
+    }
     var rows = [
       ResultRow("Header", try prettyJSON(header)), ResultRow("Payload", try prettyJSON(payload)),
     ]
@@ -35,7 +46,7 @@ public enum JwtTool: ToolModule {
     var html: String?
     if options.verify {
       try require(
-        (header as? [String: Any])?["alg"] as? String == "HS256", "此验证入口只接受 alg=HS256，拒绝算法替换。")
+        headerValues["alg"] as? String == "HS256", "此验证入口只接受 alg=HS256，拒绝算法替换。")
       try require(!options.key.isEmpty, "请输入验签密钥。")
       let signature = try Base64Codec.decode(String(parts[2]), urlSafe: true)
       let valid = HMAC<SHA256>.isValidAuthenticationCode(
@@ -45,13 +56,20 @@ public enum JwtTool: ToolModule {
       verification = ResultReport(valid ? "success" : "failure", valid ? "JWT 签名校验通过" : "JWT 签名校验未通过",
         valid ? "签名与当前密钥匹配，仍需检查过期时间、受众和签发者。" : "签名与当前密钥不匹配，请检查令牌内容及密钥。",
         metrics: [ResultRow("算法", "HS256"), ResultRow("签名", valid ? "有效" : "无效")])
+      if valid && !temporalIssues.isEmpty {
+        state = "HS256 签名有效；令牌" + temporalIssues.joined(separator: "、") + "。"
+        verification = ResultReport("warning", "签名有效，但令牌" + temporalIssues.joined(separator: "、"),
+          "签名校验不代表令牌当前可用；仍需核对 aud、iss 等业务声明。",
+          metrics: [ResultRow("签名", "有效"), ResultRow("时间声明", temporalIssues.joined(separator: "、"))])
+      }
       rows.append(ResultRow("签名", state))
       html = ComparisonPreview.documents([
         ("令牌内容", [(text: "头部：" + rows[0].value, kind: ""), (text: "载荷：" + rows[1].value, kind: "")]),
         ("签名校验", [(text: String(parts[2]), kind: valid ? "add" : "error"), (text: state, kind: valid ? "" : "error")]),
       ])
     }
-    if let values = payload as? [String: Any] {
+    if !temporalIssues.isEmpty { rows.append(ResultRow("时间声明（未验证业务可信性）", temporalIssues.joined(separator: "、"))) }
+    do {
       for key in ["iat", "exp", "nbf"] {
         if let n = values[key] as? NSNumber, abs(n.doubleValue) < 253_402_300_800 {
           rows.append(ResultRow("\(key) · \(Dates.zoneLabel(.current, at: Date(timeIntervalSince1970: n.doubleValue)))", Dates.display(Date(timeIntervalSince1970: n.doubleValue))))

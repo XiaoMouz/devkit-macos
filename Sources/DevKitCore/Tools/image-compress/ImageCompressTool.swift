@@ -37,8 +37,18 @@ public enum ImageCompressTool: ToolModule {
       file = smallest
     }
     let reached = options.targetKB == 0 || file.data.count <= options.targetKB * 1000
+    let originalBytes = input.file?.count ?? 0
+    let larger = file.data.count > originalBytes
+    let warning = !reached || larger
+    let sizeNote = larger ? "结果比原文件更大，建议保留原文件或更换格式。" : ""
     return ToolOutput(
       "原文件 \(input.file?.count ?? 0) 字节 → \(file.data.count) 字节", artifacts: [file],
-      note: "JPEG 有损编码；透明背景合成白色。" + (reached ? "" : "当前尺寸无法达到目标大小，可先缩小尺寸。"))
+      note: "JPEG 有损编码；透明背景合成白色。",
+
+      report: ResultReport(warning ? "warning" : "success",
+        !reached ? "未达到目标大小" : larger ? "结果体积增大" : "压缩完成",
+        sizeNote + (reached ? "原文件不会被修改。" : "请降低目标尺寸或调整目标大小。"),
+        metrics: [ResultRow("原文件", "\(originalBytes) 字节"), ResultRow("输出 JPEG", "\(file.data.count) 字节"),
+          ResultRow("体积变化", String(format: "%+.1f%%", originalBytes > 0 ? (Double(file.data.count) / Double(originalBytes) - 1) * 100 : 0))]))
   }
 }

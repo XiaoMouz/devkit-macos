@@ -11,7 +11,7 @@ import Testing
     var options = ContrastTool.Options()
     options.background = "#000000"
     let result = try await ContrastTool.execute(.init(text: "#ffffff"), options: options)
-    #expect(result.rows.first?.value == "21.00:1")
+    #expect(result.rows.first?.value == "21.0000:1")
     #expect(throws: (any Error).self) { try ColorValue.parse("rgb(999,0,0)") }
     #expect(throws: (any Error).self) { try ColorValue.parse("#    aabb") }
   }

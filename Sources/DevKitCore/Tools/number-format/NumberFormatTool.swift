@@ -33,14 +33,21 @@ public enum NumberFormatTool: ToolModule {
       options.rounding == "bankers"
       ? .bankers : options.rounding == "down" ? .down : options.rounding == "up" ? .up : .plain
     NSDecimalRound(&rounded, &number, options.scale, mode)
-    let f = NumberFormatter()
-    f.locale = Locale(identifier: "en_US_POSIX")
-    f.numberStyle = .decimal
-    f.usesGroupingSeparator = options.grouping
-    f.minimumFractionDigits = options.scale
-    f.maximumFractionDigits = options.scale
-    return ToolOutput(
-      f.string(from: NSDecimalNumber(decimal: rounded))
-        ?? NSDecimalNumber(decimal: rounded).stringValue)
+    // NumberFormatter can round NSDecimalNumber through a binary floating-point
+    // representation. Format the rounded decimal digits without that conversion.
+    let plain = NSDecimalString(&rounded, Locale(identifier: "en_US_POSIX"))
+    let negative = plain.hasPrefix("-")
+    let digits = negative ? String(plain.dropFirst()) : plain
+    let parts = digits.split(separator: ".", omittingEmptySubsequences: false)
+    var integer = String(parts[0])
+    if options.grouping {
+      integer = String(integer.reversed().enumerated().flatMap { index, digit -> [Character] in
+        index > 0 && index % 3 == 0 ? [",", digit] : [digit]
+      }.reversed())
+    }
+    let fraction = parts.count > 1 ? String(parts[1]) : ""
+    let suffix = options.scale == 0 ? "" : "." + fraction
+      + String(repeating: "0", count: max(0, options.scale - fraction.count))
+    return ToolOutput((negative ? "-" : "") + integer + suffix)
   }
 }

@@ -21,11 +21,37 @@ public enum HttpStatusTool: ToolModule {
       413: "请求体过大", 415: "不支持的媒体类型", 418: "I'm a teapot（保留）", 422: "内容无法处理", 429: "请求过多",
       500: "服务器内部错误", 502: "网关响应无效", 503: "服务暂不可用", 504: "网关超时",
     ]
-    let phrase = HTTPURLResponse.localizedString(forStatusCode: code)
+    let phrase = Self.phrase(code)
     let group = [1: "信息响应", 2: "成功", 3: "重定向", 4: "客户端错误", 5: "服务端错误"][code / 100]!
     return ToolOutput(
       "\(code) · \(phrase)\n\(descriptions[code] ?? "系统未提供专门说明，请查阅 IANA 状态码注册表。")",
       rows: [ResultRow("状态码", String(code)), ResultRow("类别", group), ResultRow("状态", phrase), ResultRow("含义", descriptions[code] ?? "未收录专门说明")],
-      note: "协议参考：RFC 9110 / IANA HTTP Status Code Registry；名称由当前系统提供。")
+      note: "协议参考：RFC 9110 / IANA HTTP Status Code Registry；常见英文名称来自本地 IANA 注册表快照（2026-10-11），不依赖系统通用错误名称。")
   }
+  public static func phrase(_ code: Int) -> String {
+    // IANA HTTP Status Code Registry, checked 2026-10-11.
+    let names: [Int: String] = [
+      100: "Continue", 101: "Switching Protocols", 102: "Processing", 103: "Early Hints",
+      104: "Upload Resumption Supported (temporary until 2026-11-13)",
+      200: "OK", 201: "Created", 202: "Accepted", 203: "Non-Authoritative Information",
+      204: "No Content", 205: "Reset Content", 206: "Partial Content", 207: "Multi-Status",
+      208: "Already Reported", 226: "IM Used", 300: "Multiple Choices", 301: "Moved Permanently",
+      302: "Found", 303: "See Other", 304: "Not Modified", 305: "Use Proxy", 306: "Unused",
+      307: "Temporary Redirect", 308: "Permanent Redirect", 400: "Bad Request", 401: "Unauthorized",
+      402: "Payment Required", 403: "Forbidden", 404: "Not Found", 405: "Method Not Allowed",
+      406: "Not Acceptable", 407: "Proxy Authentication Required", 408: "Request Timeout",
+      409: "Conflict", 410: "Gone", 411: "Length Required", 412: "Precondition Failed",
+      413: "Content Too Large", 414: "URI Too Long", 415: "Unsupported Media Type",
+      416: "Range Not Satisfiable", 417: "Expectation Failed", 418: "Unused (I'm a teapot)",
+      421: "Misdirected Request", 422: "Unprocessable Content", 423: "Locked", 424: "Failed Dependency",
+      425: "Too Early", 426: "Upgrade Required", 428: "Precondition Required", 429: "Too Many Requests",
+      431: "Request Header Fields Too Large", 451: "Unavailable For Legal Reasons",
+      500: "Internal Server Error", 501: "Not Implemented", 502: "Bad Gateway", 503: "Service Unavailable",
+      504: "Gateway Timeout", 505: "HTTP Version Not Supported", 506: "Variant Also Negotiates",
+      507: "Insufficient Storage", 508: "Loop Detected", 510: "Not Extended (obsolete)",
+      511: "Network Authentication Required",
+    ]
+    return names[code] ?? "Unassigned"
+  }
+
 }
