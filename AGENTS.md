@@ -7,3 +7,11 @@
 - 签名在 Xcode 的 Signing & Capabilities / 本机 xcconfig 中维护。不要覆盖用户现有的团队、证书或其他未提交配置。
 - `Scripts/` 只保留测试和源码/资源维护工具；这些工具不能安装或启动另一份 DevKit。集成测试与 Spotlight 元数据检查显式接收从 Xcode 取得的 App 路径，不自行构建或猜测产物目录。
 - `project.yml` 用于维护生成的工程结构；仅在需要同步工程配置时使用 XcodeGen，避免覆盖他人的未提交工程改动。新增模块时更新注册表，JavaScript 引擎变更时更新 Vendor bundle。
+
+## 项目资料与文档维护
+
+- 编码代理的共享资料位于 [.codex/docs/README.md](.codex/docs/README.md)，按任务选择相关主题；无需为普通小改动读取全部文档。
+- Claude Code 通过 `.claude/CLAUDE.md` 导入本文件，共用同一份约定与资料。
+- `.codex/docs/` 只维护当前架构、开发约束、功能边界和测试要求，不追加按日期组织的工作日记、验收流水、测试次数或本机调试记录。
+- `docs/` 专用于面向用户的网页教程；根目录 `README.md` 负责产品介绍、运行入口和文档导航。
+- 代码或行为改变时更新对应主题，替换失效内容；变更历史留在 Git，临时报告和证据放在已忽略的 `build/` 或仓库外。

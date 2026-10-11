@@ -9,16 +9,3 @@ xcuserdata/
 Config/Signing.local.xcconfig
 
 __pycache__/
-
-# Keep acceptance reports and final summaries; raw evidence stays in local archives.
-/docs/acceptance/**
-!/docs/acceptance/**/
-!/docs/acceptance/README.md
-!/docs/acceptance/**/report.md
-!/docs/acceptance/**/warnings.md
-!/docs/acceptance/**/memory-summary.csv
-!/docs/acceptance/**/memory-summary-final-expanded.csv
-!/docs/acceptance/**/resource-final-summary.json
-!/docs/acceptance/**/verification-readback.json
-!/docs/acceptance/**/favicon-batch-readback.json
-!/docs/acceptance/**/fixture-recipes.md
