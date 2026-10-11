@@ -2,6 +2,19 @@ import AppKit
 import DevKitCore
 import SwiftUI
 
+/// Preserve exact source bytes (including normalization form), using a bulk
+/// comparison instead of Unicode normalization or a Debug-mode byte iterator.
+private func sameEditorText(_ lhs: String?, _ rhs: String) -> Bool {
+  guard var lhs else { return false }
+  var rhs = rhs
+  return lhs.withUTF8 { left in
+    rhs.withUTF8 { right in
+      left.count == right.count
+        && (left.isEmpty || memcmp(left.baseAddress!, right.baseAddress!, left.count) == 0)
+    }
+  }
+}
+
 struct CodeEditor: View {
   @Binding var text: String
   var editable = true
@@ -13,10 +26,10 @@ struct CodeEditor: View {
   var state: EditorViewState? = nil
   var contentID = 0
   @State private var localState = EditorViewState()
+  @State private var analysis = EditorTextAnalysis()
   @AppStorage("wrapLines") private var requestedWrap = true
   private var editorState: EditorViewState { state ?? localState }
   private var effectiveLanguage: SyntaxLanguage { editorState.languageOverride ?? language }
-  private var paged: Bool { text.utf16.count > 131_072 }
   private func replaceLarge(_ range: NSRange, _ replacement: String) -> Bool {
     guard editable, NSMaxRange(range) <= (text as NSString).length else { return false }
     let updated = (text as NSString).replacingCharacters(in: range, with: replacement)
@@ -37,7 +50,9 @@ struct CodeEditor: View {
     contentSettled()
   }
   var body: some View {
-    VStack(spacing: 0) {
+    let summary = analysis.summary(for: text)
+    let paged = summary.paged
+    return VStack(spacing: 0) {
       if paged {
         PagedCodeEditor(text: $text, editable: editable, label: label, state: editorState,
           contentSettled: contentSettled, editingBegan: editingBegan,
@@ -52,10 +67,10 @@ struct CodeEditor: View {
       HStack(spacing: 8) {
         if let status {
           PaneStatusLabel(status: status)
-        } else { Text("\(text.count) 字符").monospacedDigit() }
+        } else { Text("\(summary.characters) 字符").monospacedDigit() }
         Spacer(minLength: 8)
-        if status != nil { Text("\(text.count) 字符").monospacedDigit() }
-        if !paged && requestedWrap && !EditorTextPolicy.shouldWrap(text) { Text("超长行 · 横向滚动") }
+        if status != nil { Text("\(summary.characters) 字符").monospacedDigit() }
+        if !paged && requestedWrap && !summary.wrap { Text("超长行 · 横向滚动") }
         if paged { Text("分段编辑 · 纯文本") }
         else {
           Menu {
@@ -79,6 +94,27 @@ struct CodeEditor: View {
       .onChange(of: text) { _, value in
         if let expected = editorState.largeExpected, expected != value { editorState.clearLargeUndo() }
       }
+  }
+}
+
+/// A per-editor memo, independent of status, selection, and window layout.
+/// Comparing an unchanged String is cheap; counting graphemes and scanning lines is not.
+@MainActor private final class EditorTextAnalysis {
+  struct Summary {
+    let characters: Int
+    let paged: Bool
+    let wrap: Bool
+  }
+  private var text: String?
+  private var cached = Summary(characters: 0, paged: false, wrap: true)
+  func summary(for value: String) -> Summary {
+    if !sameEditorText(text, value) {
+      let paged = value.utf16.count > 131_072
+      cached = Summary(characters: value.count, paged: paged,
+        wrap: !paged && EditorTextPolicy.shouldWrap(value))
+      text = value
+    }
+    return cached
   }
 }
 
@@ -227,23 +263,25 @@ private struct NativeCodeEditor: NSViewRepresentable {
     return host
   }
   private func configure(_ view: WorkspaceTextView, scroll: EditorScrollView, forceUnwrapped: Bool = false) {
-    let wrap = !forceUnwrapped && self.wrap && EditorTextPolicy.shouldWrap(text)
-    view.isEditable = editable && isEnabled
+    let wrap = !forceUnwrapped && self.wrap && view.allowsWrapping(text)
+    if view.isEditable != (editable && isEnabled) { view.isEditable = editable && isEnabled }
     if !isEnabled && view.window?.firstResponder === view { view.window?.makeFirstResponder(nil) }
-    view.isSelectable = isEnabled
+    if view.isSelectable != isEnabled { view.isSelectable = isEnabled }
     scroll.setAccessibilityHidden(!isEnabled)
     let font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
     if view.font != font { view.font = font; view.needsDisplay = true; scroll.lineRuler?.needsDisplay = true }
-    view.isHorizontallyResizable = !wrap
-    scroll.wrapLines = wrap
-    view.autoresizingMask = wrap ? [.width] : []
-    view.textContainer?.widthTracksTextView = wrap
+    let changedWrap = scroll.wrapLines != wrap
+    if view.isHorizontallyResizable != !wrap { view.isHorizontallyResizable = !wrap }
+    if changedWrap { scroll.wrapLines = wrap }
+    let mask: NSView.AutoresizingMask = wrap ? [.width] : []
+    if view.autoresizingMask != mask { view.autoresizingMask = mask }
+    if view.textContainer?.widthTracksTextView != wrap { view.textContainer?.widthTracksTextView = wrap }
     let containerSize = NSSize(
       width: wrap ? max(0, scroll.contentView.bounds.width - view.textContainerInset.width * 2) : .greatestFiniteMagnitude,
       height: CGFloat.greatestFiniteMagnitude)
     if view.textContainer?.containerSize != containerSize { view.textContainer?.containerSize = containerSize }
-    scroll.hasHorizontalScroller = !wrap
-    scroll.tile()
+    if scroll.hasHorizontalScroller != !wrap { scroll.hasHorizontalScroller = !wrap }
+    if changedWrap { scroll.tile() }
   }
   func updateNSView(_ host: EditorContainer, context: Context) {
     let scroll = host.scroll
@@ -262,10 +300,10 @@ private struct NativeCodeEditor: NSViewRepresentable {
       scroll.contentView.scroll(to: .zero)
       scroll.reflectScrolledClipView(scroll.contentView)
     }
-    if view.string != text && !view.hasMarkedText() {
+    if !sameEditorText(view.plainText, text) && !view.hasMarkedText() {
       // Stop wrapping before inserting a huge paragraph; when clearing it,
       // replace the text before restoring normal wrapping.
-      if !EditorTextPolicy.shouldWrap(text) { configure(view, scroll: scroll, forceUnwrapped: true) }
+      if !view.allowsWrapping(text) { configure(view, scroll: scroll, forceUnwrapped: true) }
       let range = view.selectedRange()
       view.string = text
       view.setSelectedRange(NSRange(location: editable ? min(range.location, (text as NSString).length) : 0, length: 0))
@@ -327,9 +365,9 @@ private struct NativeCodeEditor: NSViewRepresentable {
         highlightTask?.cancel(); scheduledText = nil; return
       }
       guard !view.hasMarkedText() else { highlightTask?.cancel(); scheduledText = nil; return }
-      let snapshot = view.string
+      let snapshot = view.plainText
       let language = parent.language
-      guard scheduledText != snapshot || scheduledLanguage != language else { return }
+      guard !sameEditorText(scheduledText, snapshot) || scheduledLanguage != language else { return }
       scheduledText = snapshot; scheduledLanguage = language
       highlightTask?.cancel()
       revision += 1
@@ -343,7 +381,7 @@ private struct NativeCodeEditor: NSViewRepresentable {
         do { try await Task.sleep(for: .milliseconds(100)) } catch { return }
         let tokens = await SyntaxHighlighter.shared.tokens(for: snapshot, language: language)
         guard !Task.isCancelled, let self, requested == self.revision, let view,
-          view.string == snapshot, !view.hasMarkedText() else { return }
+          sameEditorText(view.plainText, snapshot), !view.hasMarkedText() else { return }
         // Replace colours together, after parsing, so typing doesn't flash the
         // whole document back to monochrome during the debounce interval.
         view.layoutManager?.removeTemporaryAttribute(.foregroundColor, forCharacterRange: NSRange(location: 0, length: count))
@@ -359,13 +397,13 @@ private struct NativeCodeEditor: NSViewRepresentable {
       guard parent.text.utf16.count <= 131_072 else { return }
       guard let view = notification.object as? WorkspaceTextView else { return }
       view.rebuildLines()
-      parent.text = view.string
+      parent.text = view.plainText
       schedule(view)
       if bulkEdit { bulkEdit = false; parent.contentSettled() }
     }
     func textView(_ textView: NSTextView, shouldChangeTextIn affectedCharRange: NSRange,
       replacementString: String?) -> Bool {
-      if let replacementString, textView.string.utf16.count - affectedCharRange.length + replacementString.utf16.count > 131_072,
+      if let replacementString, (textView.textStorage?.length ?? 0) - affectedCharRange.length + replacementString.utf16.count > 131_072,
         parent.replaceLarge?(affectedCharRange, replacementString) == true { return false }
       bulkEdit = (replacementString?.utf8.count ?? 0) > 128 || affectedCharRange.length > 128
       if let replacementString, !EditorTextPolicy.shouldWrap(replacementString),
@@ -494,13 +532,31 @@ private final class WorkspaceTextView: NSTextView {
     return super.validateMenuItem(menuItem)
   }
   var lineStarts = [0]
+  /// NSTextView supplies an NSString-backed String. Repeated Swift equality and
+  /// grapheme queries on that foreign storage normalize Unicode scalar by scalar.
+  /// Materialize one native snapshot per edit, shared by the binding and highlighter.
+  private(set) var plainText = ""
+  private var wrapText: String?
+  private var cachedWrap = true
+  func allowsWrapping(_ text: String) -> Bool {
+    if !sameEditorText(wrapText, text) {
+      cachedWrap = EditorTextPolicy.shouldWrap(text)
+      wrapText = text
+    }
+    return cachedWrap
+  }
   func rebuildLines() {
+    plainText = string
+    plainText.makeContiguousUTF8()
     lineStarts = [0]
-    var previous: UInt16 = 0
-    for (index, unit) in string.utf16.enumerated() {
-      if unit == 10 && previous == 13 { lineStarts[lineStarts.count - 1] = index + 1 }
-      else if unit == 10 || unit == 13 || unit == 0x2028 || unit == 0x2029 { lineStarts.append(index + 1) }
-      previous = unit
+    let source = plainText as NSString
+    var start = 0
+    while start < source.length {
+      var end = 0, contentsEnd = 0
+      source.getLineStart(nil, end: &end, contentsEnd: &contentsEnd,
+        for: NSRange(location: start, length: 0))
+      if end > contentsEnd { lineStarts.append(end) }
+      start = end
     }
     if let ruler = (enclosingScrollView as? EditorScrollView)?.lineRuler {
       let width = max(34, CGFloat(String(lineStarts.count).count) * 7 + 16)

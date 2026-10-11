@@ -20,6 +20,8 @@ zsh Scripts/test-appearance.sh
 
 编辑器回归编译实际组件，使用隐藏测试窗口和独立粘贴板；它不是另一份 DevKit 验收应用。只修改文档时检查链接和内容即可，不重建应用。
 
+编辑器性能变更可运行 `zsh Scripts/test-editor.sh --benchmark`，测量 100,000 字节中英混合文本的输入与原地刷新耗时。它使用同一隐藏组件测试进程，报告中位数及最大值，不将依赖机器负载的耗时设为测试通过阈值。交互验收仍使用 Xcode 启动的应用。
+
 检查 worker、CLI 和 Spotlight 元数据时，显式传入从 Xcode 获取的应用路径：
 
 ```sh

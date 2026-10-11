@@ -3,12 +3,6 @@ import SwiftUI
 
 struct MainWindow: View {
   @State private var workspace = WindowWorkspace()
-  @State private var query = ""
-  @State private var favoritesExpanded = true
-  /// The sidebar row last chosen, so a favourite stays highlighted where it was clicked
-  /// even though the same tool also appears in its category.
-  @State private var sidebarTag: String?
-  @State private var expandedCategories: Set<ToolCategory> = [.encoding]
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @AppStorage("showToolConfiguration") private var configurationVisible = true
   @AppStorage(FavoriteTools.key) private var favorites = FavoriteTools.defaults
@@ -16,21 +10,15 @@ struct MainWindow: View {
   private var searchRequest: Int { workspace.searchRequest }
   private var active: ToolTab? { workspace.active }
   private var favoriteIDs: [String] { FavoriteTools.ids(favorites) }
-  private var allTools: [ToolMetadata] { ToolRegistry.all.map { $0.metadata } }
   private var favoriteTools: [ToolMetadata] {
-    favoriteIDs.compactMap { id in allTools.first { $0.id == id } }
-  }
-  private var matches: [ToolMetadata] {
-    ToolRegistry.all.map { $0.metadata }.filter {
-      (query.isEmpty || "\($0.name) \($0.id) \($0.summary) \($0.category.rawValue)".localizedStandardContains(query))
-    }
+    favoriteIDs.compactMap { ToolCatalogue.byID[$0] }
   }
   @State private var columns = NavigationSplitViewVisibility.all
   // Keep native toolbar and collapse behavior, with a fixed-width sidebar and
   // a single inset, behind-window material surface.
   var body: some View {
     NavigationSplitView(columnVisibility: $columns) {
-      sidebar.navigationSplitViewColumnWidth(WorkspaceMetrics.sidebarWidth)
+      ToolSidebar(workspace: workspace).navigationSplitViewColumnWidth(WorkspaceMetrics.sidebarWidth)
         .background(FixedSidebarWidth(width: WorkspaceMetrics.sidebarWidth))
         // The system toggle is a standalone glass button; over the glass panel it
         // stacks glass on glass and sits flush with the panel's top edge.
@@ -120,99 +108,6 @@ struct MainWindow: View {
     if tab.metadata.id == "websocket" { return tab.bridge.running ? "断开" : "连接" }
     return tab.bridge.running ? "取消" : tab.bridge.actionTitle
   }
-  private static let favoritePrefix = "favorite:"
-  private static func toolID(_ tag: String) -> String {
-    tag.hasPrefix(favoritePrefix) ? String(tag.dropFirst(favoritePrefix.count)) : tag
-  }
-  private var sidebarSelection: Binding<String?> {
-    Binding(get: {
-      guard let id = workspace.navigation.selectedToolID else { return nil }
-      if let sidebarTag, Self.toolID(sidebarTag) == id { return sidebarTag }
-      return id
-    }, set: { tag in
-      sidebarTag = tag
-      if let tag { open(Self.toolID(tag)) }
-    })
-  }
-  private var sidebar: some View {
-    VStack(spacing: 0) {
-      SidebarSearchField(text: $query, prompt: "搜索工具", focusRequest: searchRequest) {
-        if let first = matches.first { open(first.id) }
-      }.padding(.horizontal, 12).padding(.top, 2).padding(.bottom, 8)
-      ScrollViewReader { scroll in
-        List(selection: sidebarSelection) {
-          if !query.isEmpty {
-            ForEach(matches) { toolRow($0) }
-          } else {
-            // Favourites are pinned above the catalogue, as Finder and Music pin theirs,
-            // instead of being a separate mode the list has to switch into.
-            if !favoriteTools.isEmpty {
-              Section {
-                if favoritesExpanded {
-                  ForEach(favoriteTools) { toolRow($0, tag: Self.favoritePrefix + $0.id) }
-                }
-              } header: {
-                SidebarSectionHeader(title: "收藏", symbol: "star.fill", tint: .yellow,
-                  count: favoriteTools.count, expanded: $favoritesExpanded)
-              }
-            }
-            ForEach(ToolCategory.allCases, id: \.self) { category in
-              let tools = allTools.filter { $0.category == category }
-              Section {
-                if expandedCategories.contains(category) { ForEach(tools) { toolRow($0) } }
-              } header: {
-                SidebarSectionHeader(title: category.rawValue, symbol: category.symbol,
-                  tint: category.tint, count: tools.count,
-                  expanded: Binding(get: { expandedCategories.contains(category) }, set: {
-                    if $0 { expandedCategories.insert(category) } else { expandedCategories.remove(category) }
-                  }))
-              }
-            }
-          }
-        }
-        .listStyle(.sidebar)
-        .scrollContentBackground(.hidden)
-        .overlay {
-          if !query.isEmpty && matches.isEmpty {
-            ContentUnavailableView.search(text: query)
-          }
-        }
-        // A bar the list scrolls beneath: the hard edge effect separates the footer
-        // from rows passing behind it instead of letting them show through the text.
-        .safeAreaBar(edge: .bottom) {
-          HStack(spacing: 10) {
-            Button { workspace.showOverview() } label: { Label("工具总览", systemImage: "square.grid.2x2") }
-              .help("工具总览")
-            Text("\(ToolRegistry.all.count) 个工具").font(.callout).foregroundStyle(.secondary)
-            Spacer()
-            SettingsLink { Label("设置", systemImage: "gearshape") }.help("设置")
-          }
-          .labelStyle(.iconOnly).buttonStyle(.borderless).controlSize(.large)
-          .padding(.horizontal, 16).padding(.vertical, 10)
-        }
-        .scrollEdgeEffectStyle(.hard, for: .bottom)
-        .onChange(of: workspace.navigation.selectedID) { _, _ in
-          guard let metadata = active?.metadata else { return }
-          // A favourite that was clicked stays in place; otherwise reveal the category row.
-          if sidebarTag == Self.favoritePrefix + metadata.id { return }
-          expandedCategories.insert(metadata.category)
-          Task { @MainActor in await Task.yield(); scroll.scrollTo(metadata.id, anchor: .center) }
-        }
-      }
-    }
-    .floatingSidebarPanel()
-  }
-  private func toolRow(_ item: ToolMetadata, tag: String? = nil) -> some View {
-    // Names only; the description stays available as the row's tooltip.
-    Label {
-      Text(item.name).lineLimit(1)
-    } icon: {
-      ToolIconTile(symbol: item.symbol, tint: item.category.tint, size: 22)
-    }
-    .padding(.vertical, 3)
-    .tag(tag ?? item.id).id(tag ?? item.id).help(item.summary)
-    .contextMenu { Button(favoriteIDs.contains(item.id) ? "取消收藏" : "收藏") { toggleFavorite(item.id) } }
-  }
   private var commandActions: WorkspaceActions {
     workspace.commands
   }
@@ -233,7 +128,7 @@ struct MainWindow: View {
         }
         ForEach(ToolCategory.allCases, id: \.self) { category in
           homeSection(category.rawValue, symbol: category.symbol, tint: category.tint,
-            tools: allTools.filter { $0.category == category })
+            tools: ToolCatalogue.byCategory[category] ?? [])
         }
       }.padding(30).frame(maxWidth: 1180, alignment: .leading).frame(maxWidth: .infinity)
     }
@@ -269,6 +164,127 @@ struct MainWindow: View {
     workspace.open(id)
   }
   private func toggleFavorite(_ id: String) { favorites = FavoriteTools.toggling(id, in: favorites) }
+}
+
+/// Search and disclosure changes only invalidate the sidebar, not the active editor.
+private struct ToolSidebar: View {
+  let workspace: WindowWorkspace
+  @State private var query = ""
+  @State private var favoritesExpanded = true
+  /// The sidebar row last chosen, so a favourite stays highlighted where it was clicked
+  /// even though the same tool also appears in its category.
+  @State private var sidebarTag: String?
+  @State private var expandedCategories: Set<ToolCategory> = [.encoding]
+  @AppStorage(FavoriteTools.key) private var favorites = FavoriteTools.defaults
+  private var searchRequest: Int { workspace.searchRequest }
+  private var favoriteIDs: [String] { FavoriteTools.ids(favorites) }
+  private var favoriteTools: [ToolMetadata] { favoriteIDs.compactMap { ToolCatalogue.byID[$0] } }
+  private var matches: [ToolMetadata] {
+    ToolCatalogue.all.filter {
+      (query.isEmpty || "\($0.name) \($0.id) \($0.summary) \($0.category.rawValue)".localizedStandardContains(query))
+    }
+  }
+  private static let favoritePrefix = "favorite:"
+  private static func toolID(_ tag: String) -> String {
+    tag.hasPrefix(favoritePrefix) ? String(tag.dropFirst(favoritePrefix.count)) : tag
+  }
+  private var sidebarSelection: Binding<String?> {
+    Binding(get: {
+      guard let id = workspace.navigation.selectedToolID else { return nil }
+      if let sidebarTag, Self.toolID(sidebarTag) == id { return sidebarTag }
+      return id
+    }, set: { tag in
+      sidebarTag = tag
+      if let tag { open(Self.toolID(tag)) }
+    })
+  }
+  var body: some View {
+    VStack(spacing: 0) {
+      SidebarSearchField(text: $query, prompt: "搜索工具", focusRequest: searchRequest) {
+        if let first = matches.first { open(first.id) }
+      }.padding(.horizontal, 12).padding(.top, 2).padding(.bottom, 8)
+      ScrollViewReader { scroll in
+        List(selection: sidebarSelection) {
+          if !query.isEmpty {
+            ForEach(matches) { toolRow($0) }
+          } else {
+            // Favourites are pinned above the catalogue, as Finder and Music pin theirs,
+            // instead of being a separate mode the list has to switch into.
+            if !favoriteTools.isEmpty {
+              Section {
+                if favoritesExpanded {
+                  ForEach(favoriteTools) { toolRow($0, tag: Self.favoritePrefix + $0.id) }
+                }
+              } header: {
+                SidebarSectionHeader(title: "收藏", symbol: "star.fill", tint: .yellow,
+                  count: favoriteTools.count, expanded: $favoritesExpanded)
+              }
+            }
+            ForEach(ToolCategory.allCases, id: \.self) { category in
+              let tools = ToolCatalogue.byCategory[category] ?? []
+              Section {
+                if expandedCategories.contains(category) { ForEach(tools) { toolRow($0) } }
+              } header: {
+                SidebarSectionHeader(title: category.rawValue, symbol: category.symbol,
+                  tint: category.tint, count: tools.count,
+                  expanded: Binding(get: { expandedCategories.contains(category) }, set: {
+                    if $0 { expandedCategories.insert(category) } else { expandedCategories.remove(category) }
+                  }))
+              }
+            }
+          }
+        }
+        .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
+        .overlay {
+          if !query.isEmpty && matches.isEmpty {
+            ContentUnavailableView.search(text: query)
+          }
+        }
+        // A bar the list scrolls beneath: the hard edge effect separates the footer
+        // from rows passing behind it instead of letting them show through the text.
+        .safeAreaBar(edge: .bottom) {
+          HStack(spacing: 10) {
+            Button { workspace.showOverview() } label: { Label("工具总览", systemImage: "square.grid.2x2") }
+              .help("工具总览")
+            Text("\(ToolRegistry.all.count) 个工具").font(.callout).foregroundStyle(.secondary)
+            Spacer()
+            SettingsLink { Label("设置", systemImage: "gearshape") }.help("设置")
+          }
+          .labelStyle(.iconOnly).buttonStyle(.borderless).controlSize(.large)
+          .padding(.horizontal, 16).padding(.vertical, 10)
+        }
+        .scrollEdgeEffectStyle(.hard, for: .bottom)
+        .onChange(of: workspace.navigation.selectedID) { _, _ in
+          guard let metadata = workspace.active?.metadata else { return }
+          // A favourite that was clicked stays in place; otherwise reveal the category row.
+          if sidebarTag == Self.favoritePrefix + metadata.id { return }
+          expandedCategories.insert(metadata.category)
+          Task { @MainActor in await Task.yield(); scroll.scrollTo(metadata.id, anchor: .center) }
+        }
+      }
+    }
+    .floatingSidebarPanel()
+  }
+  private func toolRow(_ item: ToolMetadata, tag: String? = nil) -> some View {
+    // Names only; the description stays available as the row's tooltip.
+    Label {
+      Text(item.name).lineLimit(1)
+    } icon: {
+      ToolIconTile(symbol: item.symbol, tint: item.category.tint, size: 22)
+    }
+    .padding(.vertical, 3)
+    .tag(tag ?? item.id).id(tag ?? item.id).help(item.summary)
+    .contextMenu { Button(favoriteIDs.contains(item.id) ? "取消收藏" : "收藏") { toggleFavorite(item.id) } }
+  }
+  private func open(_ id: String) { workspace.open(id) }
+  private func toggleFavorite(_ id: String) { favorites = FavoriteTools.toggling(id, in: favorites) }
+}
+
+private enum ToolCatalogue {
+  static let all = ToolRegistry.all.map { $0.metadata }
+  static let byID = Dictionary(uniqueKeysWithValues: all.map { ($0.id, $0) })
+  static let byCategory = Dictionary(grouping: all, by: \.category)
 }
 
 /// SwiftUI's column width is only a preference. Lock the owning AppKit sidebar

@@ -19,4 +19,4 @@ xcrun swiftc -swift-version 6 -parse-as-library \
   "${editor_core_objects[@]}" -o "$editor_bin_dir/editor-regression"
 # The executable stays next to SwiftPM's resource bundle. The hidden host window
 # and unique pasteboard keep the user's app session and clipboard untouched.
-"$editor_bin_dir/editor-regression"
+"$editor_bin_dir/editor-regression" "$@"

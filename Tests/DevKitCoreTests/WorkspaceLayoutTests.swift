@@ -40,4 +40,18 @@ import Testing
     layout.evaluate(texts: [""])
     #expect(layout.mode(width: 1200) == .split)
   }
+  @Test func wrappingUsesUTF16LineLengthsAndAllNewlineForms() {
+    let limit = EditorTextPolicy.maximumWrappedLineLength
+    let line = String(repeating: "a", count: limit)
+    #expect(EditorTextPolicy.shouldWrap(""))
+    #expect(EditorTextPolicy.shouldWrap(line))
+    #expect(!EditorTextPolicy.shouldWrap(line + "a"))
+    for separator in ["\n", "\r", "\r\n", "\u{85}", "\u{2028}", "\u{2029}"] {
+      #expect(EditorTextPolicy.shouldWrap(line + separator + line + separator))
+      #expect(!EditorTextPolicy.shouldWrap("short" + separator + line + "a"))
+    }
+    let emoji = String(repeating: "🐈", count: limit / 2)
+    #expect(EditorTextPolicy.shouldWrap(emoji))
+    #expect(!EditorTextPolicy.shouldWrap(emoji + "a"))
+  }
 }

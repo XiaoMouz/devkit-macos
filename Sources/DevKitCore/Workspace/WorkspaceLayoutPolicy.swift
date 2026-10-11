@@ -44,14 +44,14 @@ public struct WorkspaceLayoutPolicy: Sendable, Equatable {
 public enum EditorTextPolicy {
   public static let maximumWrappedLineLength = 16_384
   public static func shouldWrap(_ text: String) -> Bool {
-    var length = 0
-    for unit in text.utf16 {
-      switch unit {
-      case 10, 13, 0x85, 0x2028, 0x2029: length = 0
-      default:
-        length += 1
-        if length > maximumWrappedLineLength { return false }
-      }
+    let source = text as NSString
+    var start = 0
+    while start < source.length {
+      var end = 0, contentsEnd = 0
+      source.getLineStart(nil, end: &end, contentsEnd: &contentsEnd,
+        for: NSRange(location: start, length: 0))
+      if contentsEnd - start > maximumWrappedLineLength { return false }
+      start = end
     }
     return true
   }

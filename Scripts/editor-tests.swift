@@ -78,6 +78,77 @@
     }
     check(components[0] != components[1])
     print("PASS syntax palette adapts to light and dark appearances")
+
+    let multiline = "a\r\n🐈\rb\nc\u{85}d\u{2028}e\u{2029}"
+    view.insertText(multiline, replacementRange: NSRange(location: 0, length: view.string.utf16.count))
+    check(view.lineStarts == [0, 3, 6, 8, 10, 12, 14])
+    view.insertText("\n", replacementRange: NSRange(location: 6, length: 0))
+    check(view.lineStarts == [0, 3, 7, 9, 11, 13, 15])
+    view.breakUndoCoalescing()
+    view.undoManager?.undo()
+    check(view.string == multiline)
+    check(view.lineStarts == [0, 3, 6, 8, 10, 12, 14])
+    print("PASS Unicode line numbers remain correct after editing and undo")
+
+    // An unrelated SwiftUI refresh must not reset selection or reinsert text.
+    let selection = NSRange(location: 3, length: 2)
+    view.setSelectedRange(selection)
+    host.rootView = CodeEditor(text: Binding(get: { value }, set: { value = $0 }), label: "Editor regression", language: .json)
+    host.layoutSubtreeIfNeeded()
+    check(view.string == multiline && view.selectedRange() == selection)
+    print("PASS unchanged editor updates preserve text and selection")
+
+    for source in ["é", "e\u{301}"] {
+      value = source
+      host.rootView = CodeEditor(text: Binding(get: { value }, set: { value = $0 }), label: "Editor regression", language: .json)
+      host.layoutSubtreeIfNeeded()
+      check(view.string.utf8.elementsEqual(source.utf8))
+      check(view.plainText.utf8.elementsEqual(source.utf8))
+    }
+    print("PASS canonically equivalent replacements preserve exact input bytes")
+    window.close()
+    if CommandLine.arguments.contains("--benchmark") { try await benchmark() }
+  }
+}
+
+// Optional diagnostic timings, not machine-dependent pass/fail thresholds.
+extension EditorRegression {
+  @MainActor static func benchmark() async throws {
+    func measure(_ name: String, iterations: Int, _ work: () -> Void) {
+      var values: [Double] = []
+      for _ in 0..<iterations {
+        let start = ContinuousClock.now
+        work()
+        let d = start.duration(to: .now).components
+        values.append(Double(d.seconds) * 1000 + Double(d.attoseconds) / 1e15)
+      }
+      values.sort()
+      print("BENCH \(name): median \(String(format: "%.2f", values[values.count / 2])) ms; max \(String(format: "%.2f", values.last!)) ms")
+    }
+    var value = String(repeating: "{\"title\":\"性能测试🐈\",\"value\":42}\n", count: 2500)
+    let state = EditorViewState()
+    let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 900, height: 600), styleMask: [.titled, .resizable], backing: .buffered, defer: false)
+    window.isReleasedWhenClosed = false
+    let makeRoot = { CodeEditor(text: Binding(get: { value }, set: { value = $0 }), label: "Benchmark", language: .plain, state: state) }
+    let host = NSHostingView(rootView: makeRoot())
+    window.contentView = host
+    host.layoutSubtreeIfNeeded()
+    try await Task.sleep(for: .milliseconds(300))
+    func editor(_ view: NSView) -> WorkspaceTextView? {
+      if let text = view as? WorkspaceTextView { return text }
+      return view.subviews.lazy.compactMap(editor).first
+    }
+    guard let view = editor(host) else { fatalError("missing editor") }
+    print("SAMPLE UTF16=\(value.utf16.count), bytes=\(value.utf8.count)")
+    measure("native typing", iterations: 30) {
+      view.insertText("a", replacementRange: NSRange(location: 20, length: 0))
+      host.rootView = makeRoot()
+      host.layoutSubtreeIfNeeded()
+    }
+    measure("unchanged editor refresh", iterations: 30) {
+      host.rootView = makeRoot()
+      host.layoutSubtreeIfNeeded()
+    }
     window.close()
   }
 }
