@@ -23,6 +23,7 @@ struct SettingsView: View {
         }
       }.formStyle(.grouped).tabItem { Label("通用", systemImage: "gearshape") }
       SpotlightSettingsView().tabItem { Label("Spotlight", systemImage: "magnifyingglass") }
+      AutomationSettingsView().tabItem { Label("CLI 与 AI", systemImage: "terminal") }
       VStack(spacing: 12) {
         Image(nsImage: NSApp.applicationIconImage).resizable().scaledToFit().frame(width: 96, height: 96)
           .accessibilityHidden(true)

@@ -20,12 +20,14 @@ zsh Scripts/test-appearance.sh
 
 编辑器回归编译实际组件，使用隐藏测试窗口和独立粘贴板；它不是另一份 DevKit 验收应用。只修改文档时检查链接和内容即可，不重建应用。
 
-检查 worker 和 Spotlight 元数据时，显式传入从 Xcode 获取的应用路径：
+检查 worker、CLI 和 Spotlight 元数据时，显式传入从 Xcode 获取的应用路径：
 
 ```sh
 python3 Scripts/integration-tests.py "/path/from/Xcode/DevKit.app"
 python3 Scripts/check-spotlight-metadata.py "/path/from/Xcode/DevKit.app"
 ```
+
+CLI 集成覆盖包内执行、软链接调用、解析器资源、文件和 JSON 输入、附件、错误与超时、受控本地网络。`swift test` 另覆盖参数校验、注册表默认值、安装冲突与隔离临时目录中的 Shell PATH 配置，不改写测试机器的真实启动文件。修改配套 Skill 时同步 `Sources/DevKitCore/Resources/Skills/devkit` 和面向用户的 [CLI 教程](../../docs/cli-and-ai.md)。
 
 ## JavaScript 与资源
 

@@ -61,6 +61,12 @@ DevKit 注册 48 个工具，入口以 [ToolRegistry.swift](../../Sources/DevKit
 | [uuid](../../Sources/DevKitCore/Tools/uuid/UuidTool.swift) | UUID | RFC 9562 v4/v7；v7 同毫秒不保证单调性。 |
 | [websocket](../../Sources/DevKitCore/Tools/websocket/WebsocketTool.swift) | WebSocket 调试 | 专属界面手动连接/发送/接收/断开；1000 条/5 MiB；不持久化。 |
 
+## CLI 与 AI 接入
+
+设置中的「CLI 与 AI」提供 CLI 和 Codex / Claude Code Skill 安装。`devkit list`、`describe` 和 `run` 覆盖当前注册工具，支持 UTF-8 管道、文本/二进制文件、第二份文本、参数文件和完整 JSON 请求。工具发现与参数校验复用核心定义，执行通过包内 worker 隔离。安装为 zsh / bash 自动配置 PATH，新终端可直接使用 `devkit`；其他 Shell 需手动配置。
+
+CLI 默认使用按类别排列的工具列表、参数说明与可读结果；AI / 脚本显式使用 `--format json`，`run --format text` 提供精确原文。附件默认显示名称、类型和大小，JSON 模式提供 Base64 数据，不自动保存。网络工具显式要求 `--allow-network`。文件输入包含文件校验均受 32 MiB 限制，WebSocket 是一次性的核心调用，不共享 UI 会话。CLI / Skill 链接依赖当前应用位置，移动应用后需更新链接。详见 [CLI 与 AI 教程](../../docs/cli-and-ai.md)。
+
 ## 仍需解决的事项
 
 - 空闲及轻量操作后的应用与辅助进程合计 100 MB 内存目标尚未满足；不能用冷启动值代表连续使用后的表现。

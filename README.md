@@ -38,6 +38,18 @@ JSON 的格式化、压缩、校验、路径查询、结构对比、Schema 校�
 
 Spotlight 集成默认关闭，可在设置中按工具启用。支持命令入口与引导式动作；系统 Quick Key 需要手动配置，有效开发者签名是执行前提。完整系统交互仍需进一步验证。
 
+## CLI 与 AI
+
+在「设置 → CLI 与 AI」安装 `devkit` 命令和配套 Skill，支持 Codex、Claude Code，以及其他支持 `SKILL.md` 的 AI。安装会自动配置终端路径，新开终端即可直接使用命令。CLI 复用 48 个工具核心，默认显示适合阅读的工具列表、参数说明和结果；AI / 脚本可加 `--format json` 获取结构化输出。
+
+```sh
+devkit list
+devkit describe json
+printf '%s' '{"hello":"DevKit"}' | devkit run json --format text
+```
+
+安装和调用方式见 [CLI 与 AI 教程](docs/cli-and-ai.md)。
+
 ## 开发
 
 核心和会话回归测试使用：
@@ -52,6 +64,7 @@ swift test
 DevKit/                 原生应用、共享界面与系统集成
 Sources/DevKitCore/      工具核心、算法与资源
 Sources/DevKitWorker/    独立处理进程
+Sources/DevKitCLI/       随应用嵌入的命令行入口
 Tests/                  核心与会话测试
 Vendor/                 离线 JavaScript 依赖与资源构建
 .codex/docs/            编码代理共享的项目资料

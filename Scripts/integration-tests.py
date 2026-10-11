@@ -13,12 +13,14 @@ import subprocess
 import sys
 import threading
 import time
+import tempfile
 import unittest
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('app', type=Path, help='DevKit.app produced by Xcode Run or Archive')
 args = parser.parse_args()
 WORKER = args.app / 'Contents/Helpers/DevKitWorker'
+CLI = args.app / 'Contents/Helpers/devkit'
 if not WORKER.is_file():
     parser.error('所选 App 中没有 DevKitWorker，请传入 Xcode 构建出的 DevKit.app。')
 sys.argv = sys.argv[:1]
@@ -166,5 +168,138 @@ class WorkerIntegration(unittest.TestCase):
                 self.assertEqual(run(tool)['error']['message'], '工具不存在。')
     def test_unknown_tool_is_structured_error(self):
         self.assertIn('error',run('nonexistent'))
+
+class CLIIntegration(unittest.TestCase):
+    def cli(self, *arguments, input=b'', executable=CLI):
+        return subprocess.run([str(executable), *arguments], input=input, capture_output=True, timeout=28)
+
+    def test_discovery_and_conditional_description(self):
+        result = self.cli('list', '--format', 'json')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(len(json.loads(result.stdout)['tools']), 48)
+        description = json.loads(self.cli('describe', 'json', '--option', 'operation=schema', '--format', 'json').stdout)['tool']
+        self.assertEqual(description['inputStyle'], 'pair')
+        self.assertFalse(description['network'])
+
+    def test_human_output_is_default(self):
+        listing = self.cli('list')
+        self.assertEqual(listing.returncode, 0, listing.stderr)
+        text = listing.stdout.decode()
+        self.assertIn('编码与转换', text)
+        self.assertIn('base64', text)
+        self.assertNotIn('"protocolVersion"', text)
+        detail = self.cli('describe', 'base64').stdout.decode()
+        self.assertIn('operation', detail)
+        self.assertIn('decode', detail)
+        result = self.cli('run', 'base64', '--text', 'hello')
+        self.assertEqual(result.stdout, b'aGVsbG8=\n')
+        error = self.cli('run', 'unknown')
+        self.assertEqual(error.returncode, 2)
+        self.assertEqual(error.stdout, b'')
+        self.assertTrue(error.stderr.decode().startswith('错误：'))
+
+    def test_pipe_and_structured_request(self):
+        original = '  你好\n"$HOME"\\\n'.encode()
+        result = self.cli('run', 'base64', '--format', 'text', input=original)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, base64.b64encode(original))
+        request = {'id': 'base64', 'input': {'text': result.stdout.decode()}, 'options': {'operation': 'decode'}}
+        decoded = self.cli('run', '--request', '-', '--format', 'text', input=json.dumps(request).encode())
+        self.assertEqual(decoded.stdout, original)
+
+    def test_json_resources_from_symlink(self):
+        with tempfile.TemporaryDirectory(prefix='devkit cli ') as folder:
+            link = Path(folder) / 'devkit'
+            link.symlink_to(CLI.resolve())
+            result = self.cli('run', 'json', '--option', 'operation=minify', '--format', 'text',
+                              input=b'{ "hello": "DevKit" }', executable=link)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout, b'{"hello":"DevKit"}')
+
+    def test_file_options_and_secondary_input(self):
+        with tempfile.TemporaryDirectory() as folder:
+            folder = Path(folder)
+            (folder / 'a.json').write_text('{"value": 1}')
+            (folder / 'schema.json').write_text('{"type":"array"}')
+            (folder / 'options.json').write_text('{"operation":"schema"}')
+            result = self.cli('run', 'json', '--input-file', str(folder / 'a.json'),
+                              '--secondary-file', str(folder / 'schema.json'),
+                              '--options-file', str(folder / 'options.json'), '--format', 'json')
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(json.loads(result.stdout)['output']['report']['state'], 'failure')
+
+    def test_binary_file_and_attachment(self):
+        with tempfile.TemporaryDirectory() as folder:
+            file = Path(folder) / 'fixture.bin'
+            file.write_bytes(bytes(range(256)))
+            result = self.cli('run', 'file-checksum', '--file', str(file), '--format', 'text')
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout.decode(), hashlib.sha256(file.read_bytes()).hexdigest())
+        qr = self.cli('run', 'qr-code', '--text', 'DevKit CLI', '--format', 'json')
+        self.assertEqual(qr.returncode, 0, qr.stderr)
+        artifact = json.loads(qr.stdout)['output']['artifacts'][0]
+        self.assertTrue(base64.b64decode(artifact['data']).startswith(b'\x89PNG\r\n\x1a\n'))
+
+    def test_errors_only_write_stderr(self):
+        for arguments, status in [
+            (['run', 'base64', '--option', 'padding=yes'], 2),
+            (['run', 'base64', '--option', 'operation=decode', '--text', '$'], 1),
+            (['run', 'http-client', '--text', 'http://127.0.0.1:1'], 2),
+        ]:
+            result = self.cli(*arguments, '--format', 'json')
+            self.assertEqual(result.returncode, status)
+            self.assertEqual(result.stdout, b'')
+            self.assertIn('error', json.loads(result.stderr))
+
+    def test_explicit_local_network_request(self):
+        server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), HTTPHandler)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        try:
+            result = self.cli('run', 'http-client', '--text', f'http://127.0.0.1:{server.server_port}/',
+                              '--allow-network', '--format', 'json')
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(json.loads(result.stdout)['output']['text'], '{"hello":"DevKit"}')
+        finally:
+            server.shutdown(); server.server_close()
+
+    def test_cli_timeout_is_structured(self):
+        request = {'id': 'regex', 'input': {'text': 'a' * 40000 + '!'},
+                   'options': {'pattern': '^(a+)+$', 'flags': '', 'operation': 'match'}}
+        result = self.cli('run', '--request', '-', '--format', 'json', input=json.dumps(request).encode())
+        if result.returncode == 0:
+            self.assertEqual(json.loads(result.stdout)['output']['text'], '[]')
+        else:
+            self.assertEqual(result.returncode, 124, result.stderr)
+            self.assertEqual(json.loads(result.stderr)['error']['code'], 'timeout')
+
+    def test_cli_cancel_terminates_worker_connection(self):
+        connected, disconnected = threading.Event(), threading.Event()
+        class WaitingHandler(socketserver.BaseRequestHandler):
+            def handle(self):
+                self.request.settimeout(5)
+                headers = b''
+                while b'\r\n\r\n' not in headers:
+                    headers += self.request.recv(1024)
+                self.request.sendall(b'HTTP/1.1 200 OK\r\nContent-Length: 100\r\n\r\n')
+                connected.set()
+                try:
+                    if self.request.recv(1) == b'': disconnected.set()
+                except ConnectionResetError:
+                    disconnected.set()
+        server = socketserver.ThreadingTCPServer(('127.0.0.1', 0), WaitingHandler)
+        server.daemon_threads = True
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        process = subprocess.Popen([str(CLI), 'run', 'http-client', '--text',
+                                    f'http://127.0.0.1:{server.server_address[1]}/', '--allow-network'],
+                                   stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try:
+            self.assertTrue(connected.wait(5))
+            process.terminate()
+            process.communicate(timeout=3)
+            self.assertEqual(process.returncode, 143)
+            self.assertTrue(disconnected.wait(2), 'worker connection survived CLI cancellation')
+        finally:
+            if process.poll() is None: process.kill(); process.communicate()
+            server.shutdown(); server.server_close()
 
 if __name__=='__main__': unittest.main(verbosity=2)

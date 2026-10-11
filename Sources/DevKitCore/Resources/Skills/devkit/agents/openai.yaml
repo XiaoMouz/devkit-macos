@@ -1,0 +1,4 @@
+interface:
+  display_name: "DevKit"
+  short_description: "调用本机 DevKit CLI，完成编码转换、JSON、文本与图片处理"
+  default_prompt: "使用 $devkit 查询合适的本地工具并处理这份开发数据。"

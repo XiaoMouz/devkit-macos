@@ -7,6 +7,7 @@ let package = Package(
   products: [
     .library(name: "DevKitCore", targets: ["DevKitCore"]),
     .executable(name: "DevKitWorker", targets: ["DevKitWorker"]),
+    .executable(name: "devkit", targets: ["DevKitCLI"]),
   ],
   targets: [
     .target(
@@ -29,6 +30,7 @@ let package = Package(
         "Tools/text-replace/Engine.mjs",
       ], resources: [.copy("Resources")]),
     .executableTarget(name: "DevKitWorker", dependencies: ["DevKitCore"]),
+    .executableTarget(name: "DevKitCLI", dependencies: ["DevKitCore"]),
     .target(
       name: "DevKitSession", dependencies: ["DevKitCore"], path: "DevKit/Shared",
       exclude: [

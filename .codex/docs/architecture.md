@@ -13,9 +13,13 @@
 | `Sources/DevKitCore/Workspace/` | 布局、参数排列、分页、导航和语法高亮规则 |
 | `Sources/DevKitCore/Registry/` | 显式工具注册表 |
 | `Sources/DevKitWorker/` | 包内独立处理进程 |
+| `Sources/DevKitCLI/` | 包内 `devkit` 命令与 worker 进程桥接 |
+| `Sources/DevKitCore/Automation/` | CLI 参数校验、工具发现、JSON 协议与安装链接 |
 | `Vendor/` | 本地 JavaScript 依赖、打包源与许可证补充 |
 
-`Package.swift` 定义 `DevKitCore`、`DevKitWorker` 和供测试使用的 `DevKitSession`。应用由 Xcode target 编译，并通过工程内的 Embed worker 构建阶段嵌入 helper。不要另建一套应用打包流程。
+`Package.swift` 定义 `DevKitCore`、`DevKitWorker`、`DevKitCLI` 和供测试使用的 `DevKitSession`。应用由 Xcode target 编译，并通过工程内的 Embed command-line helpers 构建阶段将 worker 和 CLI 嵌入 `Contents/Helpers`。不要另建一套应用打包流程。
+
+CLI 的 `list` / `describe` 从 `ToolRegistry` 和 `OptionField` 生成描述，`run` 校验参数后调用同一包内 worker。选项按字段定义顺序写入，保留关联参数的默认值行为。CLI 与 UI 会话、剪贴板独立；`CommandPresentation` 负责默认的人类可读分组与排版，AI 显式使用 `--format json` 取得带 `protocolVersion` 的协议结果。错误遵循所选格式，写 stderr 并使用非零退出码；`run --format text` 保留精确原文。默认格式不依据 TTY 或管道自动切换。Skill 原文位于 `Sources/DevKitCore/Resources/Skills/devkit`，通过 Swift Package 资源一起分发。设置页创建 CLI / Skill 用户目录链接，不复制应用、不覆盖未知同名文件；CLI 安装时为当前登录 Shell 的启动配置追加幂等 PATH 块，支持 zsh 和 bash，保留用户原有配置。
 
 ## 执行与状态
 
