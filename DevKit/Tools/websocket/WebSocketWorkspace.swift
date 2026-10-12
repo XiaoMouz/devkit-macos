@@ -15,7 +15,7 @@ import SwiftUI
   var connecting = false
   var messages: [Message] = []
   var error: String?
-  var status = "尚未连接"
+  var status = L10n.tr("Not Connected")
   private var session: URLSession?
   private var socket: URLSessionWebSocketTask?
   private var receiver: Task<Void, Never>?
@@ -27,7 +27,7 @@ import SwiftUI
       guard let endpoint = URL(string: url),
         ["ws", "wss"].contains(endpoint.scheme?.lowercased() ?? ""), endpoint.host != nil,
         endpoint.user == nil, endpoint.password == nil
-      else { throw ToolFailure("请输入 ws:// 或 wss:// 地址。") }
+      else { throw ToolFailure(L10n.tr("Enter a ws:// or wss:// URL.")) }
       var request = URLRequest(url: endpoint)
       request.allHTTPHeaderFields = try NetworkSupport.headers(headers)
       let session = NetworkSupport.session(persistentConnection: true)
@@ -37,7 +37,7 @@ import SwiftUI
       self.socket = socket
       socket.resume()
       connecting = true
-      status = "连接中…"
+      status = L10n.tr("Connecting…")
       error = nil
       let current = generation
       receiver = Task {
@@ -51,13 +51,13 @@ import SwiftUI
           guard generation == current else { return }
           connected = true
           connecting = false
-          status = "已连接"
+          status = L10n.tr("Connected")
           while !Task.isCancelled {
             let message = try await socket.receive()
             guard generation == current else { return }
             switch message {
-            case .string(let value): try append("接收", value)
-            case .data(let bytes): try append("接收 · Hex", hex(bytes))
+            case .string(let value): try append(L10n.tr("Received"), value)
+            case .data(let bytes): try append(L10n.tr("Received · Hex"), hex(bytes))
             @unknown default: break
             }
           }
@@ -68,10 +68,10 @@ import SwiftUI
           disconnect()
           if code == .normalClosure || code == .goingAway {
             self.error = nil
-            status = "远端正常关闭（\(code.rawValue)）" + (reason.isEmpty ? "" : "：" + reason)
+            status = L10n.tr("Remote closed normally (\(code.rawValue))") + (reason.isEmpty ? "" : "：" + reason)
           } else {
             self.error = NetworkSupport.message(for: error)
-            status = code == .invalid ? "连接意外中断" : "远端关闭（\(code.rawValue)）" + (reason.isEmpty ? "" : "：" + reason)
+            status = code == .invalid ? L10n.tr("Connection interrupted unexpectedly") : L10n.tr("Remote closed (\(code.rawValue))") + (reason.isEmpty ? "" : "：" + reason)
           }
         }
       }
@@ -82,14 +82,14 @@ import SwiftUI
     let text = draft
     let current = generation
     guard text.utf8.count <= 1024 * 1024 else {
-      error = "单条消息上限 1 MiB。"
+      error = L10n.tr("Each message is limited to 1 MiB.")
       return
     }
     Task {
       do {
         try await socket.send(.string(text))
         guard generation == current else { return }
-        try append("发送", text)
+        try append(L10n.tr("Send"), text)
       } catch { if generation == current { self.error = NetworkSupport.message(for: error) } }
     }
   }
@@ -103,7 +103,7 @@ import SwiftUI
     session = nil
     connected = false
     connecting = false
-    status = "已断开"
+    status = L10n.tr("Disconnected")
   }
   func clear() {
     messages = []
@@ -112,7 +112,7 @@ import SwiftUI
   private func append(_ direction: String, _ text: String) throws {
     try require(
       messages.count < 1000 && totalBytes + text.utf8.count <= 5 * 1024 * 1024,
-      "会话已达 1000 条或 5 MiB 上限；清空后重新连接。")
+      L10n.tr("The session reached 1,000 messages or 5 MiB. Clear it and reconnect."))
     totalBytes += text.utf8.count
     messages.append(Message(direction: direction, text: text))
   }
@@ -126,25 +126,25 @@ struct WebSocketWorkspace: View {
   var body: some View {
     VStack(spacing: 12) {
       HStack {
-        TextField("wss:// 或 ws:// 地址", text: $model.url).textFieldStyle(.roundedBorder).disabled(
+        TextField(L10n.tr("wss:// or ws:// URL"), text: $model.url).textFieldStyle(.roundedBorder).disabled(
           model.connected || model.connecting)
-        Button { model.send() } label: { Label("发送消息", systemImage: "paperplane") }
+        Button { model.send() } label: { Label(L10n.tr("Send Message"), systemImage: "paperplane") }
           .buttonStyle(.bordered).buttonBorderShape(.capsule).disabled(!model.connected)
         Menu {
-          Button("复制全部消息") { copy() }
-          Button("清空消息") { model.clear() }
-        } label: { Label("更多", systemImage: "ellipsis") }.labelStyle(.iconOnly).menuStyle(.button)
-          .buttonStyle(.bordered).buttonBorderShape(.capsule).fixedSize().help("更多操作")
+          Button(L10n.tr("Copy All Messages")) { copy() }
+          Button(L10n.tr("Clear Messages")) { model.clear() }
+        } label: { Label(L10n.tr("More"), systemImage: "ellipsis") }.labelStyle(.iconOnly).menuStyle(.button)
+          .buttonStyle(.bordered).buttonBorderShape(.capsule).fixedSize().help(L10n.tr("More Actions"))
       }.padding(.bottom, 8)
       GeometryReader { bounds in
         let split = bounds.size.width >= 720
         VStack(spacing: 8) {
           if !split {
-            WorkspaceSegments(items: [("发送", "send"), ("消息（\(model.messages.count)）", "messages")], selection: $pane)
+            WorkspaceSegments(items: [(L10n.tr("Send"), "send"), (L10n.tr("Messages (\(model.messages.count))"), "messages")], selection: $pane)
           }
           WorkspacePaneDeck(roles: [.input, .output],
             visible: split ? [.input, .output] : [pane == "send" ? .input : .output],
-            titles: [.input: "发送消息", .output: "会话消息"], actions: { _ in EmptyView() }) { role in
+            titles: [.input: L10n.tr("Send Message"), .output: L10n.tr("Session Messages")], actions: { _ in EmptyView() }) { role in
             if role == .input { sendPane } else { messagesPane }
           }
         }.animation(WorkspaceMotion.layout(reduceMotion: reduceMotion), value: split)
@@ -152,7 +152,7 @@ struct WebSocketWorkspace: View {
       HStack {
         Text(model.status)
         Spacer()
-        Text("\(model.messages.count) 条消息")
+        Text(L10n.tr("Messages: \(model.messages.count)"))
       }.font(.caption).foregroundStyle(.secondary)
       if let error = model.error {
         Text(error).font(.callout).foregroundStyle(.orange).padding(14).frame(
@@ -169,20 +169,20 @@ struct WebSocketWorkspace: View {
   }
   private var sendPane: some View {
     VStack(spacing: 0) {
-      CodeEditor(text: $model.draft, label: "WebSocket 待发送消息")
+      CodeEditor(text: $model.draft, label: L10n.tr("WebSocket Message to Send"))
     }.frame(minWidth: 220, maxWidth: .infinity, maxHeight: .infinity)
   }
   private var messagesPane: some View {
     VStack(spacing: 0) {
       if model.messages.isEmpty {
         ContentUnavailableView(
-          "等待消息", systemImage: "network", description: Text("连接后手动发送文本；结果留在当前标签页。")
+          L10n.tr("Waiting for Messages"), systemImage: "network", description: Text(L10n.tr("Connect and send text manually. Results stay in this tab."))
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
       } else {
         List(model.messages) { message in
           Button {
-            if Clipboard.copy(message.text) { model.status = "已复制消息" }
+            if Clipboard.copy(message.text) { model.status = L10n.tr("Message Copied") }
           } label: {
             VStack(alignment: .leading, spacing: 7) {
               HStack {
@@ -193,7 +193,7 @@ struct WebSocketWorkspace: View {
               HighlightedText(text: String(message.text.prefix(5000)))
                 .lineLimit(12)
             }.padding(.vertical, 6)
-          }.buttonStyle(.plain).help("点击复制完整消息")
+          }.buttonStyle(.plain).help(L10n.tr("Click to copy the full message"))
         }.listStyle(.plain).scrollContentBackground(.hidden)
       }
     }.frame(minWidth: 250, maxWidth: .infinity, maxHeight: .infinity)
@@ -210,7 +210,7 @@ struct WebSocketWorkspace: View {
   private func copy() {
     if Clipboard.copy(model.messages.map { "[\($0.direction)] \($0.text)" }.joined(separator: "\n"))
     {
-      model.status = "已复制会话"
+      model.status = L10n.tr("Session Copied")
     }
   }
 }
@@ -220,8 +220,8 @@ struct SocketConfiguration: View {
   var body: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: 18) {
-        Text("工具配置").font(.system(size: 12, weight: .semibold))
-        Text("请求头").font(.callout).foregroundStyle(.secondary)
+        Text(L10n.tr("Tool Configuration")).font(.system(size: 12, weight: .semibold))
+        Text(L10n.tr("Headers")).font(.callout).foregroundStyle(.secondary)
         KeyValueEditor(text: $model.headers, kind: .headers).disabled(model.connected || model.connecting)
           .textFieldStyle(.roundedBorder).disabled(model.connected || model.connecting)
       }.padding(18)
@@ -234,7 +234,7 @@ struct SocketFooter: View {
     HStack {
       Text(model.status)
       Spacer()
-      Text("\(model.messages.count) 条消息 · 会话不保存")
+      Text(L10n.tr("Messages: \(model.messages.count) · Session is not saved"))
     }.font(.system(size: 11)).foregroundStyle(.secondary)
   }
 }

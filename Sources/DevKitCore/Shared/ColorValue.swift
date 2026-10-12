@@ -42,40 +42,40 @@ public struct ColorValue: Sendable {
     if text.hasPrefix("#") {
       var value = String(text.dropFirst())
       if value.count == 3 || value.count == 4 { value = value.map { "\($0)\($0)" }.joined() }
-      try require(value.count == 6 || value.count == 8, "HEX 颜色需要 3、4、6 或 8 位。")
+      try require(value.count == 6 || value.count == 8, L10n.tr("HEX colors require 3, 4, 6, or 8 digits."))
       let bytes = try unhex(value)
-      try require(bytes.count == 3 || bytes.count == 4, "HEX 颜色不能包含空白或缺少通道。")
+      try require(bytes.count == 3 || bytes.count == 4, L10n.tr("HEX colors cannot contain whitespace or omit channels."))
       return ColorValue(
         r: Double(bytes[0]) / 255, g: Double(bytes[1]) / 255, b: Double(bytes[2]) / 255,
         a: bytes.count == 4 ? Double(bytes[3]) / 255 : 1)
     }
     let hsl = text.hasPrefix("hsl(") || text.hasPrefix("hsla(")
-    try require(hsl || text.hasPrefix("rgb(") || text.hasPrefix("rgba("), "支持 #HEX、rgb() 和 hsl()。")
+    try require(hsl || text.hasPrefix("rgb(") || text.hasPrefix("rgba("), L10n.tr("Supports #HEX, rgb(), and hsl()."))
     guard let start = text.firstIndex(of: "("), text.hasSuffix(")") else {
-      throw ToolFailure("颜色函数格式无效。")
+      throw ToolFailure(L10n.tr("Invalid color function format."))
     }
     let pieces = text[text.index(after: start)..<text.index(before: text.endIndex)].split {
       $0 == "," || $0 == "/" || $0.isWhitespace
     }.map(String.init)
-    try require(pieces.count == 3 || pieces.count == 4, "颜色参数数量无效。")
+    try require(pieces.count == 3 || pieces.count == 4, L10n.tr("Invalid number of color parameters."))
     var numbers = [Double]()
     for (index, piece) in pieces.enumerated() {
       guard
         let n = Double(
           piece.replacingOccurrences(of: "%", with: "").replacingOccurrences(of: "deg", with: "")),
         n.isFinite
-      else { throw ToolFailure("颜色参数需要有限数字。") }
+      else { throw ToolFailure(L10n.tr("Color parameters must be finite numbers.")) }
       numbers.append(piece.hasSuffix("%") ? n / 100 : index == 3 || hsl ? n : n / 255)
     }
     let alpha = numbers.count == 4 ? numbers[3] : 1
-    try require((0...1).contains(alpha), "透明度范围为 0–1。")
+    try require((0...1).contains(alpha), L10n.tr("Opacity must be between 0 and 1."))
     if !hsl {
-      try require(numbers.prefix(3).allSatisfy { (0...1).contains($0) }, "RGB 范围为 0–255 或 0%–100%。")
+      try require(numbers.prefix(3).allSatisfy { (0...1).contains($0) }, L10n.tr("RGB values must be 0–255 or 0%–100%."))
       return ColorValue(r: numbers[0], g: numbers[1], b: numbers[2], a: alpha)
     }
     try require(
       pieces[1].hasSuffix("%") && pieces[2].hasSuffix("%") && (0...1).contains(numbers[1])
-        && (0...1).contains(numbers[2]), "HSL 饱和度与亮度必须为 0%–100%。")
+        && (0...1).contains(numbers[2]), L10n.tr("HSL saturation and lightness must be 0%–100%."))
     let h =
       (numbers[0].truncatingRemainder(dividingBy: 360) + 360).truncatingRemainder(dividingBy: 360)
       / 60

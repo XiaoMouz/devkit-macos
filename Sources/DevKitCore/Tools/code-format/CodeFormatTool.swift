@@ -8,16 +8,16 @@ public enum CodeFormatTool: ToolModule {
     public init() {}
   }
   public static let metadata = ToolMetadata(
-    "code-format", "代码格式化", .assets, "Prettier 格式化 JS / TS / HTML / CSS；SQL 可选方言。",
+    "code-format", "Code Formatter", .assets, "Format JS, TS, HTML, and CSS with Prettier, or SQL with a choice of dialect.",
     sample: "const hello={name:\"DevKit\",tools:[\"base64\",\"json\"]};", secondary: "",
     input: .text, network: false)
   public static var fields: [OptionField<Options>] {
     [
       .init(
-        "language", "语言", \.language, choices: ["javascript", "typescript", "html", "css", "sql"]),
-      .init("indent", "缩进", \.indent, range: 1...8),
+        "language", L10n.tr("Language"), \.language, choices: ["javascript", "typescript", "html", "css", "sql"]),
+      .init("indent", L10n.tr("Indent"), \.indent, range: 1...8),
       .init(
-        "dialect", "SQL 方言", \.dialect,
+        "dialect", L10n.tr("SQL Dialect"), \.dialect,
         choices: ["sql", "mysql", "postgresql", "sqlite", "transactsql"]),
     ]
   }

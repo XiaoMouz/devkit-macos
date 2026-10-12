@@ -11,38 +11,38 @@ struct AutomationSettingsView: View {
 
   var body: some View {
     Form {
-      Section("命令行工具") {
-        Text("通过终端和 AI 调用 DevKit 的 \(ToolRegistry.all.count) 个工具，无需打开主窗口。")
+      Section(L10n.tr("Command-Line Tools")) {
+        Text(L10n.tr("Use DevKit’s \(ToolRegistry.all.count) tools from your terminal or AI without opening the main window."))
         HStack {
           path(command.path)
           Spacer()
-          Button(installed(cli, command) ? "已安装 · 更新链接" : "安装 CLI") {
+          Button(installed(cli, command) ? L10n.tr("Installed · Update Link") : L10n.tr("Install CLI")) {
             install(cli, at: command, key: "cli")
           }
         }
-        Text("安装时自动配置终端路径，新开终端即可使用 devkit。已有终端请重开；移动应用后可在这里更新链接。")
+        Text(L10n.tr("Installation configures your terminal path. Open a new terminal to use devkit. Reopen existing terminals; update the link here if you move the app."))
           .font(.caption).foregroundStyle(.secondary)
         HStack {
           path("devkit list")
           Spacer()
-          Button("复制命令") { Clipboard.copy("devkit list") }
+          Button(L10n.tr("Copy Command")) { Clipboard.copy("devkit list") }
         }
       }
       Section("AI Skill") {
-        Text("安装 devkit Skill，让 AI 发现工具、查询参数并通过 CLI 执行。先安装上方 CLI，再为使用的 AI 安装 Skill。")
+        Text(L10n.tr("Install the devkit Skill so AI can discover tools, inspect parameters, and run the CLI. Install the CLI above first, then install the Skill for your AI."))
           .font(.callout)
         skillRow("Codex", directory: codexSkills, key: "codex")
         skillRow("Claude Code", directory: home.appendingPathComponent(".claude/skills"), key: "claude")
-        Button("查看 Skill 文件") {
+        Button(L10n.tr("View Skill Files")) {
           if let url = AutomationInstallation.skillURL { NSWorkspace.shared.open(url) }
         }
-        Text("其他支持 SKILL.md 的 AI 可使用同一份文件。安装后重新打开 AI 会话，使其发现新 Skill。")
+        Text(L10n.tr("Other AI tools that support SKILL.md can use the same files. Start a new AI session after installation to discover the Skill."))
           .font(.caption).foregroundStyle(.secondary)
       }
-      Section("调用示例") {
+      Section(L10n.tr("Examples")) {
         path("devkit describe json")
         path("printf '%s' '{\"hello\":\"DevKit\"}' | devkit run json --format text")
-        Text("默认显示排版结果，AI 可加 --format json；联网工具需要 --allow-network。")
+        Text(L10n.tr("Results are formatted by default. AI can add --format json; network tools require --allow-network."))
           .font(.caption).foregroundStyle(.secondary)
       }
       if let message {
@@ -80,7 +80,7 @@ struct AutomationSettingsView: View {
         path(destination.path).foregroundStyle(.secondary)
       }
       Spacer()
-      Button(AutomationInstallation.skillURL.map { installed($0, destination) } == true ? "已安装 · 更新链接" : "安装 Skill") {
+      Button(AutomationInstallation.skillURL.map { installed($0, destination) } == true ? L10n.tr("Installed · Update Link") : L10n.tr("Install Skill")) {
         if let source = AutomationInstallation.skillURL { install(source, at: destination, key: key) }
       }.disabled(AutomationInstallation.skillURL == nil)
     }
@@ -94,8 +94,8 @@ struct AutomationSettingsView: View {
       UserDefaults.standard.set(source.path, forKey: setting)
       if key == "cli" {
         try AutomationInstallation.configureCommandPath(home: home, shell: AutomationInstallation.loginShell)
-        message = "CLI 已安装。新开终端即可运行 devkit list。"
-      } else { message = "已安装到 \(destination.path)" }
+        message = L10n.tr("CLI installed. Open a new terminal and run devkit list.")
+      } else { message = L10n.tr("Installed at \(destination.path)") }
       failed = false
     } catch {
       message = error.localizedDescription; failed = true

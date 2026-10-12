@@ -3,7 +3,7 @@ import Foundation
 public enum HttpStatusTool: ToolModule {
   public typealias Options = EmptyOptions
   public static let metadata = ToolMetadata(
-    "http-status", "HTTP 状态码", .web, "本地查询 HTTP 状态含义；不发送请求。", sample: "404", secondary: "",
+    "http-status", "HTTP Status Code", .web, "Look up HTTP status meanings locally without sending a request.", sample: "404", secondary: "",
     input: .text, network: false)
   public static var fields: [OptionField<Options>] {
     [
@@ -13,20 +13,20 @@ public enum HttpStatusTool: ToolModule {
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
     guard let code = Int(input.text.trimmingCharacters(in: .whitespacesAndNewlines)),
       (100...599).contains(code)
-    else { throw ToolFailure("请输入 100–599 的状态码。") }
+    else { throw ToolFailure(L10n.tr("Enter a status code from 100 to 599.")) }
     let descriptions: [Int: String] = [
-      200: "请求成功", 201: "资源已创建", 202: "已接受异步处理", 204: "成功且无响应正文", 301: "永久重定向", 302: "临时重定向",
-      304: "缓存未修改", 307: "临时重定向，保持方法", 308: "永久重定向，保持方法", 400: "请求格式有误", 401: "缺少或无效的身份凭证",
-      403: "拒绝访问", 404: "未找到资源", 405: "方法不允许", 408: "请求超时", 409: "资源状态冲突", 410: "资源已永久移除",
-      413: "请求体过大", 415: "不支持的媒体类型", 418: "I'm a teapot（保留）", 422: "内容无法处理", 429: "请求过多",
-      500: "服务器内部错误", 502: "网关响应无效", 503: "服务暂不可用", 504: "网关超时",
+      200: L10n.tr("Request succeeded"), 201: L10n.tr("Resource created"), 202: L10n.tr("Accepted for asynchronous processing"), 204: L10n.tr("Succeeded with no response body"), 301: L10n.tr("Permanent redirect"), 302: L10n.tr("Temporary redirect"),
+      304: L10n.tr("Cached resource not modified"), 307: L10n.tr("Temporary redirect preserving the method"), 308: L10n.tr("Permanent redirect preserving the method"), 400: L10n.tr("Malformed request"), 401: L10n.tr("Missing or invalid credentials"),
+      403: L10n.tr("Access denied"), 404: L10n.tr("Resource not found"), 405: L10n.tr("Method not allowed"), 408: L10n.tr("Request timeout"), 409: L10n.tr("Resource state conflict"), 410: L10n.tr("Resource permanently removed"),
+      413: L10n.tr("Request body too large"), 415: L10n.tr("Unsupported media type"), 418: L10n.tr("I’m a teapot (reserved)"), 422: L10n.tr("Content cannot be processed"), 429: L10n.tr("Too many requests"),
+      500: L10n.tr("Internal server error"), 502: L10n.tr("Invalid gateway response"), 503: L10n.tr("Service temporarily unavailable"), 504: L10n.tr("Gateway timeout"),
     ]
     let phrase = Self.phrase(code)
-    let group = [1: "信息响应", 2: "成功", 3: "重定向", 4: "客户端错误", 5: "服务端错误"][code / 100]!
+    let group = [1: L10n.tr("Informational"), 2: L10n.tr("Success"), 3: L10n.tr("Redirection"), 4: L10n.tr("Client Error"), 5: L10n.tr("Server Error")][code / 100]!
     return ToolOutput(
-      "\(code) · \(phrase)\n\(descriptions[code] ?? "系统未提供专门说明，请查阅 IANA 状态码注册表。")",
-      rows: [ResultRow("状态码", String(code)), ResultRow("类别", group), ResultRow("状态", phrase), ResultRow("含义", descriptions[code] ?? "未收录专门说明")],
-      note: "协议参考：RFC 9110 / IANA HTTP Status Code Registry；常见英文名称来自本地 IANA 注册表快照（2026-10-11），不依赖系统通用错误名称。")
+      "\(code) · \(phrase)\n\(descriptions[code] ?? L10n.tr("The system provides no specific description. Consult the IANA status code registry."))",
+      rows: [ResultRow(L10n.tr("Status Code"), String(code)), ResultRow(L10n.tr("Category"), group), ResultRow(L10n.tr("Status"), phrase), ResultRow(L10n.tr("Meaning"), descriptions[code] ?? L10n.tr("No Specific Description"))],
+      note: L10n.tr("Protocol reference: RFC 9110 / IANA HTTP Status Code Registry. Common English names come from a local IANA registry snapshot (2026-10-11), independent of generic system error names."))
   }
   public static func phrase(_ code: Int) -> String {
     // IANA HTTP Status Code Registry, checked 2026-10-11.

@@ -3,7 +3,7 @@ import Foundation
 public enum FaviconTool: ToolModule {
   public typealias Options = EmptyOptions
   public static let metadata = ToolMetadata(
-    "favicon", "网站图标", .assets, "从图片生成常用 PNG 尺寸与 ICO；原文件不覆盖。", sample: "", secondary: "",
+    "favicon", "Favicon", .assets, "Generate common PNG sizes and ICO files from an image without overwriting the original.", sample: "", secondary: "",
     input: .file, network: false)
   public static var fields: [OptionField<Options>] {
     [
@@ -29,6 +29,6 @@ public enum FaviconTool: ToolModule {
     files.append(Artifact("favicon.ico", "image/x-icon", ico))
     let html =
       "<link rel=\"icon\" href=\"/favicon.ico\">\n<link rel=\"apple-touch-icon\" sizes=\"180x180\" href=\"/icon-180.png\">\n<link rel=\"icon\" type=\"image/png\" sizes=\"192x192\" href=\"/icon-192.png\">"
-    return ToolOutput(html, artifacts: files, note: "ICO 内含 16/32/48 px PNG 图像；各文件可通过导出菜单保存。")
+    return ToolOutput(html, artifacts: files, note: L10n.tr("The ICO contains 16, 32, and 48 px PNG images. Save each file using the export menu."))
   }
 }

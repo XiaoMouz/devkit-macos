@@ -29,7 +29,7 @@ struct SidebarSectionHeader: View {
     } label: {
       HStack(spacing: 6) {
         Image(systemName: symbol).foregroundStyle(tint).frame(width: 16)
-        Text(title).lineLimit(1)
+        Text(title).lineLimit(2).fixedSize(horizontal: false, vertical: true)
         Spacer(minLength: 4)
         Text("\(count)").monospacedDigit().frame(width: 22, alignment: .trailing)
         Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold))
@@ -37,13 +37,13 @@ struct SidebarSectionHeader: View {
           .opacity(hovering ? 1 : 0.5)
       }
       .font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
-      .padding(.trailing, 10).frame(height: 28).contentShape(Rectangle())
+      .padding(.trailing, 10).frame(minHeight: 28).contentShape(Rectangle())
     }
     .buttonStyle(.plain).padding(.top, 8).padding(.bottom, 2)
     .onHover { hovering = $0 }
-    .accessibilityLabel("\(title)，\(count) 个工具")
-    .accessibilityValue(expanded ? "已展开" : "已收起")
-    .accessibilityHint(expanded ? "收起分类" : "展开分类")
+    .accessibilityLabel(L10n.tr("\(title), tools: \(count)"))
+    .accessibilityValue(expanded ? L10n.tr("Expanded") : L10n.tr("Collapsed"))
+    .accessibilityHint(expanded ? L10n.tr("Collapse Category") : L10n.tr("Expand Category"))
   }
 }
 
@@ -253,7 +253,7 @@ struct PaneActions<Content: View>: View {
       }
       if role == .output {
         Image(systemName: "lock").font(.system(size: 10)).foregroundStyle(.secondary)
-          .help("只读").accessibilityLabel("只读")
+          .help(L10n.tr("Read-Only")).accessibilityLabel(L10n.tr("Read-Only"))
       }
       Spacer(minLength: 8)
       content().fixedSize()
@@ -354,7 +354,7 @@ struct WorkspaceSegments<Value: Hashable>: View {
     }
   }
   private var nativePicker: some View {
-    Picker("切换", selection: $selection) {
+    Picker(L10n.tr("Switch"), selection: $selection) {
       ForEach(items.indices, id: \.self) { index in
         itemLabel(at: index).tag(items[index].1)
       }
@@ -386,10 +386,10 @@ enum DetachedWorkspacePane: String {
   case input, secondary, output, comparison
   var title: String {
     switch self {
-    case .input: "输入"
-    case .secondary: "第二输入"
-    case .output: "结果"
-    case .comparison: "对照"
+    case .input: L10n.tr("Input")
+    case .secondary: L10n.tr("Second Input")
+    case .output: L10n.tr("Result")
+    case .comparison: L10n.tr("Comparison")
     }
   }
 }
@@ -451,7 +451,7 @@ struct WorkspacePaneDeck<Pane: View, Actions: View>: View {
             .onTapGesture(count: 2) {
               withAnimation(WorkspaceMotion.layout(reduceMotion: reduceMotion)) { fraction = 0.5 }
             }
-            .accessibilityLabel("调整对照面板宽度")
+            .accessibilityLabel(L10n.tr("Adjust comparison pane widths"))
             .accessibilityAdjustableAction { direction in
               withAnimation(WorkspaceMotion.layout(reduceMotion: reduceMotion)) {
                 fraction = min(max(fraction + (direction == .increment ? 0.05 : -0.05), 0.25), 0.75)

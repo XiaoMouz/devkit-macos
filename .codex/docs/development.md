@@ -15,19 +15,21 @@
 ## 核心与会话测试
 
 ```sh
-swift test
+python3 Scripts/localization.py --check
+DEVKIT_LANGUAGE=zh-Hans swift test
+DEVKIT_LANGUAGE=en swift test --filter LocalizationTests
 zsh Scripts/test-editor.sh
 zsh Scripts/test-appearance.sh
 ```
 
-编辑器回归编译实际组件，使用隐藏测试窗口和独立粘贴板；它不是另一份 DevKit 验收应用。只修改文档时检查链接和内容即可，不重建应用。
+核心与会话测试包含中文报告断言，固定使用 `zh-Hans`；英文行为由独立的本地化回归覆盖，避免测试结果依赖机器语言。编辑器回归编译实际组件，使用隐藏测试窗口和独立粘贴板；它不是另一份 DevKit 验收应用。只修改文档时检查链接和内容即可，不重建应用。
 
 编辑器性能变更可运行 `zsh Scripts/test-editor.sh --benchmark`，测量 100,000 字节中英混合文本的输入与原地刷新耗时。它使用同一隐藏组件测试进程，报告中位数及最大值，不将依赖机器负载的耗时设为测试通过阈值。交互验收仍使用 Xcode 启动的应用。
 
 检查 worker、CLI 和 Spotlight 元数据时，显式传入从 Xcode 获取的应用路径：
 
 ```sh
-python3 Scripts/integration-tests.py "/path/from/Xcode/DevKit.app"
+DEVKIT_LANGUAGE=zh-Hans python3 Scripts/integration-tests.py "/path/from/Xcode/DevKit.app"
 python3 Scripts/check-spotlight-metadata.py "/path/from/Xcode/DevKit.app"
 ```
 
@@ -48,6 +50,10 @@ npm run build --prefix docs
 `.github/workflows/docs.yml` 在 main 的文档变更后构建并部署 GitHub Pages，仓库 Pages source 使用 GitHub Actions。构建产物、node_modules 和缓存不入库。截图只来自 Xcode 当前 Run 的应用，使用可公开样例；面向用户的正式截图保存在 `docs/public/images/`，临时验收证据保存在 `build/`。
 
 官网和根 README 聚焦功能、安装与使用，下载链接指向 Releases 的 latest 入口，不固定具体版本号；版本号只在版本说明和对应 Release 中出现。不展示签名公司、Developer ID、公证票据、自用/预览版、本机/本地处理等标签及内部验收记录。工具页保留操作、示例、参数和必要限制，删去重复的通用前言、宣传口号及不影响使用的实现说明；共用操作集中在相应指南中。
+
+## 翻译资源
+
+新增语言或修改翻译遵循[多语言规范](localization.md)。编辑 `Sources/DevKitCore/Resources/Translations/*.json` 后运行 `python3 Scripts/localization.py`，用 `--check` 检查生成资源是否一致。翻译变更不需要 XcodeGen 或重新打包 JavaScript。
 
 ## JavaScript 与资源
 

@@ -48,7 +48,7 @@ struct MainWindow: View {
       }.frame(width: bounds.size.width, height: bounds.size.height).clipped()
     }
     .background { Color(nsColor: .workspaceBase).ignoresSafeArea() }
-    .navigationTitle(active?.metadata.name ?? "工具总览")
+    .navigationTitle(active?.metadata.name ?? L10n.tr("All Tools"))
     .toolbar { toolbarContent }
     .inspector(isPresented: inspectorVisible) {
       if let active { active.configuration.id(active.id).inspectorColumnWidth(min: 220, ideal: 260, max: 360) }
@@ -72,9 +72,9 @@ struct MainWindow: View {
     if let active, active.metadata.id == "websocket" {
       ToolbarItem(placement: .primaryAction) {
         Button { toggleFavorite(active.metadata.id) } label: {
-          Label("收藏", systemImage: favoriteIDs.contains(active.metadata.id) ? "star.fill" : "star")
+          Label(L10n.tr("Favorites"), systemImage: favoriteIDs.contains(active.metadata.id) ? "star.fill" : "star")
             .contentTransition(.symbolEffect(.replace))
-        }.help(favoriteIDs.contains(active.metadata.id) ? "取消收藏" : "收藏当前工具")
+        }.help(favoriteIDs.contains(active.metadata.id) ? L10n.tr("Remove from Favorites") : L10n.tr("Add Current Tool to Favorites"))
       }
       ToolbarSpacer(.fixed, placement: .primaryAction)
       ToolbarItem(placement: .primaryAction) {
@@ -82,14 +82,14 @@ struct MainWindow: View {
           Label(runTitle(active), systemImage: active.bridge.running ? "stop.fill" : "play.fill")
             .labelStyle(.titleAndIcon).padding(.horizontal, 6)
         }.buttonStyle(.borderedProminent)
-          .help(active.bridge.running ? "断开" : "连接 ⌘↩︎")
+          .help(active.bridge.running ? L10n.tr("Disconnect") : L10n.tr("Connect ⌘↩︎"))
       }
       if active.hasConfiguration {
         ToolbarSpacer(.fixed, placement: .primaryAction)
         ToolbarItem(placement: .primaryAction) {
           Button { configurationVisible.toggle() } label: {
-            Label("检查器", systemImage: "sidebar.right")
-          }.help("显示或隐藏配置")
+            Label(L10n.tr("Inspector"), systemImage: "sidebar.right")
+          }.help(L10n.tr("Show or Hide Configuration"))
         }
       }
     }
@@ -101,12 +101,12 @@ struct MainWindow: View {
         columns = hidden ? .all : .detailOnly
       }
     } label: {
-      Label(hidden ? "显示侧栏" : "隐藏侧栏", systemImage: "sidebar.left")
-    }.labelStyle(.iconOnly).help(hidden ? "显示侧栏 ⌃⌘S" : "隐藏侧栏 ⌃⌘S")
+      Label(hidden ? L10n.tr("Show Sidebar") : L10n.tr("Hide Sidebar"), systemImage: "sidebar.left")
+    }.labelStyle(.iconOnly).help(hidden ? L10n.tr("Show Sidebar ⌃⌘S") : L10n.tr("Hide Sidebar ⌃⌘S"))
   }
   private func runTitle(_ tab: ToolTab) -> String {
-    if tab.metadata.id == "websocket" { return tab.bridge.running ? "断开" : "连接" }
-    return tab.bridge.running ? "取消" : tab.bridge.actionTitle
+    if tab.metadata.id == "websocket" { return tab.bridge.running ? L10n.tr("Disconnect") : L10n.tr("Connect") }
+    return tab.bridge.running ? L10n.tr("Cancel") : tab.bridge.actionTitle
   }
   private var commandActions: WorkspaceActions {
     workspace.commands
@@ -115,19 +115,19 @@ struct MainWindow: View {
     ScrollView {
       VStack(alignment: .leading, spacing: 30) {
         VStack(alignment: .leading, spacing: 8) {
-          Text("开发日常，随手可用。").font(.title.weight(.semibold))
-          Text("编码、数据、文本与前端资源。在一个原生工作空间完成。").foregroundStyle(.secondary)
+          Text(L10n.tr("Everyday tools, ready when you are.")).font(.title.weight(.semibold))
+          Text(L10n.tr("Encoding, data, text, and web assets in one native workspace.")).foregroundStyle(.secondary)
           HStack(spacing: 14) {
-            Label("\(ToolRegistry.all.count) 个工具", systemImage: "square.grid.2x2")
-            Label("\(ToolCategory.allCases.count) 个分类", systemImage: "folder")
-            Label("本地处理", systemImage: "lock.shield")
+            Label(L10n.tr("Tools: \(ToolRegistry.all.count)"), systemImage: "square.grid.2x2")
+            Label(L10n.tr("Categories: \(ToolCategory.allCases.count)"), systemImage: "folder")
+            Label(L10n.tr("Local Processing"), systemImage: "lock.shield")
           }.font(.caption).foregroundStyle(.secondary).padding(.top, 4)
         }.padding(.top, 20)
         if !favoriteTools.isEmpty {
-          homeSection("收藏", symbol: "star.fill", tint: .yellow, tools: favoriteTools)
+          homeSection(L10n.tr("Favorites"), symbol: "star.fill", tint: .yellow, tools: favoriteTools)
         }
         ForEach(ToolCategory.allCases, id: \.self) { category in
-          homeSection(category.rawValue, symbol: category.symbol, tint: category.tint,
+          homeSection(category.title, symbol: category.symbol, tint: category.tint,
             tools: ToolCatalogue.byCategory[category] ?? [])
         }
       }.padding(30).frame(maxWidth: 1180, alignment: .leading).frame(maxWidth: .infinity)
@@ -155,7 +155,7 @@ struct MainWindow: View {
             }.padding(12).frame(maxWidth: .infinity, minHeight: 72, alignment: .topLeading)
           }.buttonStyle(HoverSurfaceButtonStyle(cornerRadius: 12, resting: 0.035, bordered: true))
             .help(item.summary)
-            .contextMenu { Button(favoriteIDs.contains(item.id) ? "取消收藏" : "收藏") { toggleFavorite(item.id) } }
+            .contextMenu { Button(favoriteIDs.contains(item.id) ? L10n.tr("Remove from Favorites") : L10n.tr("Favorites")) { toggleFavorite(item.id) } }
         }
       }
     }
@@ -181,7 +181,7 @@ private struct ToolSidebar: View {
   private var favoriteTools: [ToolMetadata] { favoriteIDs.compactMap { ToolCatalogue.byID[$0] } }
   private var matches: [ToolMetadata] {
     ToolCatalogue.all.filter {
-      (query.isEmpty || "\($0.name) \($0.id) \($0.summary) \($0.category.rawValue)".localizedStandardContains(query))
+      (query.isEmpty || $0.searchText.localizedStandardContains(query))
     }
   }
   private static let favoritePrefix = "favorite:"
@@ -200,7 +200,7 @@ private struct ToolSidebar: View {
   }
   var body: some View {
     VStack(spacing: 0) {
-      SidebarSearchField(text: $query, prompt: "搜索工具", focusRequest: searchRequest) {
+      SidebarSearchField(text: $query, prompt: L10n.tr("Search Tools"), focusRequest: searchRequest) {
         if let first = matches.first { open(first.id) }
       }.padding(.horizontal, 12).padding(.top, 2).padding(.bottom, 8)
       ScrollViewReader { scroll in
@@ -216,7 +216,7 @@ private struct ToolSidebar: View {
                   ForEach(favoriteTools) { toolRow($0, tag: Self.favoritePrefix + $0.id) }
                 }
               } header: {
-                SidebarSectionHeader(title: "收藏", symbol: "star.fill", tint: .yellow,
+                SidebarSectionHeader(title: L10n.tr("Favorites"), symbol: "star.fill", tint: .yellow,
                   count: favoriteTools.count, expanded: $favoritesExpanded)
               }
             }
@@ -225,7 +225,7 @@ private struct ToolSidebar: View {
               Section {
                 if expandedCategories.contains(category) { ForEach(tools) { toolRow($0) } }
               } header: {
-                SidebarSectionHeader(title: category.rawValue, symbol: category.symbol,
+                SidebarSectionHeader(title: category.title, symbol: category.symbol,
                   tint: category.tint, count: tools.count,
                   expanded: Binding(get: { expandedCategories.contains(category) }, set: {
                     if $0 { expandedCategories.insert(category) } else { expandedCategories.remove(category) }
@@ -245,11 +245,11 @@ private struct ToolSidebar: View {
         // from rows passing behind it instead of letting them show through the text.
         .safeAreaBar(edge: .bottom) {
           HStack(spacing: 10) {
-            Button { workspace.showOverview() } label: { Label("工具总览", systemImage: "square.grid.2x2") }
-              .help("工具总览")
-            Text("\(ToolRegistry.all.count) 个工具").font(.callout).foregroundStyle(.secondary)
+            Button { workspace.showOverview() } label: { Label(L10n.tr("All Tools"), systemImage: "square.grid.2x2") }
+              .help(L10n.tr("All Tools"))
+            Text(L10n.tr("Tools: \(ToolRegistry.all.count)")).font(.callout).foregroundStyle(.secondary)
             Spacer()
-            SettingsLink { Label("设置", systemImage: "gearshape") }.help("设置")
+            SettingsLink { Label(L10n.tr("Settings"), systemImage: "gearshape") }.help(L10n.tr("Settings"))
           }
           .labelStyle(.iconOnly).buttonStyle(.borderless).controlSize(.large)
           .padding(.horizontal, 16).padding(.vertical, 10)
@@ -269,13 +269,13 @@ private struct ToolSidebar: View {
   private func toolRow(_ item: ToolMetadata, tag: String? = nil) -> some View {
     // Names only; the description stays available as the row's tooltip.
     Label {
-      Text(item.name).lineLimit(1)
+      Text(item.name).lineLimit(2).fixedSize(horizontal: false, vertical: true)
     } icon: {
       ToolIconTile(symbol: item.symbol, tint: item.category.tint, size: 22)
     }
     .padding(.vertical, 3)
-    .tag(tag ?? item.id).id(tag ?? item.id).help(item.summary)
-    .contextMenu { Button(favoriteIDs.contains(item.id) ? "取消收藏" : "收藏") { toggleFavorite(item.id) } }
+    .tag(tag ?? item.id).id(tag ?? item.id).help(item.name + "\n" + item.summary)
+    .contextMenu { Button(favoriteIDs.contains(item.id) ? L10n.tr("Remove from Favorites") : L10n.tr("Favorites")) { toggleFavorite(item.id) } }
   }
   private func open(_ id: String) { workspace.open(id) }
   private func toggleFavorite(_ id: String) { favorites = FavoriteTools.toggling(id, in: favorites) }

@@ -1,3 +1,4 @@
+import { tr } from '../../../../Vendor/localization.mjs';
 import {
   safeJSON,
   pretty,
@@ -6,16 +7,16 @@ import {
 } from "../../../../Vendor/common.mjs";
 export default (i, o) => {
   const input = safeJSON(i.text);
-  if (!input || typeof input !== "object") throw Error("模板必须为字段到类型的对象或字段列表");
+  if (!input || typeof input !== "object") throw Error(tr("The template must map fields to types or contain a field list"));
   const entries = Array.isArray(input)
     ? input.map((row) => [row?.name, row?.value])
     : Object.entries(input).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0);
-  if (!entries.length) throw Error("请至少添加一个字段。");
-  if (entries.some(([name]) => typeof name !== "string" || !name.trim())) throw Error("请填写字段名称。");
-  if (new Set(entries.map(([name]) => name)).size !== entries.length) throw Error("字段名称不能重复。");
+  if (!entries.length) throw Error(tr("Add at least one field."));
+  if (entries.some(([name]) => typeof name !== "string" || !name.trim())) throw Error(tr("Enter a field name."));
+  if (new Set(entries.map(([name]) => name)).size !== entries.length) throw Error(tr("Field names must be unique."));
   const schema = Object.fromEntries(entries);
-  if (!Number.isInteger(o.seed) || o.seed < 0 || o.seed > 2147483647) throw Error("种子范围为 0–2147483647。");
-  if (o.count < 1 || o.count > 10000) throw Error("数量必须为 1–10000");
+  if (!Number.isInteger(o.seed) || o.seed < 0 || o.seed > 2147483647) throw Error(tr("Seed must be between 0 and 2,147,483,647."));
+  if (o.count < 1 || o.count > 10000) throw Error(tr("Count must be 1–10,000"));
   let seed = o.seed >>> 0;
   const rng = () => {
     seed = (Math.imul(1664525, seed) + 1013904223) >>> 0;
@@ -23,7 +24,7 @@ export default (i, o) => {
   };
   const types = ["index", "name", "email", "boolean", "integer", "uuid"];
   for (const type of Object.values(schema))
-    if (!types.includes(type)) throw Error("支持类型：" + types.join(", "));
+    if (!types.includes(type)) throw Error(tr("Supported types: ") + types.join(", "));
   const names = ["Ada", "Lin", "Alex", "Kai", "Sam", "Mia"];
   const rows = Array.from({ length: o.count }, (_, n) =>
     Object.fromEntries(
@@ -53,6 +54,6 @@ export default (i, o) => {
     o.format === "json"
       ? pretty(rows)
       : csvStringify([Object.keys(schema), ...rows.map(Object.values)]),
-    { note: "可复现测试数据；不用于密码、令牌或真实身份。" },
+    { note: tr("Reproducible test data. Do not use for passwords, tokens, or real identities.") },
   );
 };

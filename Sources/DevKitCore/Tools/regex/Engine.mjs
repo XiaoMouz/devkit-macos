@@ -1,8 +1,9 @@
+import { tr } from '../../../../Vendor/localization.mjs';
 import { result, pretty } from "../../../../Vendor/common.mjs";
 export default (i, o) => {
   let r;
   try { r = new RegExp(o.pattern, o.flags); }
-  catch (error) { throw Error("正则表达式或标志无效；标志不能重复，u 与 v 不能同时使用。\n" + error.message); }
+  catch (error) { throw Error(tr("Invalid regex or flags. Flags cannot repeat, and u and v cannot be combined.\n") + error.message); }
   if (o.operation === "replace")
     return result(i.text.replace(r, o.replacement));
   const rows = [];
@@ -24,7 +25,7 @@ export default (i, o) => {
         groups: m.slice(1),
         named: m.groups,
       });
-      if (rows.length > 10000) throw Error("匹配超过 10000 项");
+      if (rows.length > 10000) throw Error(tr("More than 10,000 matches"));
       if (m[0] === "") {
         if ((r.unicode || r.unicodeSets) && i.text.codePointAt(r.lastIndex) > 0xffff)
           r.lastIndex += 2;
@@ -35,8 +36,8 @@ export default (i, o) => {
   return result(pretty(rows), {
     rows: rows.map((r, n) => ({
       label: "#" + (n + 1) + " · UTF-16 " + r.index,
-      value: r.match + r.groups.map((value, index) => `\n$${index + 1}: ${value ?? "（未匹配）"}`).join("") + (r.named ? "\n" + pretty(r.named) : ""),
+      value: r.match + r.groups.map((value, index) => `\n$${index + 1}: ${value ?? tr("(Unmatched)")}`).join("") + (r.named ? "\n" + pretty(r.named) : ""),
     })),
-    note: rows.length + " 个匹配；位置以 UTF-16 单元计数",
+    note: tr("Matches: {0}; positions use UTF-16 units", rows.length),
   });
 };

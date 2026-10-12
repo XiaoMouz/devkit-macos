@@ -21,7 +21,7 @@ public enum AutomationInstallation {
         .first { manager.fileExists(atPath: $0.path) } ?? home.appendingPathComponent(".bash_profile")
       files = [login, home.appendingPathComponent(".bashrc")]
     default:
-      throw ToolFailure("CLI 已安装；暂不支持自动配置此 Shell，请将 ~/.local/bin 加入 PATH。", code: "install-path")
+      throw ToolFailure(L10n.tr("CLI installed. Automatic setup is not supported for this shell; add ~/.local/bin to PATH."), code: "install-path")
     }
     let block = """
       # >>> DevKit CLI >>>
@@ -57,7 +57,7 @@ public enum AutomationInstallation {
   public static func installLink(source: URL, destination: URL, previousSource: String? = nil) throws {
     let manager = FileManager.default
     guard manager.fileExists(atPath: source.path) else {
-      throw ToolFailure("应用资源缺失，请重新构建 DevKit。", code: "resource")
+      throw ToolFailure(L10n.tr("App resources are missing. Rebuild DevKit."), code: "resource")
     }
     let existing = try? manager.destinationOfSymbolicLink(atPath: destination.path)
     if existing == source.path { return }
@@ -71,7 +71,7 @@ public enum AutomationInstallation {
       try manager.createSymbolicLink(at: temporary, withDestinationURL: source)
       defer { try? manager.removeItem(at: temporary) }
       guard rename(temporary.path, destination.path) == 0 else {
-        throw ToolFailure("无法更新安装链接。", code: "install")
+        throw ToolFailure(L10n.tr("Could not update the installation link."), code: "install")
       }
     } else {
       try manager.createSymbolicLink(at: destination, withDestinationURL: source)
@@ -84,6 +84,6 @@ public enum AutomationInstallation {
   }
 
   private static func conflict(_ destination: URL) -> ToolFailure {
-    ToolFailure("\(destination.path) 已存在其他文件或链接，请先手动调整位置。", code: "install-conflict")
+    ToolFailure(L10n.tr("\(destination.path) already contains another file or link. Move it manually first."), code: "install-conflict")
   }
 }

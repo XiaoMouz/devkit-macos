@@ -7,12 +7,12 @@ public enum UlidTool: ToolModule {
     public init() {}
   }
   public static let metadata = ToolMetadata(
-    "ulid", "ULID", .generators, "Crockford Base32，48 位毫秒时间戳与 80 位安全随机数。", sample: "",
+    "ulid", "ULID", .generators, "Crockford Base32 with a 48-bit millisecond timestamp and 80 secure random bits.", sample: "",
     secondary: "", input: .text, network: false)
   public static var fields: [OptionField<Options>] {
     [
-      .init("operation", "操作", \.operation, choices: ["generate", "parse"]),
-      .init("count", "数量", \.count, range: 1...1000),
+      .init("operation", L10n.tr("Operation"), \.operation, choices: ["generate", "parse"]),
+      .init("count", L10n.tr("Count"), \.count, range: 1...1000),
     ]
   }
   public static func visibleFields(for options: Options) -> [OptionField<Options>] {
@@ -25,13 +25,13 @@ public enum UlidTool: ToolModule {
       let chars = Array(input.text.uppercased())
       try require(
         chars.count == 26 && chars.allSatisfy { alphabet.contains($0) },
-        "ULID 必须为 26 位 Crockford Base32。")
+        L10n.tr("ULID must contain 26 Crockford Base32 characters."))
       var time: UInt64 = 0
       for c in chars.prefix(10) { time = time * 32 + UInt64(alphabet.firstIndex(of: c)!) }
-      try require(time < (1 << 48), "ULID 超过 128 位范围。")
-      return ToolOutput(Dates.display(Date(timeIntervalSince1970: Double(time) / 1000), milliseconds: true), note: "时区：" + Dates.zoneLabel(.current, at: Date(timeIntervalSince1970: Double(time) / 1000)))
+      try require(time < (1 << 48), L10n.tr("ULID exceeds the 128-bit range."))
+      return ToolOutput(Dates.display(Date(timeIntervalSince1970: Double(time) / 1000), milliseconds: true), note: L10n.tr("Time zone: ") + Dates.zoneLabel(.current, at: Date(timeIntervalSince1970: Double(time) / 1000)))
     }
-    try require((1...1000).contains(options.count), "数量必须为 1–1000。")
+    try require((1...1000).contains(options.count), L10n.tr("Count must be between 1 and 1,000."))
     let values = try (0..<options.count).map { _ -> String in
       var time = UInt64(Date().timeIntervalSince1970 * 1000)
       var prefix = [Character](repeating: "0", count: 10)
@@ -50,6 +50,6 @@ public enum UlidTool: ToolModule {
     return ToolOutput(
       values.joined(separator: "\n"),
       rows: values.enumerated().map { ResultRow(String($0.offset + 1), $0.element) },
-      note: "同毫秒内使用独立随机值，不保证单调递增。")
+      note: L10n.tr("Independent random values within the same millisecond; monotonic ordering is not guaranteed."))
   }
 }

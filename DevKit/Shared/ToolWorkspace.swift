@@ -48,26 +48,26 @@ struct ToolWorkspace<T: ToolModule>: View {
   }
   private var resultStatus: PaneStatus {
     if session.bridge.running {
-      return PaneStatus(title: session.status.hasPrefix("已读取") ? session.status : "处理中", symbol: "hourglass", tint: .blue)
+      return PaneStatus(title: session.status.hasPrefix(L10n.tr("Read")) ? session.status : L10n.tr("Processing"), symbol: "hourglass", tint: .blue)
     }
     if let error = session.error {
-      return PaneStatus(title: "需要检查", symbol: "exclamationmark.circle", tint: .red, detail: error)
+      return PaneStatus(title: L10n.tr("Needs Review"), symbol: "exclamationmark.circle", tint: .red, detail: error)
     }
-    if session.status.hasPrefix("已复制") || session.status.hasPrefix("已导出") {
+    if session.status.hasPrefix(L10n.tr("Copied")) || session.status.hasPrefix(L10n.tr("Exported")) {
       return PaneStatus(title: session.status, symbol: "checkmark.circle", tint: .green, detail: session.status)
     }
-    if !session.status.isEmpty && !["已完成", "内容已修改，重新执行以更新结果", "处理中…"].contains(session.status) {
+    if !session.status.isEmpty && ![L10n.tr("Completed"), L10n.tr("Content changed. Run again to update the result."), L10n.tr("Processing…")].contains(session.status) {
       return PaneStatus(title: session.status, symbol: "info.circle", tint: .secondary, detail: session.status)
     }
-    guard session.output != nil else { return PaneStatus(title: "待生成", symbol: "text.alignleft", tint: .secondary) }
+    guard session.output != nil else { return PaneStatus(title: L10n.tr("Ready to Generate"), symbol: "text.alignleft", tint: .secondary) }
     if session.current, let report = session.output?.report {
-      return PaneStatus(title: report.state == "failure" ? "未通过" : report.state == "warning" ? "请留意" : report.state == "difference" ? "存在差异" : "已通过",
+      return PaneStatus(title: report.state == "failure" ? L10n.tr("Failed") : report.state == "warning" ? L10n.tr("Please Review") : report.state == "difference" ? L10n.tr("Differences Found") : L10n.tr("Passed"),
         symbol: ["failure", "warning"].contains(report.state) ? "exclamationmark.circle" : report.state == "difference" ? "plusminus.circle" : "checkmark.circle",
         tint: report.state == "failure" ? .red : ["difference", "warning"].contains(report.state) ? .orange : .green, elapsed: elapsedLabel(session.elapsed))
     }
     return session.current
-      ? PaneStatus(title: "已完成", symbol: "checkmark.circle", tint: .green, elapsed: elapsedLabel(session.elapsed))
-      : PaneStatus(title: "待更新", symbol: "arrow.trianglehead.clockwise", tint: .orange)
+      ? PaneStatus(title: L10n.tr("Completed"), symbol: "checkmark.circle", tint: .green, elapsed: elapsedLabel(session.elapsed))
+      : PaneStatus(title: L10n.tr("Needs Update"), symbol: "arrow.trianglehead.clockwise", tint: .orange)
   }
   private var visible: [WorkspacePane] {
     if let detachedPane {
@@ -88,7 +88,7 @@ struct ToolWorkspace<T: ToolModule>: View {
           HStack {
             ToolPrimaryControl(session: session, inToolbar: false)
             Spacer()
-            Button(session.bridge.running ? "取消" : form.action) { session.run() }.buttonStyle(.borderedProminent)
+            Button(session.bridge.running ? L10n.tr("Cancel") : form.action) { session.run() }.buttonStyle(.borderedProminent)
           }
           workspaceTools
         }
@@ -126,12 +126,12 @@ struct ToolWorkspace<T: ToolModule>: View {
             Button { session.run() } label: {
               // Tool actions use the same title as the selected operation, including detached windows.
               Label {
-                Text(verbatim: session.bridge.running ? "取消" : form.action)
+                Text(verbatim: session.bridge.running ? L10n.tr("Cancel") : form.action)
               } icon: {
                 Image(systemName: session.bridge.running ? "stop.fill" : "play.fill")
               }.labelStyle(.titleAndIcon).padding(.horizontal, 6)
             }.buttonStyle(.borderedProminent)
-              .help(session.bridge.running ? "取消" : "\(form.action) ⌘↩︎")
+              .help(session.bridge.running ? L10n.tr("Cancel") : "\(form.action) ⌘↩︎")
           }
         }
       }
@@ -158,7 +158,7 @@ struct ToolWorkspace<T: ToolModule>: View {
   /// Shown inside detached windows, which have no shared window toolbar.
   private var workspaceTools: some View {
     HStack(spacing: 12) {
-      Text(detachedPane?.title ?? "工作区")
+      Text(detachedPane?.title ?? L10n.tr("Workspace"))
       Spacer(minLength: 4)
       windowMenu.labelStyle(.iconOnly).menuStyle(.button).buttonStyle(.bordered).fixedSize()
     }.font(.system(size: 12)).controlSize(.small).frame(height: 30)
@@ -166,8 +166,8 @@ struct ToolWorkspace<T: ToolModule>: View {
   private var favoriteButton: some View {
     let favorite = FavoriteTools.ids(favorites).contains(session.metadata.id)
     return Button { favorites = FavoriteTools.toggling(session.metadata.id, in: favorites) } label: {
-      Label("收藏", systemImage: favorite ? "star.fill" : "star").contentTransition(.symbolEffect(.replace))
-    }.help(favorite ? "取消收藏" : "收藏当前工具")
+      Label(L10n.tr("Favorites"), systemImage: favorite ? "star.fill" : "star").contentTransition(.symbolEffect(.replace))
+    }.help(favorite ? L10n.tr("Remove from Favorites") : L10n.tr("Add Current Tool to Favorites"))
   }
   private var paneSwitch: some View {
     WorkspaceSegments(items: paneChoices, selection: Binding(get: {
@@ -181,20 +181,20 @@ struct ToolWorkspace<T: ToolModule>: View {
   }
   private var windowMenu: some View {
     Menu {
-      Button("在新窗口打开输入") { detach(.input) }
-      if paired { Button("在新窗口打开第二输入") { detach(.secondary) } }
-      Button("在新窗口打开结果") { detach(.output) }
-      Button("打开对照窗口") { detach(.comparison) }
+      Button(L10n.tr("Open Input in New Window")) { detach(.input) }
+      if paired { Button(L10n.tr("Open Second Input in New Window")) { detach(.secondary) } }
+      Button(L10n.tr("Open Result in New Window")) { detach(.output) }
+      Button(L10n.tr("Open Comparison Window")) { detach(.comparison) }
       Divider()
-      Button("自动适应布局") { session.chooseLayout(.automatic) }
-    } label: { Label("窗口与布局", systemImage: "rectangle.on.rectangle") }
-      .help("在新窗口打开或调整布局")
+      Button(L10n.tr("Fit Layout Automatically")) { session.chooseLayout(.automatic) }
+    } label: { Label(L10n.tr("Windows and Layout"), systemImage: "rectangle.on.rectangle") }
+      .help(L10n.tr("Open in a new window or adjust the layout"))
   }
   private var paneChoices: [(String, String)] {
-    var items = [(session.inputStyle == .generator ? "参数" : "输入", "input")]
-    if paired { items.append((session.operation == "schema" ? "Schema" : "对比内容", "secondary")) }
-    items.append(("结果", "output"))
-    if availableWidth >= WorkspaceLayoutPolicy.minimumSplitWidth { items.append(("对照", "comparison")) }
+    var items = [(session.inputStyle == .generator ? L10n.tr("Parameters") : L10n.tr("Input"), "input")]
+    if paired { items.append((session.operation == "schema" ? "Schema" : L10n.tr("Comparison Content"), "secondary")) }
+    items.append((L10n.tr("Result"), "output"))
+    if availableWidth >= WorkspaceLayoutPolicy.minimumSplitWidth { items.append((L10n.tr("Comparison"), "comparison")) }
     return items
   }
   @ViewBuilder private func paneActions(_ role: WorkspacePane) -> some View {
@@ -203,7 +203,7 @@ struct ToolWorkspace<T: ToolModule>: View {
     case .secondary: secondaryActions
     case .output:
       if let output = session.output { resultActions(output) }
-      else { Button {} label: { Label("复制", systemImage: "doc.on.doc") }.disabled(true) }
+      else { Button {} label: { Label(L10n.tr("Copy"), systemImage: "doc.on.doc") }.disabled(true) }
     }
     if role != .output && !visible.contains(.output), session.error != nil {
       PaneStatusLabel(status: resultStatus).labelStyle(.iconOnly)
@@ -213,11 +213,11 @@ struct ToolWorkspace<T: ToolModule>: View {
     Group {
       Button {
         if let text = NSPasteboard.general.string(forType: .string) { session.input.secondary = text; session.refreshLayout() }
-      } label: { Label("粘贴", systemImage: "doc.on.clipboard") }.help("粘贴文本")
-      Button { session.chooseFile(secondary: true) } label: { Label("导入…", systemImage: "square.and.arrow.down") }
-        .help("从文件导入")
-      Button { session.input.secondary = "" } label: { Label("清空\(form.secondaryTitle)", systemImage: "trash") }
-        .labelStyle(.iconOnly).help("清空\(form.secondaryTitle)")
+      } label: { Label(L10n.tr("Paste"), systemImage: "doc.on.clipboard") }.help(L10n.tr("Paste Text"))
+      Button { session.chooseFile(secondary: true) } label: { Label(L10n.tr("Import…"), systemImage: "square.and.arrow.down") }
+        .help(L10n.tr("Import from File"))
+      Button { session.input.secondary = "" } label: { Label(L10n.tr("Clear \(form.secondaryTitle)"), systemImage: "trash") }
+        .labelStyle(.iconOnly).help(L10n.tr("Clear \(form.secondaryTitle)"))
     }
   }
   private var secondaryInput: some View {
@@ -235,11 +235,11 @@ struct ToolWorkspace<T: ToolModule>: View {
   private var resultPane: some View {
     VStack(spacing: 0) {
       if let error = session.error {
-        ResultReportView(report: ResultReport("failure", "未能完成处理", error))
-        WorkspaceEmptyState(title: "修正输入后可重新执行", detail: "输入内容已保留。", symbol: "square.and.pencil", tint: .secondary) { EmptyView() }
+        ResultReportView(report: ResultReport("failure", L10n.tr("Could Not Complete Processing"), error))
+        WorkspaceEmptyState(title: L10n.tr("Correct the input and run again"), detail: L10n.tr("Your input has been preserved."), symbol: "square.and.pencil", tint: .secondary) { EmptyView() }
       } else if let output = session.output {
         if !session.current {
-          Text("以下为上次结果，当前输入尚未完成处理。").font(.caption).foregroundStyle(.orange)
+          Text(L10n.tr("The previous result is shown below. The current input has not finished processing.")).font(.caption).foregroundStyle(.orange)
             .frame(maxWidth: .infinity, alignment: .leading).padding(10)
         }
         if let report = output.report { ResultReportView(report: report) }
@@ -250,8 +250,8 @@ struct ToolWorkspace<T: ToolModule>: View {
         }
 
       } else {
-        WorkspaceEmptyState(title: session.bridge.running ? "正在处理" : "结果会显示在这里",
-          detail: session.bridge.running ? "可点击顶部的取消按钮停止处理。" : "准备好输入后，点击顶部“\(form.action)”",
+        WorkspaceEmptyState(title: session.bridge.running ? L10n.tr("Processing Input") : L10n.tr("Results Will Appear Here"),
+          detail: session.bridge.running ? L10n.tr("Click Cancel at the top to stop processing.") : L10n.tr("When the input is ready, click “\(form.action)” at the top"),
           symbol: session.error != nil ? "exclamationmark.circle" : form.isImage || session.metadata.id == "qr-code" ? "photo" : "arrow.right",
           tint: session.error == nil ? .purple : .red) {
           EmptyView()
@@ -265,7 +265,7 @@ struct ToolWorkspace<T: ToolModule>: View {
             if display == "preview", session.imageArtifact != nil,
               output.artifacts.indices.contains(selectedArtifact) {
               Text(ByteCountFormatter.string(fromByteCount: Int64(output.artifacts[selectedArtifact].data.count), countStyle: .file)).monospacedDigit()
-            } else { Text("\(output.text.count) 字符").monospacedDigit() }
+            } else { Text(L10n.tr("Characters: \(output.text.count)")).monospacedDigit() }
           }
         }.font(.system(size: 10)).foregroundStyle(.secondary)
           .padding(.horizontal, 16).frame(height: 28)
@@ -285,59 +285,59 @@ struct ToolWorkspace<T: ToolModule>: View {
   }
   private func resultViews(_ output: ToolOutput) -> [(String, String, String)] {
     if output.report != nil && session.imageArtifact == nil {
-      var views = [(session.metadata.id == "json" ? "路径列表" : "问题明细", "rows", "list.bullet")]
-      if output.html != nil { views.append(("高亮对照", "preview", "rectangle.split.2x1")) }
-      views.append(("文本", "text", "text.alignleft"))
+      var views = [(session.metadata.id == "json" ? L10n.tr("Path List") : L10n.tr("Issue Details"), "rows", "list.bullet")]
+      if output.html != nil { views.append((L10n.tr("Highlighted Comparison"), "preview", "rectangle.split.2x1")) }
+      views.append((L10n.tr("Text"), "text", "text.alignleft"))
       return views
     }
-    var views = [(session.metadata.id == "http-client" ? "正文" : "文本", "text", "text.alignleft")]
-    if session.binaryArtifact != nil { views.append(("文件", "files", "doc")) }
+    var views = [(session.metadata.id == "http-client" ? L10n.tr("Body") : L10n.tr("Text"), "text", "text.alignleft")]
+    if session.binaryArtifact != nil { views.append((L10n.tr("File"), "files", "doc")) }
     if !output.rows.isEmpty {
-      views.append((session.metadata.id == "http-client" ? "状态与响应头" : "条目", "rows", "list.bullet"))
+      views.append((session.metadata.id == "http-client" ? L10n.tr("Status and Response Headers") : L10n.tr("Items"), "rows", "list.bullet"))
     }
-    if output.html != nil || session.imageArtifact != nil { views.append((session.metadata.id == "json" ? "折叠视图" : "预览", "preview", "eye")) }
+    if output.html != nil || session.imageArtifact != nil { views.append((session.metadata.id == "json" ? L10n.tr("Collapsible View") : L10n.tr("Preview"), "preview", "eye")) }
     return views
   }
   private func resultActions(_ output: ToolOutput) -> some View {
     let views = resultViews(output)
     return Group {
       if output.report != nil, output.html != nil {
-        WorkspaceSegments(items: [(session.metadata.id == "json" ? "路径" : "明细", "rows"),
-          ("高亮", "preview"), ("文本", "text")], selection: $viewState.display)
-          .accessibilityElement(children: .contain).accessibilityLabel("结果视图").help("切换问题路径与高亮对照")
+        WorkspaceSegments(items: [(session.metadata.id == "json" ? L10n.tr("Path") : L10n.tr("Details"), "rows"),
+          (L10n.tr("Highlights"), "preview"), (L10n.tr("Text"), "text")], selection: $viewState.display)
+          .accessibilityElement(children: .contain).accessibilityLabel(L10n.tr("Result View")).help(L10n.tr("Switch between issue paths and highlighted comparison"))
       } else if views.count > 1 {
         Menu {
-          Picker("结果视图", selection: $viewState.display) {
+          Picker(L10n.tr("Result View"), selection: $viewState.display) {
             ForEach(views, id: \.1) { view in Label(view.0, systemImage: view.2).tag(view.1) }
           }
         } label: {
           let current = views.first { $0.1 == display } ?? views[0]
           Label(current.0, systemImage: current.2)
-        }.menuStyle(.button).fixedSize().help("切换结果视图")
+        }.menuStyle(.button).fixedSize().help(L10n.tr("Switch Result View"))
       }
       if session.binaryArtifact == nil || display == "text" {
         Button { session.copyResult() } label: {
-          Label(session.copied ? "已复制" : session.imageArtifact != nil ? "复制图片" : "复制",
+          Label(session.copied ? L10n.tr("Copied") : session.imageArtifact != nil ? L10n.tr("Copy Image") : L10n.tr("Copy"),
             systemImage: session.copied ? "checkmark" : "doc.on.doc").contentTransition(.symbolEffect(.replace))
         }.buttonStyle(.bordered).tint(.blue)
-          .help(session.imageArtifact != nil ? "复制图片" : "复制完整结果 ⌘⇧C").disabled(!session.current)
+          .help(session.imageArtifact != nil ? L10n.tr("Copy Image") : L10n.tr("Copy Full Result ⌘⇧C")).disabled(!session.current)
       }
       if output.artifacts.isEmpty {
-        Button { session.save(session.textArtifact) } label: { Label("导出…", systemImage: "square.and.arrow.up") }
-          .help("导出为文件").disabled(!session.current)
+        Button { session.save(session.textArtifact) } label: { Label(L10n.tr("Export…"), systemImage: "square.and.arrow.up") }
+          .help(L10n.tr("Export to File")).disabled(!session.current)
       } else if output.artifacts.count == 1 {
         Button { session.save(output.artifacts[0]) } label: {
-          Label(session.imageArtifact != nil ? "保存图片…" : "保存文件…", systemImage: "square.and.arrow.down")
-        }.help(session.imageArtifact != nil ? "保存图片" : "保存文件").disabled(!session.current)
+          Label(session.imageArtifact != nil ? L10n.tr("Save Image…") : L10n.tr("Save File…"), systemImage: "square.and.arrow.down")
+        }.help(session.imageArtifact != nil ? L10n.tr("Save Image") : L10n.tr("Save File")).disabled(!session.current)
       } else {
         Menu {
-          Button("全部导出到文件夹…") { session.saveAllArtifacts() }
+          Button(L10n.tr("Export All to Folder…")) { session.saveAllArtifacts() }
           Divider()
           ForEach(output.artifacts.indices, id: \.self) { index in
             Button(output.artifacts[index].name) { session.save(output.artifacts[index]) }
           }
-        } label: { Label("导出文件", systemImage: "square.and.arrow.up") }
-          .fixedSize().help("选择要导出的文件").disabled(!session.current)
+        } label: { Label(L10n.tr("Export File"), systemImage: "square.and.arrow.up") }
+          .fixedSize().help(L10n.tr("Choose a file to export")).disabled(!session.current)
       }
     }
   }
@@ -349,14 +349,14 @@ struct ToolWorkspace<T: ToolModule>: View {
         Text(artifact.name).font(.headline)
         Text(artifact.mime).font(.caption).foregroundStyle(.secondary)
         Text(ByteCountFormatter.string(fromByteCount: Int64(artifact.data.count), countStyle: .file)).foregroundStyle(.secondary)
-        Button { session.save(artifact) } label: { Label("保存文件…", systemImage: "square.and.arrow.down") }
+        Button { session.save(artifact) } label: { Label(L10n.tr("Save File…"), systemImage: "square.and.arrow.down") }
           .buttonStyle(.borderedProminent).controlSize(.large).disabled(!session.current)
       }.frame(maxWidth: .infinity, maxHeight: .infinity)
     } else if display == "preview", let html = output.html { SafePreview(html: html, toolID: session.metadata.id) }
     else if display == "preview", session.imageArtifact != nil {
       VStack(spacing: 10) {
         if output.artifacts.count > 1 {
-          Picker("预览文件", selection: $viewState.selectedArtifact) {
+          Picker(L10n.tr("Preview File"), selection: $viewState.selectedArtifact) {
             ForEach(output.artifacts.indices, id: \.self) { index in Text(output.artifacts[index].name).tag(index) }
           }.padding(12)
         }
@@ -370,12 +370,12 @@ struct ToolWorkspace<T: ToolModule>: View {
             .font(.caption).foregroundStyle(.secondary)
           RasterImagePreview(data: artifact.data, pixelated: session.metadata.id == "qr-code")
             .padding(24).frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else { Text("此文件可通过导出菜单保存").foregroundStyle(.secondary) }
+        } else { Text(L10n.tr("Save this file using the export menu")).foregroundStyle(.secondary) }
       }
     } else if display == "rows", output.rows.isEmpty, output.report != nil {
       if let html = output.html { SafePreview(html: html, toolID: session.metadata.id) }
       else {
-        CodeEditor(text: .constant(output.text), editable: false, label: "校验详情", language: outputLanguage, status: resultStatus, state: viewState.outputEditor, contentID: session.completedRun)
+        CodeEditor(text: .constant(output.text), editable: false, label: L10n.tr("Validation Details"), language: outputLanguage, status: resultStatus, state: viewState.outputEditor, contentID: session.completedRun)
       }
     } else if display == "rows", !output.rows.isEmpty {
       ScrollView {
@@ -385,13 +385,13 @@ struct ToolWorkspace<T: ToolModule>: View {
               Text(row.label).font(.system(.body, design: .monospaced))
                 .foregroundStyle(rowTint(row, report: output.report))
                 .frame(minWidth: 70, alignment: .leading)
-              HighlightedText(text: row.value.isEmpty ? "（空值）" : output.report != nil && row.value.count > 1200
-                ? String(row.value.prefix(1200)) + "\n…（完整内容可复制或导出）" : row.value,
+              HighlightedText(text: row.value.isEmpty ? L10n.tr("(Empty value)") : output.report != nil && row.value.count > 1200
+                ? String(row.value.prefix(1200)) + L10n.tr("\n…(Copy or export for the full content)") : row.value,
                 language: output.report == nil ? .automatic : .plain, fontSize: fontSize)
                 .textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
-              Button { if Clipboard.copy(row.value) { session.status = "已复制" } } label: { Image(systemName: "doc.on.doc") }
+              Button { if Clipboard.copy(row.value) { session.status = L10n.tr("Copied") } } label: { Image(systemName: "doc.on.doc") }
                 .buttonStyle(.bordered).buttonBorderShape(.capsule).controlSize(.small)
-                .disabled(!session.current).accessibilityLabel("复制 " + row.label)
+                .disabled(!session.current).accessibilityLabel(L10n.tr("Copy ") + row.label)
             }.padding(14)
               .background(output.report == nil ? Color.clear : rowTint(row, report: output.report).opacity(0.045))
             Divider()
@@ -415,9 +415,9 @@ struct ToolWorkspace<T: ToolModule>: View {
   }
   private func rowTint(_ row: ResultRow, report: ResultReport?) -> Color {
     if session.metadata.id == "contrast" {
-      return row.value == "通过" ? .green : row.value == "未通过" ? .red : .secondary
+      return row.value == L10n.tr("Pass") ? .green : row.value == L10n.tr("Failed") ? .red : .secondary
     }
-    if session.metadata.id == "jwt", row.label != "签名" { return .secondary }
+    if session.metadata.id == "jwt", row.label != L10n.tr("Signature") { return .secondary }
     if report?.state == "failure" { return .red }
     if row.label.hasPrefix("+ ") { return .green }
     if row.label.hasPrefix("− ") { return .red }

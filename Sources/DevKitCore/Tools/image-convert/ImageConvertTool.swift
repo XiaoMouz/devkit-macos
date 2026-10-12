@@ -7,24 +7,24 @@ public enum ImageConvertTool: ToolModule {
     public init() {}
   }
   public static let metadata = ToolMetadata(
-    "image-convert", "图片格式转换", .assets, "系统编码器转换 PNG / JPEG / HEIC；首帧，默认移除元数据。", sample: "",
+    "image-convert", "Image Format Conversion", .assets, "Convert PNG, JPEG, and HEIC using system encoders. Uses the first frame and removes metadata by default.", sample: "",
     secondary: "", input: .file, network: false)
   public static var fields: [OptionField<Options>] {
     [
-      .init("format", "格式", \.format, choices: ["png", "jpeg", "heic"]),
-      .init("quality", "有损质量 %", \.quality, range: 1...100),
+      .init("format", L10n.tr("Output Format"), \.format, choices: ["png", "jpeg", "heic"]),
+      .init("quality", L10n.tr("Lossy Quality %"), \.quality, range: 1...100),
     ]
   }
   public static func visibleFields(for options: Options) -> [OptionField<Options>] {
     fields.filter { field in options.format != "png" || field.id != "quality" }
   }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
-    try require((1...100).contains(options.quality), "质量范围为 1–100。")
+    try require((1...100).contains(options.quality), L10n.tr("Quality must be between 1 and 100."))
     let image = try ImageCodec.decode(input)
     let file = try ImageCodec.encode(
       image, format: options.format, quality: Double(options.quality) / 100)
     return ToolOutput(
-      "\(image.width) × \(image.height) · \(file.data.count) 字节", artifacts: [file],
-      note: "使用首帧并按方向标记旋转；JPEG 透明区域合成为白色，原文件不修改。")
+      L10n.tr("\(image.width) × \(image.height) · \(file.data.count) bytes"), artifacts: [file],
+      note: L10n.tr("Uses the first frame and applies orientation. JPEG transparency is composited on white. The original file is not modified."))
   }
 }

@@ -12,14 +12,14 @@ struct WorkerMain {
     let response: WorkerResponse
     do {
       let data = FileHandle.standardInput.readDataToEndOfFile()
-      try require(data.count <= 60 * 1024 * 1024, "请求超过工作进程限制。")
+      try require(data.count <= 60 * 1024 * 1024, L10n.tr("Request exceeds the worker process limit."))
       let request = try JSONDecoder().decode(WorkerRequest.self, from: data)
       try Limits.check(request.input)
-      guard let tool = ToolRegistry.find(request.id) else { throw ToolFailure("工具不存在。") }
+      guard let tool = ToolRegistry.find(request.id) else { throw ToolFailure(L10n.tr("Tool not found.")) }
       let output = try await tool.executeEncoded(request.input, options: request.options)
       try require(
         output.text.utf8.count + output.artifacts.reduce(0, { $0 + $1.data.count })
-          <= Limits.outputBytes, "结果超过 32 MiB。")
+          <= Limits.outputBytes, L10n.tr("Result exceeds 32 MiB."))
       response = WorkerResponse(output: output)
     } catch let error as ToolFailure { response = WorkerResponse(error: error) } catch {
       response = WorkerResponse(error: ToolFailure(error.localizedDescription))

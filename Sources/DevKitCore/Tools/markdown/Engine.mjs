@@ -1,3 +1,4 @@
+import { tr } from '../../../../Vendor/localization.mjs';
 import { marked } from "marked";
 import sanitize from "sanitize-html";
 import { result } from "../../../../Vendor/common.mjs";
@@ -9,6 +10,6 @@ export default (i, o) => {
   });
   return result(html, {
     html,
-    note: "预览不加载外部资源，原始 HTML 经白名单清理。",
+    note: tr("The preview does not load external resources. Raw HTML is sanitized using an allowlist."),
   });
 };

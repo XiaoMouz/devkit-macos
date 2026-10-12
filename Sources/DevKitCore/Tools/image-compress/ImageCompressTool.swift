@@ -7,17 +7,17 @@ public enum ImageCompressTool: ToolModule {
     public init() {}
   }
   public static let metadata = ToolMetadata(
-    "image-compress", "图片压缩", .assets, "JPEG 有损质量与目标大小；原文件不覆盖。", sample: "", secondary: "",
+    "image-compress", "Image Compression", .assets, "JPEG lossy quality and target size, without overwriting the original.", sample: "", secondary: "",
     input: .file, network: false)
   public static var fields: [OptionField<Options>] {
     [
-      .init("quality", "质量上限 %", \.quality, range: 10...100),
-      .init("targetKB", "目标 KB（0 为不限）", \.targetKB, range: 0...32000),
+      .init("quality", L10n.tr("Maximum Quality %"), \.quality, range: 10...100),
+      .init("targetKB", L10n.tr("Target KB (0 for unlimited)"), \.targetKB, range: 0...32000),
     ]
   }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
     try require(
-      (10...100).contains(options.quality) && (0...32000).contains(options.targetKB), "压缩参数超出范围。")
+      (10...100).contains(options.quality) && (0...32000).contains(options.targetKB), L10n.tr("Compression parameters are out of range."))
     let image = try ImageCodec.decode(input)
     var file = try ImageCodec.encode(image, format: "jpeg", quality: Double(options.quality) / 100)
     if options.targetKB > 0 && file.data.count > options.targetKB * 1000 {
@@ -40,15 +40,15 @@ public enum ImageCompressTool: ToolModule {
     let originalBytes = input.file?.count ?? 0
     let larger = file.data.count > originalBytes
     let warning = !reached || larger
-    let sizeNote = larger ? "结果比原文件更大，建议保留原文件或更换格式。" : ""
+    let sizeNote = larger ? L10n.tr("The result is larger than the original. Keep the original or choose another format.") : ""
     return ToolOutput(
-      "原文件 \(input.file?.count ?? 0) 字节 → \(file.data.count) 字节", artifacts: [file],
-      note: "JPEG 有损编码；透明背景合成白色。",
+      L10n.tr("Original \(input.file?.count ?? 0) bytes → \(file.data.count) bytes"), artifacts: [file],
+      note: L10n.tr("Lossy JPEG encoding. Transparency is composited on white."),
 
       report: ResultReport(warning ? "warning" : "success",
-        !reached ? "未达到目标大小" : larger ? "结果体积增大" : "压缩完成",
-        sizeNote + (reached ? "原文件不会被修改。" : "请降低目标尺寸或调整目标大小。"),
-        metrics: [ResultRow("原文件", "\(originalBytes) 字节"), ResultRow("输出 JPEG", "\(file.data.count) 字节"),
-          ResultRow("体积变化", String(format: "%+.1f%%", originalBytes > 0 ? (Double(file.data.count) / Double(originalBytes) - 1) * 100 : 0))]))
+        !reached ? L10n.tr("Target Size Not Reached") : larger ? L10n.tr("File Size Increased") : L10n.tr("Compression Complete"),
+        sizeNote + (reached ? L10n.tr("The original file will not be modified.") : L10n.tr("Reduce the dimensions or adjust the target size.")),
+        metrics: [ResultRow(L10n.tr("Original File"), L10n.tr("Bytes: \(originalBytes)")), ResultRow(L10n.tr("Output JPEG"), L10n.tr("Bytes: \(file.data.count)")),
+          ResultRow(L10n.tr("Size Change"), String(format: "%+.1f%%", originalBytes > 0 ? (Double(file.data.count) / Double(originalBytes) - 1) * 100 : 0))]))
   }
 }

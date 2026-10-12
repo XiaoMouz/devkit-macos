@@ -1,11 +1,12 @@
+import { tr } from '../../../../Vendor/localization.mjs';
 import * as prettier from "prettier/standalone";
 import * as typescript from "prettier/plugins/typescript";
 import * as estree from "prettier/plugins/estree";
 import { parseLossless, result } from "../../../../Vendor/common.mjs";
 export default async (i, o) => {
-  if (!/^[A-Za-z_$][\w$]*$/.test(o.name)) throw Error("类型名称无效");
+  if (!/^[A-Za-z_$][\w$]*$/.test(o.name)) throw Error(tr("Invalid type name"));
   const infer = (v, d = 0) => {
-    if (d > 50) throw Error("嵌套过深");
+    if (d > 50) throw Error(tr("Nesting is too deep"));
     if (v === null) return "null";
     if (v?.isLosslessNumber) return "number";
     if (Array.isArray(v))
@@ -35,6 +36,6 @@ export default async (i, o) => {
   };
   return result(
     await prettier.format("export type " + o.name + " = " + infer(parseLossless(i.text)) + ";\n", { parser: "typescript", plugins: [typescript, estree] }),
-    { note: "由当前样例推断；未出现的可选字段和更多联合类型需手动补充。" },
+    { note: tr("Inferred from the current sample. Add missing optional fields and additional union types manually.") },
   );
 };

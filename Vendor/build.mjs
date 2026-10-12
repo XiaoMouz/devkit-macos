@@ -13,9 +13,9 @@ const entry =
         `import m${n} from ${JSON.stringify(path.join(base, id, "Engine.mjs"))};`,
     )
     .join("\n") +
-  "\nconst engines={" +
+  "\nimport { tr } from './localization.mjs';\nconst engines={" +
   ids.map((id, n) => JSON.stringify(id) + ":m" + n).join(",") +
-  '};\nglobalThis.devkitExecute=async(id,input,options)=>{try{if(!engines[id])throw Error("工具不存在");const result=await engines[id](input,options);const value=JSON.stringify({output:result});if(value.length>24*1024*1024)throw Error("输出超过 24 MiB");return value;}catch(e){return JSON.stringify({error:{code:"invalid-input",message:String(e.message||e)}})}};';
+  '};\nglobalThis.devkitExecute=async(id,input,options)=>{try{if(!engines[id])throw Error(tr("Tool not found"));const result=await engines[id](input,options);const value=JSON.stringify({output:result});if(value.length>24*1024*1024)throw Error(tr("Output exceeds 24 MiB"));return value;}catch(e){return JSON.stringify({error:{code:"invalid-input",message:String(e.message||e)}})}};';
 await build({
   stdin: { contents: entry, resolveDir: import.meta.dirname, loader: "js" },
   nodePaths: [path.join(import.meta.dirname, "node_modules")],

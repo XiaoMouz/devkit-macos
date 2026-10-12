@@ -52,7 +52,7 @@ public enum SpotlightCatalog {
           if activeGenerator, !payload.isEmpty {
             guard let countField = T.fields.first(where: { $0.id == "count" }),
               case .integer(let range) = countField.kind, let count = Int(payload), range.contains(count)
-            else { throw ToolFailure("生成器只接受范围内的数量；其他参数请使用工具箱。") }
+            else { throw ToolFailure(L10n.tr("Generators only accept a count within the allowed range. Use the main app for other parameters.")) }
             countField.write(&options, String(count))
           }
           return WorkerRequest(id: T.metadata.id, input: ToolInput(text: activeGenerator ? "" : payload), options: try JSONEncoder().encode(options))
@@ -62,8 +62,8 @@ public enum SpotlightCatalog {
       generator: generator, actions: actions)
   }
   private static func operationTitle(_ operation: String) -> String {
-    ["encode":"编码", "decode":"解码", "format":"格式化", "minify":"压缩", "validate":"校验",
-     "parse":"解析", "generate":"生成", "build":"构建", "unique":"去重", "sort":"排序"][operation] ?? operation
+    ["encode":L10n.tr("Encode"), "decode":L10n.tr("Decode"), "format":L10n.tr("Format"), "minify":L10n.tr("Minify"), "validate":L10n.tr("Validate"),
+     "parse":L10n.tr("Parse"), "generate":L10n.tr("Generate"), "build":L10n.tr("Build"), "unique":L10n.tr("Remove Duplicates"), "sort":L10n.tr("Sort")][operation] ?? operation
   }
 }
 
@@ -71,34 +71,34 @@ public enum SpotlightCommand {
   /// A dedicated action already knows its tool. Spotlight can supply only the
   /// argument after its Quick Key, while manual input may include the full command.
   public static func parse(_ command: String, toolID: String, preferences: SpotlightPreferences) throws -> WorkerRequest {
-    try require(command.utf8.count <= 16 * 1024, "Spotlight 输入上限为 16 KiB，请改用工具箱。")
+    try require(command.utf8.count <= 16 * 1024, L10n.tr("Spotlight input is limited to 16 KiB. Use the main app instead."))
     let (first, _) = token(command.drop(while: { $0.isWhitespace }))
     let hasToolPrefix = first.lowercased() == toolID
       || preferences.aliases(for: toolID).contains(first.lowercased())
     let request = try parse(hasToolPrefix ? command : toolID + " " + command, preferences: preferences)
-    try require(request.id == toolID, "此动作只能执行 \(toolID)。")
+    try require(request.id == toolID, L10n.tr("This action can only run \(toolID)."))
     return request
   }
   public static func parse(_ command: String, preferences: SpotlightPreferences) throws -> WorkerRequest {
-    try require(command.utf8.count <= 16 * 1024, "Spotlight 输入上限为 16 KiB，请改用工具箱。")
-    try require(preferences.enabled, "Spotlight 已关闭，请在 DevKit 设置中启用。")
+    try require(command.utf8.count <= 16 * 1024, L10n.tr("Spotlight input is limited to 16 KiB. Use the main app instead."))
+    try require(preferences.enabled, L10n.tr("Spotlight is disabled. Enable it in DevKit settings."))
     let (alias, remainder) = token(command.drop(while: { $0.isWhitespace }))
     guard let tool = SpotlightCatalog.tools.first(where: { $0.id == alias.lowercased() || preferences.aliases(for: $0.id).contains(alias.lowercased()) })
-    else { throw ToolFailure("未知工具命令 \(alias)。可在 DevKit → 设置 → Spotlight 查看命令别名。") }
-    try require(preferences.allows(tool.id), "\(tool.name)的 Spotlight 操作已关闭。")
+    else { throw ToolFailure(L10n.tr("Unknown tool command \(alias). See command aliases in DevKit → Settings → Spotlight.")) }
+    try require(preferences.allows(tool.id), L10n.tr("Spotlight actions for \(tool.name) are disabled."))
     var payload = remainder
     let action: SpotlightAction
     if !tool.operations.isEmpty {
       let (operation, rest) = token(remainder[...])
       let canonical = ["enc":"encode", "dec":"decode", "fmt":"format", "min":"minify"][operation.lowercased()] ?? operation
       guard let selected = tool.actions.first(where: { $0.operation?.lowercased() == canonical.lowercased() }) else {
-        throw ToolFailure("\(tool.name)支持：\(tool.operations.joined(separator: ", "))。示例：\(tool.example(alias: alias))")
+        throw ToolFailure(L10n.tr("\(tool.name) supports: \(tool.operations.joined(separator: ", ")). Example: \(tool.example(alias: alias))"))
       }
       action = selected; payload = rest
     } else { action = tool.actions[0] }
     if payload == "--" { payload = "" }
     else if payload.hasPrefix("-- ") { payload = String(payload.dropFirst(3)) }
-    else { try require(tool.generator || !payload.isEmpty, "缺少输入文本；空文本请明确使用 --。") }
+    else { try require(tool.generator || !payload.isEmpty, L10n.tr("Missing input text. For empty text, explicitly use --.")) }
     return try action.request(payload)
   }
   private static func token(_ value: Substring) -> (String, String) {

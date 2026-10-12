@@ -11,15 +11,15 @@ public enum JsonTool: ToolModule {
     public init() {}
   }
   public static let metadata = ToolMetadata(
-    "json", "JSON 工作台", .structured, "格式化、压缩、JSONPath / Pointer、结构对比、Schema 校验与 TypeScript 类型。",
+    "json", "JSON Workspace", .structured, "Format, minify, query with JSONPath or Pointer, compare structures, validate schemas, and generate TypeScript types.",
     sample: "{\"name\":\"DevKit\",\"version\":1,\"users\":[{\"id\":1,\"name\":\"Ada\"}]}")
   public static var fields: [OptionField<Options>] {
     [
-      .init("operation", "功能", \.operation,
+      .init("operation", L10n.tr("Function"), \.operation,
         choices: ["format", "minify", "validate", "tree", "query", "diff", "schema", "typescript"]),
-      .init("syntax", "查询语法", \.syntax, choices: ["jsonpath", "pointer"]),
-      .init("path", "查询路径", \.path),
-      .init("name", "TypeScript 类型名称", \.name),
+      .init("syntax", L10n.tr("Query Syntax"), \.syntax, choices: ["jsonpath", "pointer"]),
+      .init("path", L10n.tr("Query Path"), \.path),
+      .init("name", L10n.tr("TypeScript Type Name"), \.name),
     ]
   }
   public static func inputStyle(for options: Options) -> InputStyle {
@@ -44,7 +44,7 @@ public enum JsonTool: ToolModule {
     case "diff": engine = "json-diff"
     case "schema": engine = "json-schema"
     case "typescript": engine = "json-to-model"
-    default: throw ToolFailure("不支持的 JSON 操作。")
+    default: throw ToolFailure(L10n.tr("Unsupported JSON operation."))
     }
     return try ScriptEngine.execute(engine, input: input, options: options)
   }

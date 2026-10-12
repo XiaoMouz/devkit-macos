@@ -8,15 +8,15 @@ public enum MockDataTool: ToolModule {
     public init() {}
   }
   public static let metadata = ToolMetadata(
-    "mock-data", "Mock 数据", .generators, "字段模板生成 JSON / CSV；按种子生成可复现测试数据。",
+    "mock-data", "Mock Data", .generators, "Generate JSON or CSV from field templates, with seeds for reproducible test data.",
     sample:
       "{\"id\":\"index\",\"name\":\"name\",\"email\":\"email\",\"active\":\"boolean\",\"score\":\"integer\"}",
     secondary: "", input: .text, network: false)
   public static var fields: [OptionField<Options>] {
     [
-      .init("count", "条数", \.count, range: 1...10000),
-      .init("seed", "可重复种子", \.seed, range: 0...2_147_483_647),
-      .init("format", "格式", \.format, choices: ["json", "csv"]),
+      .init("count", L10n.tr("Rows"), \.count, range: 1...10000),
+      .init("seed", L10n.tr("Reproducible Seed"), \.seed, range: 0...2_147_483_647),
+      .init("format", L10n.tr("Output Format"), \.format, choices: ["json", "csv"]),
     ]
   }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {

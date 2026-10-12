@@ -24,6 +24,7 @@ final class WorkerControl: @unchecked Sendable {
 enum WorkerRunner {
   static func run(_ request: WorkerRequest) async throws -> ToolOutput {
     let control = WorkerControl()
+    let language = L10n.language
     return try await withTaskCancellationHandler {
       try await Task.detached(priority: .userInitiated) {
         return try autoreleasepool {
@@ -31,6 +32,9 @@ enum WorkerRunner {
           "Contents/Helpers/DevKitWorker")
         let process = Process()
         process.executableURL = executable
+        var environment = ProcessInfo.processInfo.environment
+        environment["DEVKIT_LANGUAGE"] = language
+        process.environment = environment
         let stdin = Pipe()
         let stdout = Pipe()
         process.standardInput = stdin
@@ -51,11 +55,11 @@ enum WorkerRunner {
         let data = stdout.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
         guard process.terminationStatus == 0, !data.isEmpty else {
-          throw ToolFailure("处理已停止或超时。请减小输入后重试。", code: "timeout")
+          throw ToolFailure(L10n.tr("Processing stopped or timed out. Reduce the input and try again."), code: "timeout")
         }
         let result = try JSONDecoder().decode(WorkerResponse.self, from: data)
         if let error = result.error { throw error }
-        guard let output = result.output else { throw ToolFailure("没有收到处理结果。", code: "internal") }
+        guard let output = result.output else { throw ToolFailure(L10n.tr("No processing result received."), code: "internal") }
         return output
         }
       }.value

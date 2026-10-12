@@ -3,7 +3,7 @@ import Foundation
 public enum ColorTool: ToolModule {
   public typealias Options = EmptyOptions
   public static let metadata = ToolMetadata(
-    "color", "颜色转换", .css, "sRGB HEX / RGB / HSL 与透明度，结果点一下复制。", sample: "#3478f6", secondary: "",
+    "color", "Color Converter", .css, "sRGB HEX, RGB, HSL, and opacity. Click a result to copy it.", sample: "#3478f6", secondary: "",
     input: .text, network: false)
   public static var fields: [OptionField<Options>] {
     [
@@ -16,6 +16,6 @@ public enum ColorTool: ToolModule {
     return ToolOutput(
       rows.map(\.value).joined(separator: "\n"), rows: rows,
       html: cssPreview("background: \(c.css);border-radius:24px;", content: htmlEscape(c.hexValue)),
-      note: "色彩空间：sRGB")
+      note: L10n.tr("Color space: sRGB"))
   }
 }

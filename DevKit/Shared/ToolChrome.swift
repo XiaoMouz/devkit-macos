@@ -57,9 +57,9 @@ struct ToolFooter<T: ToolModule>: View {
   private var mode: WorkspaceLayoutMode { session.layoutPolicy.mode(width: session.bridge.workspaceWidth) }
   var body: some View {
     HStack(spacing: 10) {
-      Text(T.metadata.network ? "网络工具" : session.inputStyle == .file || T.metadata.id == "data-url" ? "本地处理" : "UTF-8 · 本地处理")
+      Text(T.metadata.network ? L10n.tr("Network Tool") : session.inputStyle == .file || T.metadata.id == "data-url" ? L10n.tr("Local Processing") : L10n.tr("UTF-8 · Local Processing"))
       if session.bridge.running { ProgressView().controlSize(.mini) }
-      if !session.status.isEmpty && session.status != "已完成" { Text(session.status).lineLimit(1) }
+      if !session.status.isEmpty && session.status != L10n.tr("Completed") { Text(session.status).lineLimit(1) }
       Spacer(minLength: 8)
       if let elapsed = elapsedLabel(session.elapsed) { Text(elapsed).monospacedDigit() }
       if T.metadata.inputStyle != .generator {
@@ -73,12 +73,12 @@ struct ToolFooter<T: ToolModule>: View {
             }.disabled(value == .split && session.bridge.workspaceWidth < WorkspaceLayoutPolicy.minimumSplitWidth)
           }
         } label: {
-          Label(mode == .split ? "并排视图" : "单页视图", systemImage: mode == .split ? "rectangle.split.2x1" : "rectangle")
-        }.menuStyle(.borderlessButton).fixedSize().help("短内容并排，长内容使用完整面板")
+          Label(mode == .split ? L10n.tr("Side-by-Side View") : L10n.tr("Single-Pane View"), systemImage: mode == .split ? "rectangle.split.2x1" : "rectangle")
+        }.menuStyle(.borderlessButton).fixedSize().help(L10n.tr("Show short content side by side; use a full pane for long content"))
       }
     }.font(.system(size: 11)).foregroundStyle(.secondary)
   }
   private func title(_ value: WorkspaceLayoutPreference) -> String {
-    switch value { case .automatic: "自动适应内容"; case .split: "并排视图"; case .focused: "单页视图" }
+    switch value { case .automatic: L10n.tr("Fit Content Automatically"); case .split: L10n.tr("Side-by-Side View"); case .focused: L10n.tr("Single-Pane View") }
   }
 }

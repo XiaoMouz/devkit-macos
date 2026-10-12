@@ -1,3 +1,4 @@
+import { tr } from './localization.mjs';
 import {
   parse as parseLossless,
   stringify as stringifyLossless,
@@ -17,8 +18,8 @@ export function safeJSON(text) {
     parseNumber: (s) => {
       const n = Number(s);
       if (!isSafeNumber(s))
-        throw Error("数值超出此操作的精确范围。请用 JSON 工作台保留原始数值。");
-      if (s.replace(/[-+.eE0-9]/g, "")) throw Error("无效数字");
+        throw Object.assign(Error(tr("Number exceeds this operation’s exact range. Use the JSON workspace to preserve the original value.")), { code: "unsafe-number" });
+      if (s.replace(/[-+.eE0-9]/g, "")) throw Error(tr("Invalid number"));
       return n;
     },
   });

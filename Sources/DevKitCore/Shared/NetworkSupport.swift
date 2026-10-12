@@ -6,14 +6,14 @@ public enum NetworkSupport {
     guard e.domain == NSURLErrorDomain else { return error.localizedDescription }
     let text: String
     switch e.code {
-    case NSURLErrorTimedOut: text = "请求超时，请检查地址或网络后重试。"
-    case NSURLErrorCannotFindHost, NSURLErrorDNSLookupFailed: text = "无法解析主机名。"
-    case NSURLErrorCannotConnectToHost: text = "无法连接服务器。"
-    case NSURLErrorNotConnectedToInternet, NSURLErrorNetworkConnectionLost: text = "网络不可用或连接已中断。"
+    case NSURLErrorTimedOut: text = L10n.tr("Request timed out. Check the address or network and try again.")
+    case NSURLErrorCannotFindHost, NSURLErrorDNSLookupFailed: text = L10n.tr("Could not resolve the host name.")
+    case NSURLErrorCannotConnectToHost: text = L10n.tr("Could not connect to the server.")
+    case NSURLErrorNotConnectedToInternet, NSURLErrorNetworkConnectionLost: text = L10n.tr("The network is unavailable or the connection was interrupted.")
     case NSURLErrorServerCertificateUntrusted, NSURLErrorServerCertificateHasBadDate,
       NSURLErrorServerCertificateHasUnknownRoot, NSURLErrorServerCertificateNotYetValid,
-      NSURLErrorSecureConnectionFailed: text = "TLS 验证失败，请检查证书与服务器配置。"
-    case NSURLErrorBadServerResponse: text = "服务器返回无效响应。"
+      NSURLErrorSecureConnectionFailed: text = L10n.tr("TLS verification failed. Check the certificate and server configuration.")
+    case NSURLErrorBadServerResponse: text = L10n.tr("The server returned an invalid response.")
     default: text = error.localizedDescription
     }
     return "\(text)（\(e.code)）"
@@ -34,17 +34,17 @@ public enum NetworkSupport {
     let values: [String: String]
     if let rows = object as? [[String: String]] {
       let names = rows.compactMap { $0["name"] }
-      try require(names.count == rows.count && names.allSatisfy { !$0.isEmpty }, "请填写请求头名称。")
-      try require(Set(names.map { $0.lowercased() }).count == names.count, "请求头名称不能重复（不区分大小写）。")
-      try require(rows.allSatisfy { $0["value"] != nil }, "请求头值必须是文本。")
+      try require(names.count == rows.count && names.allSatisfy { !$0.isEmpty }, L10n.tr("Enter a header name."))
+      try require(Set(names.map { $0.lowercased() }).count == names.count, L10n.tr("Header names must be unique (case insensitive)."))
+      try require(rows.allSatisfy { $0["value"] != nil }, L10n.tr("Header values must be text."))
       values = Dictionary(uniqueKeysWithValues: rows.map { ($0["name"]!, $0["value"]!) })
     } else if let dictionary = object as? [String: String] { values = dictionary }
-    else { throw ToolFailure("请求头需要名称和值的列表或 JSON 字符串字典。") }
-    try require(Set(values.keys.map { $0.lowercased() }).count == values.count, "请求头名称不能重复（不区分大小写）。")
+    else { throw ToolFailure(L10n.tr("Headers must be a list of names and values or a JSON string dictionary.")) }
+    try require(Set(values.keys.map { $0.lowercased() }).count == values.count, L10n.tr("Header names must be unique (case insensitive)."))
     for (key, value) in values {
       try require(
         key.range(of: "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$", options: .regularExpression) != nil
-          && !value.contains("\r") && !value.contains("\n"), "请求头包含无效名称或换行。")
+          && !value.contains("\r") && !value.contains("\n"), L10n.tr("Headers contain an invalid name or a newline."))
     }
     return values
   }

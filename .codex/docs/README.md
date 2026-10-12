@@ -10,6 +10,7 @@
 | 构建、依赖、签名与发布 | [开发维护](development.md) |
 | 页面、控件、编辑器和多窗口 | [交互约束](interaction-design.md)、[视觉约束](visual-design.md)、[行为参考](user-guide.md) |
 | 文件、网络、剪贴板与敏感数据 | [数据与权限](data-and-permissions.md) |
+| 多语言与翻译贡献 | [翻译规范](localization.md) |
 | 系统动作与命令 | [Spotlight](spotlight-design.md) |
 | CLI、参数发现与 AI Skill | [架构](architecture.md)、[CLI 使用教程](../../docs/cli-and-ai.md) |
 | 验证改动与性能目标 | [测试要求](acceptance-plan.md) |

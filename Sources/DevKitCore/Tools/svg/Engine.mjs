@@ -1,3 +1,4 @@
+import { tr } from '../../../../Vendor/localization.mjs';
 import { optimize } from "svgo/browser";
 import { result } from "../../../../Vendor/common.mjs";
 export default (i, o) => {
@@ -6,11 +7,11 @@ export default (i, o) => {
       i.text,
     )
   )
-    throw Error("SVG 包含脚本、事件、实体或外部引用；请先移除。");
-  if (!/<svg[\s>]/.test(i.text)) throw Error("需要 SVG 文档");
+    throw Error(tr("SVG contains scripts, events, entities, or external references. Remove them first."));
+  if (!/<svg[\s>]/.test(i.text)) throw Error(tr("An SVG document is required"));
   const value = optimize(i.text, { multipass: false }).data;
   return result(value, {
     html: value,
-    note: "SVG 外部引用与脚本被拒绝；可以导出 SVG 源文件。",
+    note: tr("SVG external references and scripts are rejected. You can export the SVG source."),
   });
 };

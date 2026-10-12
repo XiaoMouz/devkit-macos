@@ -29,18 +29,18 @@ import SwiftUI
     generation += 1
     let current = generation
     let snapshot = preferences
-    updating = true; status = "正在更新 DevKit 索引…"
+    updating = true; status = L10n.tr("Updating the DevKit index…")
     Task {
       do {
         try await SpotlightIndexManager.shared.synchronize(snapshot)
         if generation == current {
           updating = false
-          status = !snapshot.enabled ? "DevKit 工具索引已清空，快捷执行已关闭"
-            : !SpotlightRuntimeStatus.current.hasDeveloperIdentity ? "工具索引已同步；当前签名无法执行 Spotlight 动作"
-            : "工具索引已同步（\(SpotlightCatalog.tools.filter { snapshot.allows($0.id) }.count)）；快捷短语需在 Spotlight 中绑定"
+          status = !snapshot.enabled ? L10n.tr("DevKit’s tool index is cleared and quick execution is disabled")
+            : !SpotlightRuntimeStatus.current.hasDeveloperIdentity ? L10n.tr("Tool index synced; the current signature cannot run Spotlight actions")
+            : L10n.tr("Tool index synced (\(SpotlightCatalog.tools.filter { snapshot.allows($0.id) }.count)); bind Quick Keys in Spotlight")
         }
       } catch {
-        if generation == current { updating = false; status = "索引更新失败：\(error.localizedDescription)" }
+        if generation == current { updating = false; status = L10n.tr("Index update failed: \(error.localizedDescription)") }
       }
     }
   }
@@ -64,7 +64,7 @@ actor SpotlightIndexManager {
       do {
         if preferences.enabled { try await index.deleteAppEntities(ofType: SpotlightToolAction.self) }
         else { try await index.deleteAllSearchableItems() }
-      } catch { throw ToolFailure("清理工具索引失败：\(error.localizedDescription)") }
+      } catch { throw ToolFailure(L10n.tr("Could not clear the tool index: \(error.localizedDescription)")) }
       guard preferences.enabled else {
         UserDefaults.standard.set("disabled", forKey: Self.indexStateKey)
         return
@@ -73,7 +73,7 @@ actor SpotlightIndexManager {
         .map { SpotlightToolAction($0, preferences: preferences) }
       do {
         if !entities.isEmpty { try await index.indexAppEntities(entities) }
-      } catch { throw ToolFailure("写入工具索引失败：\(error.localizedDescription)") }
+      } catch { throw ToolFailure(L10n.tr("Could not write the tool index: \(error.localizedDescription)")) }
       // DevKit never donated intents. Static legacy actions are retired by isDiscoverable=false
       // and the updated provider, rather than calling an unrelated donation-history service.
       if SpotlightRuntimeStatus.current.hasDeveloperIdentity {

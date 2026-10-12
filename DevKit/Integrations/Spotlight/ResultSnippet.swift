@@ -3,11 +3,11 @@ import DevKitCore
 import SwiftUI
 
 struct ResultSnippetIntent: SnippetIntent {
-  static let title: LocalizedStringResource = "DevKit 结果"
+  static let title: LocalizedStringResource = "DevKit Result"
   static let isDiscoverable = false
-  @Parameter(title: "结果") var text: String
-  @Parameter(title: "工具") var tool: String
-  @Parameter(title: "已复制", default: false) var copied: Bool
+  @Parameter(title: "Result") var text: String
+  @Parameter(title: "Tools") var tool: String
+  @Parameter(title: "Copied", default: false) var copied: Bool
   init() {}
   init(text: String, tool: String, copied: Bool = false) {
     self.text = text
@@ -19,18 +19,18 @@ struct ResultSnippetIntent: SnippetIntent {
   }
 }
 struct CopyResultIntent: AppIntent {
-  static let title: LocalizedStringResource = "复制 DevKit 结果"
+  static let title: LocalizedStringResource = "Copy DevKit Result"
   static let isDiscoverable = false
   static var supportedModes: IntentModes { .background }
-  @Parameter(title: "结果") var text: String
-  @Parameter(title: "工具") var tool: String
+  @Parameter(title: "Result") var text: String
+  @Parameter(title: "Tools") var tool: String
   init() {}
   init(text: String, tool: String) {
     self.text = text
     self.tool = tool
   }
   @MainActor func perform() async throws -> some IntentResult & ShowsSnippetIntent {
-    guard Clipboard.copy(text) else { throw ToolFailure("复制失败，请重试。") }
+    guard Clipboard.copy(text) else { throw ToolFailure(L10n.tr("Could not copy. Please try again.")) }
     return .result(snippetIntent: ResultSnippetIntent(text: text, tool: tool, copied: true))
   }
 }
@@ -45,18 +45,18 @@ struct ResultSnippetView: View {
           Label(tool, systemImage: "curlybraces.square")
           Spacer()
           Label(
-            copied ? "已复制" : "点击复制", systemImage: copied ? "checkmark.circle.fill" : "doc.on.doc")
+            copied ? L10n.tr("Copied") : L10n.tr("Click to Copy"), systemImage: copied ? "checkmark.circle.fill" : "doc.on.doc")
         }.font(.caption).foregroundStyle(.secondary)
-        Text(text.isEmpty ? "（空文本）" : String(text.prefix(2000))).font(
+        Text(text.isEmpty ? L10n.tr("(Empty text)") : String(text.prefix(2000))).font(
           .system(.body, design: .monospaced)
         ).lineLimit(8).frame(maxWidth: .infinity, alignment: .leading)
         HStack {
-          Text("\(text.utf8.count) 字节")
-          if text.hasSuffix("\n") { Text("包含尾部换行") }
-          if text.count > 2000 { Text("预览已截断 · 复制包含完整内容") }
+          Text(L10n.tr("Bytes: \(text.utf8.count)"))
+          if text.hasSuffix("\n") { Text(L10n.tr("Includes a trailing newline")) }
+          if text.count > 2000 { Text(L10n.tr("Preview truncated · Copy includes the full result")) }
         }.font(.caption2).foregroundStyle(.secondary)
       }.padding(16).contentShape(Rectangle())
-    }.buttonStyle(.plain).accessibilityLabel("\(tool)，\(copied ? "已复制" : "复制完整结果")")
+    }.buttonStyle(.plain).accessibilityLabel("\(tool)，\(copied ? L10n.tr("Copied") : L10n.tr("Copy Full Result"))")
   }
 }
 
@@ -69,17 +69,17 @@ enum SpotlightExecution {
     return try await run(request)
   }
   static func run(_ request: WorkerRequest) async throws -> String {
-    try require(SpotlightPreferences.load().allows(request.id), "此工具的 Spotlight 操作已关闭，请在 DevKit 设置中启用。")
-    try require(request.input.text.utf8.count <= 16 * 1024, "Spotlight 输入上限 16 KiB，请改用工具箱。")
+    try require(SpotlightPreferences.load().allows(request.id), L10n.tr("This tool’s Spotlight action is disabled. Enable it in DevKit settings."))
+    try require(request.input.text.utf8.count <= 16 * 1024, L10n.tr("Spotlight input is limited to 16 KiB. Please use the main app instead."))
     let output = try await WorkerRunner.run(request)
-    try require(SpotlightPreferences.load().allows(request.id), "此工具的 Spotlight 操作已关闭。")
+    try require(SpotlightPreferences.load().allows(request.id), L10n.tr("This tool’s Spotlight action is disabled."))
     // Binary previews are not text results and must not be silently copied as decoded bytes.
     if request.id == "base64", let file = output.artifacts.first,
       String(data: file.data, encoding: .utf8) == nil
     {
-      throw ToolFailure("解码结果是二进制，请在工具箱导出文件。")
+      throw ToolFailure(L10n.tr("The decoded result is binary. Export it from the main app."))
     }
-    try require(output.text.utf8.count <= 64 * 1024, "结果超过 Spotlight 上限，请在工具箱处理。")
+    try require(output.text.utf8.count <= 64 * 1024, L10n.tr("The result exceeds Spotlight’s limit. Use the main app instead."))
     return output.text
   }
 }

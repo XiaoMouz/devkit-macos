@@ -1,22 +1,26 @@
+import { tr } from './localization.mjs';
 import { parseLossless, stringifyLossless, escapeHTML as esc } from './common.mjs';
 
 export const pointer = (path, key) => path + '/' + String(key).replace(/~/g, '~0').replace(/\//g, '~1');
 const container = v => v !== null && typeof v === 'object' && !v.isLosslessNumber;
 export function parseJSON(text, label = 'JSON') {
   try { return parseLossless(text); }
-  catch (error) { throw Error(jsonError(text, error, label).message); }
+  catch (error) {
+    const detail = jsonError(text, error, label);
+    throw Object.assign(Error(detail.message), { line: detail.line, column: detail.column });
+  }
 }
 export function jsonError(text, error, label = 'JSON') {
   const match = String(error.message).match(/(?:position|char(?:acter)?)\s+(\d+)/i);
   const offset = match ? Math.min(Number(match[1]), text.length) : text.length;
   const before = text.slice(0, offset).split('\n');
   const line = before.length, column = before.at(-1).length + 1;
-  return { line, column, message: `${label} 格式无效：第 ${line} 行，第 ${column} 列附近。请检查引号、逗号、括号和数值格式。` };
+  return { line, column, message: tr("Invalid {0} near line {1}, column {2}. Check quotes, commas, brackets, and number formats.", label, line, column) };
 }
 export function statistics(value) {
   let objects = 0, arrays = 0, items = 0, leaves = 0, maxDepth = 0;
   const walk = (v, depth) => {
-    if (depth > 100) throw Error('JSON 嵌套超过 100 层');
+    if (depth > 100) throw Error(tr("JSON nesting exceeds 100 levels"));
     maxDepth = Math.max(maxDepth, depth);
     if (!container(v)) { leaves++; return; }
     if (Array.isArray(v)) { arrays++; items += v.length; } else objects++;
@@ -24,9 +28,9 @@ export function statistics(value) {
   };
   walk(value, 0);
   return [
-    { label: '对象', value: String(objects) }, { label: '数组', value: String(arrays) },
-    { label: '数组元素', value: String(items) }, { label: '值', value: String(leaves) },
-    { label: '嵌套深度', value: String(maxDepth) },
+    { label: tr("Object"), value: String(objects) }, { label: tr("Array"), value: String(arrays) },
+    { label: tr("Array Items"), value: String(items) }, { label: tr("Value"), value: String(leaves) },
+    { label: tr("Nesting Depth"), value: String(maxDepth) },
   ];
 }
 export const report = (state, title, detail, metrics = []) => ({ state, title, detail, metrics });
@@ -69,10 +73,10 @@ export function jsonDocument(value, title, marks = []) {
       const type = typeof v === 'string' ? 'string' : v?.isLosslessNumber || typeof v === 'number' ? 'number' : 'literal';
       return `<div ${attr}>${key}<span class="${type}">${esc(text)}</span>${comma}</div>`;
     }
-    if (depth > 100) throw Error('JSON 嵌套超过 100 层');
+    if (depth > 100) throw Error(tr("JSON nesting exceeds 100 levels"));
     const array = Array.isArray(v), entries = Object.entries(v);
     const open = array ? '[' : '{', close = array ? ']' : '}';
-    const badge = `<span class="badge">${array ? '数组大小' : '字段'} ${entries.length}</span>`;
+    const badge = `<span class="badge">${esc(array ? tr("Array Size") : tr("Fields"))} ${entries.length}</span>`;
     if (!entries.length) return `<div ${attr}>${key}${open}${close}${comma}${badge}</div>`;
     const children = [];
     for (let index = 0; index < entries.length; index++) {
@@ -83,14 +87,14 @@ export function jsonDocument(value, title, marks = []) {
     return `<details open><summary ${attr}>${key}${open}<span class="collapsed"> … ${close}${comma}</span>${badge}</summary><div class="children">${children.join('')}</div><div ${attr}>${close}${comma}</div></details>`;
   };
   const code = walk(value, '', null, '', 0);
-  return `<section class="document"><h3>${esc(title)}</h3><div class="code">${code}${truncated ? '<p class="notice">大内容仅显示部分预览；复制或导出可获取完整文本。</p>' : ''}</div></section>`;
+  return `<section class="document"><h3>${esc(title)}</h3><div class="code">${code}${truncated ? `<p class="notice">${esc(tr("Large content is only partially previewed. Copy or export for the full text."))}</p>` : ''}</div></section>`;
 }
 export function jsonPreview(documents, legend = false) {
-  return styles + (legend ? '<div class="legend"><span class="add">＋ 新增</span><span class="remove">− 删除 / 校验失败</span><span class="change">~ 修改 / 对应规则</span></div>' : '')
-    + '<p class="notice">点击三角折叠或展开；数组旁显示元素数量。高亮行悬停可查看路径与说明。</p><div class="documents">'
+  return styles + (legend ? `<div class="legend"><span class="add">${esc(tr("＋ Added"))}</span><span class="remove">${esc(tr("− Removed / Validation Failed"))}</span><span class="change">${esc(tr("~ Changed / Related Rule"))}</span></div>` : '')
+    + `<p class="notice">${esc(tr("Click triangles to collapse or expand. Arrays show their item count. Hover over highlighted lines for paths and details."))}</p><div class="documents">`
     + documents.map(d => jsonDocument(d.value, d.title, d.marks)).join('') + '</div>';
 }
-export function sourcePreview(text, line, title = 'JSON 输入') {
+export function sourcePreview(text, line, title = tr("JSON Input")) {
   return styles + `<section class="document"><h3>${esc(title)}</h3><div class="code">`
     + text.split('\n').slice(0, 10000).map((s, i) => `<div class="line numbered ${i + 1 === line ? 'error' : ''}"><span class="ln">${i + 1}</span><span>${esc(s.slice(0, 4000)) || ' '}</span></div>`).join('') + '</div></section>';
 }

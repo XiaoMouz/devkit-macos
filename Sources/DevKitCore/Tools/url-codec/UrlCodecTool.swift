@@ -7,12 +7,12 @@ public enum UrlCodecTool: ToolModule {
     public init() {}
   }
   public static let metadata = ToolMetadata(
-    "url-codec", "URL 编解码", .encoding, "组件、完整 URL 和表单模式，明确处理空格与加号。", sample: "hello 世界 + &",
+    "url-codec", "URL Codec", .encoding, "Component, full URL, and form modes, with explicit handling of spaces and plus signs.", sample: "hello 世界 + &",
     secondary: "", input: .text, network: false)
   public static var fields: [OptionField<Options>] {
     [
-      .init("operation", "操作", \.operation, choices: ["encode", "decode"]),
-      .init("mode", "模式", \.mode, choices: ["component", "url", "form"]),
+      .init("operation", L10n.tr("Operation"), \.operation, choices: ["encode", "decode"]),
+      .init("mode", L10n.tr("Mode"), \.mode, choices: ["component", "url", "form"]),
     ]
   }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
@@ -20,7 +20,7 @@ public enum UrlCodecTool: ToolModule {
       let value =
         options.mode == "form" ? input.text.replacingOccurrences(of: "+", with: " ") : input.text
       guard let decoded = value.removingPercentEncoding else {
-        throw ToolFailure("百分号编码无效，或解码字节不是 UTF-8。")
+        throw ToolFailure(L10n.tr("Invalid percent encoding, or the decoded bytes are not UTF-8."))
       }
       return ToolOutput(decoded)
     }

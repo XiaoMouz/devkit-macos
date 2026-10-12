@@ -8,26 +8,26 @@ public enum NumberFormatTool: ToolModule {
     public init() {}
   }
   public static let metadata = ToolMetadata(
-    "number-format", "数字格式", .numbers, "Decimal 十进制舍入与千分位，最多 38 位有效数字。", sample: "1234567.895",
+    "number-format", "Number Format", .numbers, "Decimal rounding and grouping, with up to 38 significant digits.", sample: "1234567.895",
     secondary: "", input: .text, network: false)
   public static var fields: [OptionField<Options>] {
     [
-      .init("scale", "小数位", \.scale, range: 0...20),
-      .init("rounding", "舍入方式", \.rounding, choices: ["plain", "bankers", "down", "up"]),
-      .init("grouping", "千分位", \.grouping),
+      .init("scale", L10n.tr("Decimal Places"), \.scale, range: 0...20),
+      .init("rounding", L10n.tr("Rounding Mode"), \.rounding, choices: ["plain", "bankers", "down", "up"]),
+      .init("grouping", L10n.tr("Thousands Separator"), \.grouping),
     ]
   }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
     let value = input.text.trimmingCharacters(in: .whitespacesAndNewlines)
     try require(
       value.range(of: "^[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)$", options: .regularExpression)
-        != nil, "请输入普通十进制数字，不含分组符。")
+        != nil, L10n.tr("Enter a plain decimal number without grouping separators."))
     try require(
       value.filter { $0.isNumber }.drop(while: { $0 == "0" }).count <= 38
-        && (0...20).contains(options.scale), "最多 38 位有效数字，小数位 0–20。")
+        && (0...20).contains(options.scale), L10n.tr("Supports up to 38 significant digits and 0–20 decimal places."))
     guard var number = Decimal(string: value, locale: Locale(identifier: "en_US_POSIX")),
       !number.isNaN
-    else { throw ToolFailure("数字超出 Decimal 范围。") }
+    else { throw ToolFailure(L10n.tr("Number is outside the Decimal range.")) }
     var rounded = Decimal()
     let mode: Decimal.RoundingMode =
       options.rounding == "bankers"

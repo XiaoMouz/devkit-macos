@@ -4,7 +4,7 @@ import DevKitCore
 import UniformTypeIdentifiers
 
 struct SpotlightToolAction: AppEntity, IndexedEntity {
-  static let typeDisplayRepresentation = TypeDisplayRepresentation(name: "工具操作")
+  static let typeDisplayRepresentation = TypeDisplayRepresentation(name: "Tool Action")
   static let defaultQuery = SpotlightToolActionQuery()
   let id: String
   let name: String
@@ -20,7 +20,7 @@ struct SpotlightToolAction: AppEntity, IndexedEntity {
   var attributeSet: CSSearchableItemAttributeSet {
     let attributes = CSSearchableItemAttributeSet(contentType: .item)
     attributes.title = name
-    attributes.contentDescription = "DevKit 工具操作"
+    attributes.contentDescription = L10n.tr("DevKit Tool Action")
     attributes.keywords = aliases + [toolID, "DevKit"]
     return attributes
   }
@@ -39,11 +39,11 @@ struct SpotlightToolActionQuery: EntityStringQuery {
   }
 }
 struct DevKitCommandIntent: AppIntent {
-  static let title: LocalizedStringResource = "DevKit 命令"
-  static let description = IntentDescription("使用已启用工具的命令别名，如 b64 encode hello。别名在 DevKit 设置中修改。")
+  static let title: LocalizedStringResource = "DevKit Command"
+  static let description = IntentDescription("Use an enabled tool’s command alias, such as b64 encode hello. Edit aliases in DevKit settings.")
   static var supportedModes: IntentModes { .background }
-  @Parameter(title: "命令") var command: String
-  static var parameterSummary: some ParameterSummary { Summary("DevKit 命令 \(\.$command)") }
+  @Parameter(title: "Command") var command: String
+  static var parameterSummary: some ParameterSummary { Summary("DevKit Command \(\.$command)") }
   func perform() async throws -> some IntentResult & ReturnsValue<String> & ShowsSnippetIntent {
     let request = try SpotlightCommand.parse(command, preferences: .load())
     let value = try await SpotlightExecution.run(request)
@@ -51,16 +51,16 @@ struct DevKitCommandIntent: AppIntent {
   }
 }
 struct DevKitToolIntent: AppIntent {
-  static let title: LocalizedStringResource = "DevKit 工具操作"
-  static let description = IntentDescription("选择已启用的工具操作并输入文本；生成器可输入数量。")
+  static let title: LocalizedStringResource = "DevKit Tool Action"
+  static let description = IntentDescription("Choose an enabled tool action and enter text. For generators, enter a count.")
   static var supportedModes: IntentModes { .background }
-  @Parameter(title: "工具操作") var action: SpotlightToolAction
-  @Parameter(title: "文本或数量", default: "") var text: String
-  static var parameterSummary: some ParameterSummary { Summary("使用 \(\.$action) 处理 \(\.$text)") }
+  @Parameter(title: "Tool Action") var action: SpotlightToolAction
+  @Parameter(title: "Text or Count", default: "") var text: String
+  static var parameterSummary: some ParameterSummary { Summary("Process \(\.$text) with \(\.$action)") }
   func perform() async throws -> some IntentResult & ReturnsValue<String> & ShowsSnippetIntent {
     let preferences = SpotlightPreferences.load()
-    try require(preferences.allows(action.toolID), "此工具的 Spotlight 操作已关闭，请在 DevKit 设置中启用。")
-    guard let selected = SpotlightCatalog.actions.first(where: { $0.id == action.id && $0.toolID == action.toolID }) else { throw ToolFailure("工具操作已失效，请重新选择。") }
+    try require(preferences.allows(action.toolID), L10n.tr("This tool’s Spotlight action is disabled. Enable it in DevKit settings."))
+    guard let selected = SpotlightCatalog.actions.first(where: { $0.id == action.id && $0.toolID == action.toolID }) else { throw ToolFailure(L10n.tr("This tool action is no longer available. Select it again.")) }
     let value = try await SpotlightExecution.run(try selected.request(text))
     return .result(value: value, snippetIntent: ResultSnippetIntent(text: value, tool: selected.name))
   }

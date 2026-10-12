@@ -67,14 +67,14 @@ struct CodeEditor: View {
       HStack(spacing: 8) {
         if let status {
           PaneStatusLabel(status: status)
-        } else { Text("\(summary.characters) 字符").monospacedDigit() }
+        } else { Text(L10n.tr("Characters: \(summary.characters)")).monospacedDigit() }
         Spacer(minLength: 8)
-        if status != nil { Text("\(summary.characters) 字符").monospacedDigit() }
-        if !paged && requestedWrap && !summary.wrap { Text("超长行 · 横向滚动") }
-        if paged { Text("分段编辑 · 纯文本") }
+        if status != nil { Text(L10n.tr("Characters: \(summary.characters)")).monospacedDigit() }
+        if !paged && requestedWrap && !summary.wrap { Text(L10n.tr("Long line · Scroll horizontally")) }
+        if paged { Text(L10n.tr("Paged editing · Plain text")) }
         else {
           Menu {
-            Button("跟随工具") { editorState.languageOverride = nil }
+            Button(L10n.tr("Follow Tool")) { editorState.languageOverride = nil }
             Divider()
             ForEach(SyntaxLanguage.allCases, id: \.self) { item in
               Button { editorState.languageOverride = item } label: {
@@ -83,7 +83,7 @@ struct CodeEditor: View {
               }
             }
           } label: { Text(effectiveLanguage.resolved(for: text).title) }
-            .menuStyle(.borderlessButton).fixedSize().help("语法高亮语言")
+            .menuStyle(.borderlessButton).fixedSize().help(L10n.tr("Syntax Highlighting Language"))
         }
         Text("UTF-8").foregroundStyle(.tertiary)
       }.font(.system(size: 10)).foregroundStyle(.secondary)
@@ -157,14 +157,14 @@ private struct PagedCodeEditor: View {
   var body: some View {
     VStack(spacing: 0) {
       HStack(spacing: 10) {
-        Button("上一段") { move(back: true) }.disabled(state.page.previousRanges.isEmpty)
-        Text("第 \(state.page.previousRanges.count + 1) 段").monospacedDigit()
-        Button("下一段") { move(back: false) }.disabled(!state.page.hasNext(in: text))
+        Button(L10n.tr("Previous Page")) { move(back: true) }.disabled(state.page.previousRanges.isEmpty)
+        Text(L10n.tr("Page \(state.page.previousRanges.count + 1)")).monospacedDigit()
+        Button(L10n.tr("Next Page")) { move(back: false) }.disabled(!state.page.hasNext(in: text))
         Spacer()
-        Button("复制全文") { Clipboard.copy(text) }
-        Text(editable ? "修改同步到全文" : "全文保留，可逐段查看")
+        Button(L10n.tr("Copy All Text")) { Clipboard.copy(text) }
+        Text(editable ? L10n.tr("Edits update the full text") : L10n.tr("Full text retained; browse page by page"))
       }.font(.caption).padding(8).background(.primary.opacity(0.025))
-      NativeCodeEditor(text: fragment, editable: editable, label: label + "（当前片段）", language: .plain,
+      NativeCodeEditor(text: fragment, editable: editable, label: label + L10n.tr("(Current page)"), language: .plain,
         contentSettled: contentSettled, editingBegan: editingBegan, state: state,
         contentID: -(state.pageRevision + 1), replaceLarge: replaceLarge,
         undoLarge: undoLarge, redoLarge: redoLarge,

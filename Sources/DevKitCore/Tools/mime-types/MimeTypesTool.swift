@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 public enum MimeTypesTool: ToolModule {
   public typealias Options = EmptyOptions
   public static let metadata = ToolMetadata(
-    "mime-types", "MIME 类型", .web, "通过系统 Uniform Type 数据库查询扩展名或 MIME。", sample: "json",
+    "mime-types", "MIME Types", .web, "Look up file extensions and MIME types using the system Uniform Type database.", sample: "json",
     secondary: "", input: .text, network: false)
   public static var fields: [OptionField<Options>] {
     [
@@ -17,11 +17,11 @@ public enum MimeTypesTool: ToolModule {
       text.contains("/")
       ? UTType(mimeType: text)
       : UTType(filenameExtension: text.hasPrefix(".") ? String(text.dropFirst()) : text)
-    guard let type else { throw ToolFailure("系统类型库中未找到此扩展名或 MIME。") }
+    guard let type else { throw ToolFailure(L10n.tr("The extension or MIME type was not found in the system type database.")) }
     let rows = [
-      ResultRow("MIME", type.preferredMIMEType ?? "未知"),
-      ResultRow("扩展名", type.preferredFilenameExtension ?? "未知"),
-      ResultRow("UTType", type.identifier), ResultRow("说明", type.localizedDescription ?? ""),
+      ResultRow("MIME", type.preferredMIMEType ?? L10n.tr("Unknown")),
+      ResultRow(L10n.tr("Extension"), type.preferredFilenameExtension ?? L10n.tr("Unknown")),
+      ResultRow("UTType", type.identifier), ResultRow(L10n.tr("Description"), type.localizedDescription ?? ""),
     ]
     return ToolOutput(rows.map { "\($0.label): \($0.value)" }.joined(separator: "\n"), rows: rows)
   }

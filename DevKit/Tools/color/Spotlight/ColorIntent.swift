@@ -3,14 +3,14 @@ import DevKitCore
 
 struct ColorIntent: AppIntent {
   static let isDiscoverable = false
-  static let title: LocalizedStringResource = "颜色转换"
+  static let title: LocalizedStringResource = "Color Converter"
   static var supportedModes: IntentModes { .background }
-  @Parameter(title: "输入") var text: String
-  static var parameterSummary: some ParameterSummary { Summary("颜色转换 \(\.$text)") }
+  @Parameter(title: "Input") var text: String
+  static var parameterSummary: some ParameterSummary { Summary("Convert Color \(\.$text)") }
   func perform() async throws -> some IntentResult & ReturnsValue<String> & ShowsSnippetIntent {
     let options = ColorTool.Options()
 
     let value = try await SpotlightExecution.run(ColorTool.self, text: text, options: options)
-    return .result(value: value, snippetIntent: ResultSnippetIntent(text: value, tool: "颜色转换"))
+    return .result(value: value, snippetIntent: ResultSnippetIntent(text: value, tool: L10n.tr("Color Converter")))
   }
 }

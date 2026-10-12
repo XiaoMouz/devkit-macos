@@ -1,6 +1,7 @@
 import Foundation
 
 public enum ToolCategory: String, CaseIterable, Codable, Sendable {
+  // Legacy wire values are retained for CLI/Codable compatibility, not used as translation keys.
   case encoding = "编码与转换"
   case structured = "结构化数据"
   case security = "摘要与令牌"
@@ -10,6 +11,19 @@ public enum ToolCategory: String, CaseIterable, Codable, Sendable {
   case web = "Web 与网络"
   case css = "前端样式"
   case assets = "代码与图形"
+  public var title: String {
+    switch self {
+    case .encoding: L10n.tr("Encoding and Conversion")
+    case .structured: L10n.tr("Structured Data")
+    case .security: L10n.tr("Hashes and Tokens")
+    case .generators: L10n.tr("IDs and Test Data")
+    case .text: L10n.tr("Text and Matching")
+    case .numbers: L10n.tr("Time and Numbers")
+    case .web: L10n.tr("Web and Networking")
+    case .css: L10n.tr("Frontend Styles")
+    case .assets: L10n.tr("Code and Graphics")
+    }
+  }
   public var symbol: String {
     switch self {
     case .encoding: "arrow.left.arrow.right"
@@ -28,9 +42,15 @@ public enum ToolCategory: String, CaseIterable, Codable, Sendable {
 public enum InputStyle: String, Sendable { case text, pair, generator, file }
 public struct ToolMetadata: Sendable, Identifiable {
   public let id: String
-  public let name: String
+  public let sourceName: String
+  public var name: String { L10n.text(sourceName) }
   public let category: ToolCategory
-  public let summary: String
+  public let sourceSummary: String
+  public var summary: String { L10n.text(sourceSummary) }
+  public var searchText: String {
+    [id, sourceName, sourceSummary, name, summary, category.rawValue, category.title,
+     L10n.text(sourceName, language: "zh-Hans"), L10n.text(sourceSummary, language: "zh-Hans")].joined(separator: " ")
+  }
   public let symbol: String
   public let sample: String
   public let secondary: String
@@ -42,9 +62,9 @@ public struct ToolMetadata: Sendable, Identifiable {
     input: InputStyle = .text, network: Bool = false
   ) {
     self.id = id
-    self.name = name
+    self.sourceName = name
     self.category = category
-    self.summary = summary
+    self.sourceSummary = summary
     self.symbol = symbol ?? category.symbol
     self.sample = sample
     self.secondary = secondary
@@ -212,10 +232,10 @@ public enum Limits {
   public static let outputBytes = 32 * 1024 * 1024
   public static func check(_ input: ToolInput) throws {
     guard input.text.utf8.count + input.secondary.utf8.count <= textBytes else {
-      throw ToolFailure("文本超过 5 MiB，请缩小输入。", code: "limit")
+      throw ToolFailure(L10n.tr("Text exceeds 5 MiB. Reduce the input."), code: "limit")
     }
     guard (input.file?.count ?? 0) <= fileBytes else {
-      throw ToolFailure("文件超过 32 MiB。", code: "limit")
+      throw ToolFailure(L10n.tr("File exceeds 32 MiB."), code: "limit")
     }
   }
 }

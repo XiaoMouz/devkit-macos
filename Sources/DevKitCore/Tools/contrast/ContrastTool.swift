@@ -6,37 +6,37 @@ public enum ContrastTool: ToolModule {
     public init() {}
   }
   public static let metadata = ToolMetadata(
-    "contrast", "颜色对比度", .css, "WCAG 2.2 相对亮度对比值，普通和大号文字分开。", sample: "#FFFFFF", secondary: "",
+    "contrast", "Color Contrast", .css, "WCAG 2.2 relative luminance contrast, with separate results for normal and large text.", sample: "#FFFFFF", secondary: "",
     input: .text, network: false)
   public static var fields: [OptionField<Options>] {
     [
-      .init("background", "背景颜色", \.background)
+      .init("background", L10n.tr("Background Color"), \.background)
     ]
   }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
     let foreground = try ColorValue.parse(input.text)
     let background = try ColorValue.parse(options.background)
-    try require(foreground.a == 1 && background.a == 1, "请先合成透明颜色；此工具要求不透明前景与背景。")
+    try require(foreground.a == 1 && background.a == 1, L10n.tr("Composite transparent colors first. This tool requires opaque foreground and background colors."))
     let ratio =
       (max(foreground.luminance, background.luminance) + 0.05)
       / (min(foreground.luminance, background.luminance) + 0.05)
     let displayRatio = String(format: "%.4f:1", ratio)
     let nearThreshold = [3.0, 4.5, 7.0].first { ratio < $0 && $0 - ratio < 0.005 }
-    let precisionNote = nearThreshold.map { "当前实际比值略低于 \($0):1；判定使用未舍入值。" } ?? "判定使用未舍入值。"
+    let precisionNote = nearThreshold.map { L10n.tr("The actual ratio is just below \($0):1. Evaluation uses the unrounded value.") } ?? L10n.tr("Evaluation uses the unrounded value.")
     let rows = [
-      ResultRow("对比值", displayRatio),
-      ResultRow("AA 普通文字 ≥4.5", ratio >= 4.5 ? "通过" : "未通过"),
-      ResultRow("AA 大号文字 ≥3", ratio >= 3 ? "通过" : "未通过"),
-      ResultRow("AAA 普通文字 ≥7", ratio >= 7 ? "通过" : "未通过"),
-      ResultRow("AAA 大号文字 ≥4.5", ratio >= 4.5 ? "通过" : "未通过"),
+      ResultRow(L10n.tr("Contrast Ratio"), displayRatio),
+      ResultRow(L10n.tr("AA Normal Text ≥4.5"), ratio >= 4.5 ? L10n.tr("Pass") : L10n.tr("Failed")),
+      ResultRow(L10n.tr("AA Large Text ≥3"), ratio >= 3 ? L10n.tr("Pass") : L10n.tr("Failed")),
+      ResultRow(L10n.tr("AAA Normal Text ≥7"), ratio >= 7 ? L10n.tr("Pass") : L10n.tr("Failed")),
+      ResultRow(L10n.tr("AAA Large Text ≥4.5"), ratio >= 4.5 ? L10n.tr("Pass") : L10n.tr("Failed")),
     ]
     return ToolOutput(
       rows.map { "\($0.label): \($0.value)" }.joined(separator: "\n"), rows: rows,
       html: cssPreview(
         "background:\(background.css);color:\(foreground.css);border-radius:16px;",
-        content: "Aa 对比预览"), note: "WCAG 2.2；大号文字为 ≥18pt 或 ≥14pt 粗体。" + precisionNote,
-      report: ResultReport(ratio >= 4.5 ? "success" : "failure", ratio >= 4.5 ? "普通文字 AA 对比度通过" : "普通文字 AA 对比度未通过",
-        ratio >= 4.5 ? "当前颜色达到普通文字 AA 标准，各等级结果见下方。" : "建议加深前景色或提高背景亮度，使对比值达到 4.5:1。",
-        metrics: [ResultRow("当前对比值", displayRatio), ResultRow("普通文字 AA", "≥ 4.5:1")]))
+        content: L10n.tr("Aa Contrast Preview")), note: L10n.tr("WCAG 2.2. Large text is at least 18 pt, or 14 pt bold.") + precisionNote,
+      report: ResultReport(ratio >= 4.5 ? "success" : "failure", ratio >= 4.5 ? L10n.tr("Normal Text Passes AA Contrast") : L10n.tr("Normal Text Fails AA Contrast"),
+        ratio >= 4.5 ? L10n.tr("These colors meet AA for normal text. See the results for each level below.") : L10n.tr("Darken the foreground or lighten the background to reach a contrast ratio of 4.5:1."),
+        metrics: [ResultRow(L10n.tr("Current Contrast Ratio"), displayRatio), ResultRow(L10n.tr("Normal Text AA"), "≥ 4.5:1")]))
   }
 }

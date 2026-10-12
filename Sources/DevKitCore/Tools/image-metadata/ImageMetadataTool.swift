@@ -7,11 +7,11 @@ public enum ImageMetadataTool: ToolModule {
     public init() {}
   }
   public static let metadata = ToolMetadata(
-    "image-metadata", "图片信息", .assets, "查看尺寸、EXIF 与色彩信息；可导出移除元数据的新 PNG。", sample: "", secondary: "",
+    "image-metadata", "Image Information", .assets, "Inspect dimensions, EXIF, and color information. Export a new PNG with metadata removed.", sample: "", secondary: "",
     input: .file, network: false)
   public static var fields: [OptionField<Options>] {
     [
-      .init("strip", "导出移除元数据的 PNG", \.strip)
+      .init("strip", L10n.tr("Export PNG without Metadata"), \.strip)
     ]
   }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
@@ -21,11 +21,11 @@ public enum ImageMetadataTool: ToolModule {
     let artifacts =
       options.strip
       ? [try ImageCodec.encode(ImageCodec.decode(input), name: "metadata-removed")] : []
-    let keys = [(kCGImagePropertyPixelWidth as String, "宽度（px）"), (kCGImagePropertyPixelHeight as String, "高度（px）"),
-      (kCGImagePropertyColorModel as String, "颜色模型"), (kCGImagePropertyDepth as String, "位深度"),
-      (kCGImagePropertyHasAlpha as String, "透明通道")]
-    let rows = keys.compactMap { key, label in values[key].map { ResultRow(label, key == kCGImagePropertyHasAlpha as String ? (($0 as? NSNumber)?.boolValue == true ? "是" : "否") : String(describing: $0)) } }
-    return ToolOutput(text, rows: rows, artifacts: artifacts, note: options.strip ? "已生成移除元数据的 PNG。" : nil)
+    let keys = [(kCGImagePropertyPixelWidth as String, L10n.tr("Width (px)")), (kCGImagePropertyPixelHeight as String, L10n.tr("Height (px)")),
+      (kCGImagePropertyColorModel as String, L10n.tr("Color Model")), (kCGImagePropertyDepth as String, L10n.tr("Bit Depth")),
+      (kCGImagePropertyHasAlpha as String, L10n.tr("Alpha Channel"))]
+    let rows = keys.compactMap { key, label in values[key].map { ResultRow(label, key == kCGImagePropertyHasAlpha as String ? (($0 as? NSNumber)?.boolValue == true ? L10n.tr("Yes") : L10n.tr("No")) : String(describing: $0)) } }
+    return ToolOutput(text, rows: rows, artifacts: artifacts, note: options.strip ? L10n.tr("Generated a PNG with metadata removed.") : nil)
   }
   private static func jsonValue(_ value: Any) -> Any {
     switch value {

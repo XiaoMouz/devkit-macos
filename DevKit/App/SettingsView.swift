@@ -2,40 +2,55 @@ import DevKitCore
 import SwiftUI
 
 struct SettingsView: View {
+  @AppStorage(L10n.preferenceKey) private var language = "system"
   @AppStorage("appearance") private var appearance = "system"
   @AppStorage("editorFontSize") private var fontSize = 13.0
   @AppStorage("wrapLines") private var wrap = true
   var body: some View {
     TabView {
       Form {
-        Section("外观") {
-          Picker("主题", selection: $appearance) {
-            Text("跟随系统").tag("system")
-            Text("浅色").tag("light")
-            Text("深色").tag("dark")
+        Section(L10n.tr("Language")) {
+          Picker(L10n.tr("App Language"), selection: $language) {
+            Text(L10n.tr("Follow System")).tag("system")
+            ForEach(L10n.languages) { language in Text(language.name).tag(language.id) }
           }
-          Text("Liquid Glass 的透明度跟随“系统设置 → 外观”和辅助功能中的“减少透明度”。")
+          Text(L10n.tr("Quit and reopen DevKit after changing the language to apply it to all windows, menus, and Spotlight."))
             .font(.caption).foregroundStyle(.secondary)
         }
-        Section("编辑器") {
-          Slider(value: $fontSize, in: 11...22, step: 1) { Text("字号 \(Int(fontSize))") }
-          Toggle("自动换行", isOn: $wrap)
+
+        Section(L10n.tr("Appearance")) {
+          Picker(L10n.tr("Theme"), selection: $appearance) {
+            Text(L10n.tr("Follow System")).tag("system")
+            Text(L10n.tr("Light")).tag("light")
+            Text(L10n.tr("Dark")).tag("dark")
+          }
+          Text(L10n.tr("Liquid Glass transparency follows System Settings → Appearance and the Reduce Transparency accessibility setting."))
+            .font(.caption).foregroundStyle(.secondary)
         }
-      }.formStyle(.grouped).tabItem { Label("通用", systemImage: "gearshape") }
+        Section(L10n.tr("Editor")) {
+          Slider(value: $fontSize, in: 11...22, step: 1) { Text(L10n.tr("Font Size \(Int(fontSize))")) }
+          Toggle(L10n.tr("Wrap Lines"), isOn: $wrap)
+        }
+      }.formStyle(.grouped).tabItem { Label(L10n.tr("General"), systemImage: "gearshape") }
       SpotlightSettingsView().tabItem { Label("Spotlight", systemImage: "magnifyingglass") }
-      AutomationSettingsView().tabItem { Label("CLI 与 AI", systemImage: "terminal") }
+      AutomationSettingsView().tabItem { Label(L10n.tr("CLI & AI"), systemImage: "terminal") }
       VStack(spacing: 12) {
         Image(nsImage: NSApp.applicationIconImage).resizable().scaledToFit().frame(width: 96, height: 96)
           .accessibilityHidden(true)
         Text("DevKit").font(.title.bold())
-        Text("原生 macOS Web 开发者工具箱").foregroundStyle(.secondary)
+        Text(L10n.tr("A native macOS toolkit for web developers")).foregroundStyle(.secondary)
         HStack(spacing: 14) {
-          Label("\(ToolRegistry.all.count) 个工具", systemImage: "square.grid.2x2")
-          Label("本地处理", systemImage: "lock.shield")
+          Label(L10n.tr("Tools: \(ToolRegistry.all.count)"), systemImage: "square.grid.2x2")
+          Label(L10n.tr("Local Processing"), systemImage: "lock.shield")
         }.font(.callout).foregroundStyle(.secondary).padding(.top, 4)
         Text("0.1.0 · macOS 26+").font(.caption).foregroundStyle(.tertiary)
-      }.frame(maxWidth: .infinity, maxHeight: .infinity).tabItem { Label("关于", systemImage: "info.circle") }
+      }.frame(maxWidth: .infinity, maxHeight: .infinity).tabItem { Label(L10n.tr("About"), systemImage: "info.circle") }
     }.frame(width: 800, height: 610)
+      .onChange(of: language) { _, value in
+        // Native menus and App Intents read Apple's per-app language override at launch.
+        if value == "system" { UserDefaults.standard.removeObject(forKey: "AppleLanguages") }
+        else { UserDefaults.standard.set([value], forKey: "AppleLanguages") }
+      }
       .onChange(of: appearance) { _, value in AppAppearance.apply(value) }
   }
 }

@@ -43,7 +43,11 @@ printf '%s' '{"hello":"DevKit"}' | devkit run json --format text
 在 Xcode 中打开 `DevKit.xcodeproj`，选择 **DevKit / My Mac**，配置开发团队后按 **⌘R** 运行。
 
 ```sh
-swift test
+DEVKIT_LANGUAGE=zh-Hans swift test
 ```
 
 [开发指南](.codex/docs/development.md) · [项目结构](.codex/docs/architecture.md) · [贡献约定](AGENTS.md)
+
+## 翻译贡献
+
+目前支持简体中文和英文，默认跟随系统语言；在设置中更改后，退出并重新打开应用生效。代码和源文案统一使用英文，新增语言只需参考英文提供翻译 JSON，无需理解中文或修改业务代码；步骤见[多语言与翻译贡献](.codex/docs/localization.md)。

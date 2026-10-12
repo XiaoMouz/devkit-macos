@@ -4,11 +4,11 @@ import Foundation
 public struct ToolPresentation: Sendable {
   public enum Control: Sendable, Equatable { case editor, field, color, date, timestamp, pairs, template, request, image, file, generator }
   public var control: Control = .editor
-  public var inputTitle = "文本"
-  public var placeholder = "输入或粘贴文本…"
-  public var secondaryTitle = "修改后的文本"
-  public var outputTitle = "结果"
-  public var action = "处理"
+  public var inputTitle = L10n.tr("Text")
+  public var placeholder = L10n.tr("Enter or paste text…")
+  public var secondaryTitle = L10n.tr("Modified Text")
+  public var outputTitle = L10n.tr("Result")
+  public var action = L10n.tr("Process")
   public var acceptsBinary = false
   public var exportName = "result.txt"
   public var exportMIME = "text/plain"
@@ -16,78 +16,78 @@ public struct ToolPresentation: Sendable {
     let operation = values["operation"] ?? ""
     switch id {
     case "json":
-      inputTitle = operation == "diff" ? "原始 JSON" : "JSON 数据"
-      placeholder = "输入或导入 JSON…"
-      secondaryTitle = operation == "schema" ? "JSON Schema" : "对比 JSON"
-      action = ["format":"格式化", "minify":"压缩", "validate":"校验", "tree":"查看路径", "query":"查询", "diff":"对比", "schema":"校验 Schema", "typescript":"生成类型"][operation] ?? "处理"
-      outputTitle = operation == "typescript" ? "TypeScript" : operation == "diff" ? "结构差异" : "结果"
+      inputTitle = operation == "diff" ? L10n.tr("Original JSON") : L10n.tr("JSON Data")
+      placeholder = L10n.tr("Enter or import JSON…")
+      secondaryTitle = operation == "schema" ? "JSON Schema" : L10n.tr("Comparison JSON")
+      action = ["format":L10n.tr("Format"), "minify":L10n.tr("Minify"), "validate":L10n.tr("Validate"), "tree":L10n.tr("View Paths"), "query":L10n.tr("Query"), "diff":L10n.tr("Compare"), "schema":L10n.tr("Validate Schema"), "typescript":L10n.tr("Generate Types")][operation] ?? L10n.tr("Process")
+      outputTitle = operation == "typescript" ? "TypeScript" : operation == "diff" ? L10n.tr("Structural Differences") : L10n.tr("Result")
       exportName = operation == "typescript" ? "types.ts" : "result.json"
       exportMIME = operation == "typescript" ? "text/plain" : "application/json"
       if ["validate", "tree", "diff", "schema"].contains(operation) { exportName = "report.txt"; exportMIME = "text/plain" }
     case "qr-code":
       control = operation == "scan" ? .image : .editor
-      inputTitle = operation == "scan" ? "二维码图片" : "二维码内容"
-      placeholder = "输入网址或文字…"; outputTitle = operation == "scan" ? "识别内容" : "二维码"
-      action = operation == "scan" ? "识别二维码" : "生成二维码"
+      inputTitle = operation == "scan" ? L10n.tr("QR Image") : L10n.tr("QR Content")
+      placeholder = L10n.tr("Enter a URL or text…"); outputTitle = operation == "scan" ? L10n.tr("Recognized Content") : L10n.tr("QR Code")
+      action = operation == "scan" ? L10n.tr("Scan QR Code") : L10n.tr("Generate QR Code")
     case "data-url":
       control = style == .file ? .image : .editor
-      inputTitle = style == .file ? "原始图片" : "图片 Data URL"
-      placeholder = "粘贴 data:image/…"; outputTitle = style == .file ? "Data URL" : "图片"
-      action = style == .file ? "生成 Data URL" : "还原图片"
+      inputTitle = style == .file ? L10n.tr("Original Image") : L10n.tr("Image Data URL")
+      placeholder = L10n.tr("Paste data:image/…"); outputTitle = style == .file ? "Data URL" : L10n.tr("Image")
+      action = style == .file ? L10n.tr("Generate Data URL") : L10n.tr("Restore Image")
     case "image-convert", "image-resize", "image-compress", "image-metadata", "favicon":
-      control = .image; inputTitle = "原始图片"; outputTitle = id == "image-metadata" ? "图片信息" : "处理后的图片"
+      control = .image; inputTitle = L10n.tr("Original Image"); outputTitle = id == "image-metadata" ? L10n.tr("Image Information") : L10n.tr("Processed Image")
       if id == "image-metadata" { exportName = "metadata.json"; exportMIME = "application/json" }
-      action = ["image-convert":"转换格式", "image-resize":"调整尺寸", "image-compress":"压缩图片", "image-metadata":"读取信息", "favicon":"生成图标"][id]!
-      if id == "image-metadata", values["strip"] == "true" { action = "移除元数据" }
+      action = ["image-convert":L10n.tr("Convert Format"), "image-resize":L10n.tr("Resize"), "image-compress":L10n.tr("Compress Image"), "image-metadata":L10n.tr("Read Information"), "favicon":L10n.tr("Generate Icons")][id]!
+      if id == "image-metadata", values["strip"] == "true" { action = L10n.tr("Remove Metadata") }
     case "file-checksum":
-      control = .file; inputTitle = "待校验文件"
-      action = (values["expected"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "计算摘要" : "校验文件"
+      control = .file; inputTitle = L10n.tr("File to Verify")
+      action = (values["expected"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? L10n.tr("Calculate Digest") : L10n.tr("Verify File")
     case "base64":
-      inputTitle = operation == "decode" ? "Base64" : "文本"
-      action = operation == "decode" ? "解码" : "编码"
+      inputTitle = operation == "decode" ? "Base64" : L10n.tr("Text")
+      action = operation == "decode" ? L10n.tr("Decode") : L10n.tr("Encode")
     case "hash", "hmac":
-      inputTitle = "文本或文件"; acceptsBinary = true; action = "计算摘要"
+      inputTitle = L10n.tr("Text or File"); acceptsBinary = true; action = L10n.tr("Calculate Digest")
     case "pem-certificate":
-      inputTitle = "PEM / DER 证书"; placeholder = "粘贴 PEM 证书或导入证书文件…"; acceptsBinary = true; action = "解析证书"
-    case "uuid", "nanoid", "random-string": control = .generator; inputTitle = "生成参数"; action = "生成"
+      inputTitle = L10n.tr("PEM / DER Certificate"); placeholder = L10n.tr("Paste a PEM certificate or import a certificate file…"); acceptsBinary = true; action = L10n.tr("Parse Certificate")
+    case "uuid", "nanoid", "random-string": control = .generator; inputTitle = L10n.tr("Generation Parameters"); action = L10n.tr("Generate")
     case "ulid":
       control = style == .generator ? .generator : .field
-      inputTitle = style == .generator ? "生成参数" : "ULID"; placeholder = "26 位 ULID"
-      action = style == .generator ? "生成 ULID" : "解析时间"
-    case "mock-data": control = .template; inputTitle = "数据字段"; action = "生成数据"; exportName = "mock.json"; exportMIME = "application/json"
-    case "timestamp": control = .timestamp; inputTitle = "时间戳与日期"; action = "转换时间"
-    case "date-time": control = .date; inputTitle = "起始日期"; action = operation == "difference" ? "计算时间差" : operation == "add-days" ? "计算日期" : "转换时区"
-    case "cron": control = .field; inputTitle = "Cron 表达式"; placeholder = "*/15 9-18 * * 1-5"; action = "预览执行时间"
+      inputTitle = style == .generator ? L10n.tr("Generation Parameters") : "ULID"; placeholder = L10n.tr("26-character ULID")
+      action = style == .generator ? L10n.tr("Generate ULID") : L10n.tr("Parse Time")
+    case "mock-data": control = .template; inputTitle = L10n.tr("Data Fields"); action = L10n.tr("Generate Data"); exportName = "mock.json"; exportMIME = "application/json"
+    case "timestamp": control = .timestamp; inputTitle = L10n.tr("Timestamp and Date"); action = L10n.tr("Converted Time")
+    case "date-time": control = .date; inputTitle = L10n.tr("Start Date"); action = operation == "difference" ? L10n.tr("Calculate Difference") : operation == "add-days" ? L10n.tr("Calculate Date") : L10n.tr("Convert Time Zone")
+    case "cron": control = .field; inputTitle = L10n.tr("Cron Expression"); placeholder = "*/15 9-18 * * 1-5"; action = L10n.tr("Preview Run Times")
     case "number-base", "number-format", "unit-convert", "css-unit":
-      control = .field; inputTitle = "数值"; placeholder = id == "number-base" ? "255" : "输入数值"
-      action = id == "number-format" ? "格式化数字" : "换算"
+      control = .field; inputTitle = L10n.tr("Numeric Value"); placeholder = id == "number-base" ? "255" : L10n.tr("Enter a number")
+      action = id == "number-format" ? L10n.tr("Format Number") : L10n.tr("Convert")
     case "color", "contrast":
-      control = .color; inputTitle = id == "contrast" ? "前景颜色" : "颜色"
-      action = id == "contrast" ? "检查对比度" : "转换颜色"
-    case "http-status": control = .field; inputTitle = "HTTP 状态码"; placeholder = "200、404、500…"; action = "查询"
-    case "mime-types": control = .field; inputTitle = "文件扩展名或 MIME"; placeholder = "png 或 image/png"; action = "查询"
-    case "dns": control = .field; inputTitle = "域名"; placeholder = "example.com"; action = "查询 DNS"
-    case "url-parser": control = .field; inputTitle = "URL"; placeholder = "https://example.com/path?q=hello"; action = "解析 URL"
+      control = .color; inputTitle = id == "contrast" ? L10n.tr("Foreground Color") : L10n.tr("Color")
+      action = id == "contrast" ? L10n.tr("Check Contrast") : L10n.tr("Convert Color")
+    case "http-status": control = .field; inputTitle = L10n.tr("HTTP Status Code"); placeholder = "200、404、500…"; action = L10n.tr("Query")
+    case "mime-types": control = .field; inputTitle = L10n.tr("File Extension or MIME"); placeholder = L10n.tr("png or image/png"); action = L10n.tr("Query")
+    case "dns": control = .field; inputTitle = L10n.tr("Domain"); placeholder = "example.com"; action = L10n.tr("Look Up DNS")
+    case "url-parser": control = .field; inputTitle = "URL"; placeholder = "https://example.com/path?q=hello"; action = L10n.tr("Parse URL")
     case "query-string":
       control = operation == "build" ? .pairs : .field
-      inputTitle = operation == "build" ? "查询参数" : "查询字符串或 URL"
-      placeholder = "q=hello&tag=swift 或完整 URL"; action = operation == "build" ? "生成查询字符串" : operation == "sort" ? "排序参数" : "解析参数"
-    case "http-client": control = .request; inputTitle = "请求"; action = "发送请求"; outputTitle = "响应正文"
-    case "websocket": control = .request; inputTitle = "连接与消息"; action = "连接"
-    case "cookie": inputTitle = values["mode"] == "cookie" ? "Cookie 请求头" : "Set-Cookie 响应头"; action = "解析 Cookie"
-    case "curl-convert": inputTitle = "cURL 命令"; placeholder = "粘贴 cURL 命令…"; action = "转换请求"
-    case "jwt": inputTitle = "JWT 令牌"; placeholder = "粘贴 Header.Payload.Signature…"; action = values["verify"] == "true" ? "验证签名" : "解析令牌"
-    case "regex": inputTitle = "测试文本"; action = operation == "replace" ? "预览替换" : "匹配"
-    case "text-diff": inputTitle = "原始文本"; action = "对比文本"; outputTitle = "文本差异"
-    case "text-case": inputTitle = "名称或文本"; action = "转换命名"
-    case "text-lines": inputTitle = "文本行"; action = "处理文本行"
-    case "text-replace": inputTitle = "待替换文本"; action = "替换"
-    case "text-stats": inputTitle = "待统计文本"; action = "统计"
-    case "url-codec": inputTitle = operation == "decode" ? "URL 编码内容" : "URL 或参数"; action = operation == "decode" ? "解码" : "编码"
-    case "markdown": inputTitle = "Markdown"; action = "预览"; outputTitle = "预览 / HTML"; exportName = "preview.html"; exportMIME = "text/html"
-    case "svg": inputTitle = "SVG 源码"; action = "优化并预览"; outputTitle = "预览 / SVG"; exportName = "result.svg"; exportMIME = "image/svg+xml"
+      inputTitle = operation == "build" ? L10n.tr("Query Parameters") : L10n.tr("Query String or URL")
+      placeholder = L10n.tr("q=hello&tag=swift or a full URL"); action = operation == "build" ? L10n.tr("Build Query String") : operation == "sort" ? L10n.tr("Sort Parameters") : L10n.tr("Parse Parameters")
+    case "http-client": control = .request; inputTitle = L10n.tr("Request"); action = L10n.tr("Send Request"); outputTitle = L10n.tr("Response Body")
+    case "websocket": control = .request; inputTitle = L10n.tr("Connection and Messages"); action = L10n.tr("Connect")
+    case "cookie": inputTitle = values["mode"] == "cookie" ? L10n.tr("Cookie Request Header") : L10n.tr("Set-Cookie Response Header"); action = L10n.tr("Parse Cookie")
+    case "curl-convert": inputTitle = L10n.tr("cURL Command"); placeholder = L10n.tr("Paste a cURL command…"); action = L10n.tr("Convert Request")
+    case "jwt": inputTitle = L10n.tr("JWT Token"); placeholder = L10n.tr("Paste Header.Payload.Signature…"); action = values["verify"] == "true" ? L10n.tr("Verify Signature") : L10n.tr("Parse Token")
+    case "regex": inputTitle = L10n.tr("Test Text"); action = operation == "replace" ? L10n.tr("Preview Replacement") : L10n.tr("Match")
+    case "text-diff": inputTitle = L10n.tr("Original Text"); action = L10n.tr("Compare Text"); outputTitle = L10n.tr("Text Differences")
+    case "text-case": inputTitle = L10n.tr("Name or Text"); action = L10n.tr("Convert Naming")
+    case "text-lines": inputTitle = L10n.tr("Text Lines"); action = L10n.tr("Process Lines")
+    case "text-replace": inputTitle = L10n.tr("Text to Replace"); action = L10n.tr("Replace")
+    case "text-stats": inputTitle = L10n.tr("Text to Count"); action = L10n.tr("Analyze Text")
+    case "url-codec": inputTitle = operation == "decode" ? L10n.tr("URL-Encoded Content") : L10n.tr("URL or Parameters"); action = operation == "decode" ? L10n.tr("Decode") : L10n.tr("Encode")
+    case "markdown": inputTitle = "Markdown"; action = L10n.tr("Preview"); outputTitle = L10n.tr("Preview / HTML"); exportName = "preview.html"; exportMIME = "text/html"
+    case "svg": inputTitle = L10n.tr("SVG Source"); action = L10n.tr("Optimize and Preview"); outputTitle = L10n.tr("Preview / SVG"); exportName = "result.svg"; exportMIME = "image/svg+xml"
     case "code-format", "code-minify":
-      inputTitle = "源代码"; action = id == "code-format" ? "格式化代码" : "压缩代码"
+      inputTitle = L10n.tr("Source Code"); action = id == "code-format" ? L10n.tr("Format Code") : L10n.tr("Minify Code")
       let ext = ["javascript":"js", "typescript":"ts", "html":"html", "css":"css", "sql":"sql"][values["language"] ?? ""] ?? "txt"
       exportName = "result." + ext
     default: break

@@ -8,7 +8,7 @@ public enum SyntaxLanguage: String, Sendable, CaseIterable {
 
   public var title: String {
     switch self {
-    case .automatic: "自动"; case .plain: "文本"; case .json: "JSON"
+    case .automatic: L10n.tr("Automatic"); case .plain: L10n.tr("Text"); case .json: "JSON"
     case .javascript: "JavaScript"; case .typescript: "TypeScript"; case .xml: "HTML / XML"
     case .css: "CSS"; case .sql: "SQL"; case .markdown: "Markdown"; case .yaml: "YAML"
     case .ini: "TOML / INI"; case .bash: "Shell"; case .swift: "Swift"; case .python: "Python"

@@ -1,3 +1,4 @@
+import DevKitCore
 import AppKit
 import SwiftUI
 
@@ -37,7 +38,7 @@ struct WorkspaceColumns<First: View, Second: View>: View {
           .onTapGesture(count: 2) {
             withAnimation(WorkspaceMotion.layout(reduceMotion: reduceMotion)) { fraction = 0.5 }
           }
-          .accessibilityLabel("调整左右面板宽度")
+          .accessibilityLabel(L10n.tr("Adjust left and right pane widths"))
           .accessibilityAdjustableAction { direction in
             withAnimation(WorkspaceMotion.layout(reduceMotion: reduceMotion)) {
               fraction = min(max(fraction + (direction == .increment ? 0.05 : -0.05), 0.2), 0.8)

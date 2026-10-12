@@ -158,7 +158,7 @@ import OSLog
       task?.cancel()
       bridge.running = false
     }
-    status = output == nil ? "" : "内容已修改，重新执行以更新结果"
+    status = output == nil ? "" : L10n.tr("Content changed. Run again to update the result.")
   }
   func cancel() {
     task?.cancel()
@@ -166,7 +166,7 @@ import OSLog
     if bridge.running {
       revision += 1
       bridge.running = false
-      status = "已取消"
+      status = L10n.tr("Cancelled")
     }
   }
   func run() {
@@ -182,7 +182,7 @@ import OSLog
       for field in visibleFields {
         if case .integer(let range) = field.kind {
           guard let value = Int(field.read(options)), range.contains(value) else {
-            throw ToolFailure("\(field.label)范围为 \(range.lowerBound)–\(range.upperBound)。")
+            throw ToolFailure(L10n.tr("\(field.label) must be between \(range.lowerBound) and \(range.upperBound)."))
           }
         }
       }
@@ -193,13 +193,13 @@ import OSLog
       bridge.running = true
       error = nil
       copied = false
-      status = "处理中…"
+      status = L10n.tr("Processing…")
       let fileURL = checksumURL
       let checksumOptions = options as? FileChecksumTool.Options
       let progress: @Sendable (Int64, Int64) -> Void = { [weak self] read, total in
         Task { @MainActor [weak self] in
           guard let self, self.revision == version, self.bridge.running else { return }
-          self.status = "已读取 \(ByteCountFormatter.string(fromByteCount: read, countStyle: .file)) / \(ByteCountFormatter.string(fromByteCount: total, countStyle: .file))"
+          self.status = L10n.tr("Read \(ByteCountFormatter.string(fromByteCount: read, countStyle: .file)) / \(ByteCountFormatter.string(fromByteCount: total, countStyle: .file))")
         }
       }
       task = Task { @MainActor in
@@ -214,7 +214,7 @@ import OSLog
           resultRevision = version
           elapsed = Date().timeIntervalSince(start)
           bridge.running = false
-          status = "已完成"
+          status = L10n.tr("Completed")
           task = nil
           completedRun += 1
           refreshLayout()
@@ -224,7 +224,7 @@ import OSLog
           output = nil
           resultRevision = -1
           bridge.running = false
-          status = "需要检查输入"
+          status = L10n.tr("Check the input")
           task = nil
         }
       }
@@ -234,10 +234,10 @@ import OSLog
     guard current, let output else { return }
     if metadata.id != "image-metadata", let artifact = imageArtifact {
       copied = Clipboard.copyImage(artifact)
-      status = copied ? "已复制图片" : "复制失败，请重试"
+      status = copied ? L10n.tr("Image Copied") : L10n.tr("Could not copy. Try again.")
     } else {
       copied = Clipboard.copy(output.text)
-      status = copied ? "已复制完整结果" : "复制失败，请重试"
+      status = copied ? L10n.tr("Full Result Copied") : L10n.tr("Could not copy. Try again.")
     }
   }
   func useExample() {
@@ -250,9 +250,9 @@ import OSLog
   func paste() {
     if presentation.isImage {
       if let data = NSPasteboard.general.data(forType: .png) ?? NSPasteboard.general.data(forType: .tiff) {
-        input = ToolInput(file: data, fileName: "剪贴板图片")
+        input = ToolInput(file: data, fileName: L10n.tr("Clipboard Image"))
         refreshLayout()
-      } else { error = "剪贴板中没有图片。" }
+      } else { error = L10n.tr("There is no image on the clipboard.") }
       return
     }
     if let value = NSPasteboard.general.string(forType: .string) {
@@ -266,7 +266,7 @@ import OSLog
         } catch { self.error = error.localizedDescription; return }
       } else if presentation.control == .date {
         guard let date = Dates.parse(value, timeZone: inputTimeZone), Dates.supportedRange.contains(date) else {
-          error = "剪贴板中的日期无效，请使用 2026-10-12 09:00:00 这样的格式。"; return
+          error = L10n.tr("Invalid date on the clipboard. Use a format such as 2026-10-12 09:00:00."); return
         }
         input = ToolInput(text: Dates.iso(date))
       } else { input = ToolInput(text: value, secondary: input.secondary) }
@@ -317,7 +317,7 @@ import OSLog
             let access = url.startAccessingSecurityScopedResource()
             defer { if access { url.stopAccessingSecurityScopedResource() } }
             let info = try url.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
-            try require(info.isRegularFile == true, "请选择普通文件。")
+            try require(info.isRegularFile == true, L10n.tr("Choose a regular file."))
             return Int64(info.fileSize ?? 0)
           }.value
           guard version == revision else { return }
@@ -327,14 +327,14 @@ import OSLog
           refreshLayout()
         } catch {
           guard version == revision else { return }
-          importFailure = "文件未替换：" + error.localizedDescription
+          importFailure = L10n.tr("File not replaced: ") + error.localizedDescription
           self.error = importFailure
         }
       }
       return
     }
     invalidate()
-    status = "读取文件…"
+    status = L10n.tr("Reading file…")
     let version = revision
     Task { @MainActor in
       do {
@@ -342,11 +342,11 @@ import OSLog
           let access = url.startAccessingSecurityScopedResource()
           defer { if access { url.stopAccessingSecurityScopedResource() } }
           let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
-          try require(size <= Limits.fileBytes, "文件超过 32 MiB。")
+          try require(size <= Limits.fileBytes, L10n.tr("File exceeds 32 MiB."))
           let handle = try FileHandle(forReadingFrom: url)
           defer { try? handle.close() }
           let data = try handle.read(upToCount: Limits.fileBytes + 1) ?? Data()
-          try require(data.count <= Limits.fileBytes, "文件超过 32 MiB。")
+          try require(data.count <= Limits.fileBytes, L10n.tr("File exceeds 32 MiB."))
           return data
         }.value
         guard version == revision else { return }
@@ -358,14 +358,14 @@ import OSLog
           else { input = ToolInput(text: text, secondary: input.secondary) }
         } else if presentation.acceptsBinary && !secondary {
           input = ToolInput(file: data, fileName: url.lastPathComponent)
-        } else { throw ToolFailure("请选择 UTF-8 文本文件，最大 5 MiB。") }
+        } else { throw ToolFailure(L10n.tr("Choose a UTF-8 text file no larger than 5 MiB.")) }
         refreshLayout()
       } catch {
         guard version == revision else { return }
-        let message = "未导入“\(url.lastPathComponent)”：\(error.localizedDescription) 当前输入未替换；请重新导入或确认继续使用当前输入。"
+        let message = L10n.tr("Could not import “\(url.lastPathComponent)”: \(error.localizedDescription) The current input has not been replaced. Import again or confirm that you want to keep using it.")
         importFailure = message
         self.error = message
-        status = "读取失败"
+        status = L10n.tr("Read Failed")
       }
     }
   }
@@ -386,7 +386,7 @@ import OSLog
     panel.canCreateDirectories = true
     present(panel) { [weak self] response in
       guard response == .OK, let url = panel.url else { return }
-      self?.status = "正在导出…"
+      self?.status = L10n.tr("Exporting…")
       Task { @MainActor in
         do {
           try await Task.detached(priority: .utility) {
@@ -394,7 +394,7 @@ import OSLog
             defer { if access { url.stopAccessingSecurityScopedResource() } }
             try autoreleasepool { try artifact.data.write(to: url, options: .atomic) }
           }.value
-          self?.status = "已导出 \(url.lastPathComponent)"
+          self?.status = L10n.tr("Exported \(url.lastPathComponent)")
         } catch { self?.error = error.localizedDescription }
       }
     }
@@ -406,11 +406,11 @@ import OSLog
     panel.canChooseFiles = false
     panel.canCreateDirectories = true
     panel.allowsMultipleSelection = false
-    panel.prompt = "导出全部"
+    panel.prompt = L10n.tr("Export All")
     let folderName = "DevKit-\(metadata.id)-\(UUID().uuidString.prefix(8))"
     present(panel) { [weak self] response in
       guard response == .OK, let destination = panel.url else { return }
-      self?.status = "正在导出…"
+      self?.status = L10n.tr("Exporting…")
       Task { @MainActor in
         do {
           try await Task.detached(priority: .utility) {
@@ -423,7 +423,7 @@ import OSLog
               try artifact.data.write(to: folder.appendingPathComponent(name), options: .atomic)
             }
           }.value
-          self?.status = "已导出 \(artifacts.count) 个文件到 \(folderName)"
+          self?.status = L10n.tr("Exported to \(folderName) (files: \(artifacts.count))")
         } catch { self?.error = error.localizedDescription }
       }
     }

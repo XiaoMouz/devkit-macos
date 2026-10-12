@@ -8,20 +8,20 @@ public enum Base64Tool: ToolModule {
     public init() {}
   }
   public static let metadata = ToolMetadata(
-    "base64", "Base64", .encoding, "UTF-8 文本编解码；标准 / URL Safe，支持文本导出。", sample: "hello", secondary: "",
+    "base64", "Base64", .encoding, "Encode and decode UTF-8 text with standard or URL-safe Base64; export text results.", sample: "hello", secondary: "",
     input: .text, network: false)
   public static var fields: [OptionField<Options>] {
     [
-      .init("operation", "操作", \.operation, choices: ["encode", "decode"]),
+      .init("operation", L10n.tr("Operation"), \.operation, choices: ["encode", "decode"]),
       .init("urlSafe", "URL Safe", \.urlSafe),
-      .init("padding", "编码保留填充", \.padding),
+      .init("padding", L10n.tr("Keep Encoding Padding"), \.padding),
     ]
   }
   public static func visibleFields(for options: Options) -> [OptionField<Options>] {
     fields.filter { field in options.operation == "encode" || field.id != "padding" }
   }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
-    try require(input.file == nil, "请导入 UTF-8 文本。Base64 工具仅处理文本。")
+    try require(input.file == nil, L10n.tr("Import UTF-8 text. The Base64 tool only processes text."))
     if options.operation == "encode" {
       var value = input.bytes.base64EncodedString()
       if options.urlSafe {
@@ -33,7 +33,7 @@ public enum Base64Tool: ToolModule {
     }
     let data = try Base64Codec.decode(input.text, urlSafe: options.urlSafe)
     guard let text = String(data: data, encoding: .utf8) else {
-      throw ToolFailure("解码结果不是 UTF-8 文本。Base64 工具仅支持文本编解码。")
+      throw ToolFailure(L10n.tr("The decoded result is not UTF-8 text. The Base64 tool only encodes and decodes text."))
     }
     return ToolOutput(text)
   }

@@ -9,18 +9,18 @@ public enum UuidTool: ToolModule {
     public init() {}
   }
   public static let metadata = ToolMetadata(
-    "uuid", "UUID", .generators, "RFC 9562 UUID v4 / v7，支持批量与大小写。", sample: "", secondary: "",
+    "uuid", "UUID", .generators, "RFC 9562 UUID v4 and v7, with batch generation and case options.", sample: "", secondary: "",
     input: .generator, network: false)
   public static var fields: [OptionField<Options>] {
     [
-      .init("version", "版本", \.version, choices: ["v4", "v7"]),
-      .init("count", "数量", \.count, range: 1...1000),
-      .init("uppercase", "大写", \.uppercase),
-      .init("hyphens", "保留连字符", \.hyphens),
+      .init("version", L10n.tr("Version"), \.version, choices: ["v4", "v7"]),
+      .init("count", L10n.tr("Count"), \.count, range: 1...1000),
+      .init("uppercase", L10n.tr("Uppercase"), \.uppercase),
+      .init("hyphens", L10n.tr("Keep Hyphens"), \.hyphens),
     ]
   }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
-    try require((1...1000).contains(options.count), "数量必须为 1–1000。")
+    try require((1...1000).contains(options.count), L10n.tr("Count must be between 1 and 1,000."))
     let values = try (0..<options.count).map { _ -> String in
       var bytes = try randomBytes(16)
       if options.version == "v7" {
@@ -45,6 +45,6 @@ public enum UuidTool: ToolModule {
     return ToolOutput(
       values.joined(separator: "\n"),
       rows: values.enumerated().map { ResultRow(String($0.offset + 1), $0.element) },
-      note: options.version == "v7" ? "v7 使用毫秒时间戳与安全随机位；不保证同毫秒内排序。" : "UUID v4 · 使用系统安全随机数生成。")
+      note: options.version == "v7" ? L10n.tr("v7 uses a millisecond timestamp and secure random bits. Ordering within a millisecond is not guaranteed.") : L10n.tr("UUID v4 · Generated with system secure randomness."))
   }
 }

@@ -51,7 +51,7 @@ struct WorkspaceParameterBar<T: ToolModule>: View {
     .font(.system(size: 12)).controlSize(.small)
     .padding(.horizontal, 12).padding(.vertical, 4)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .accessibilityElement(children: .contain).accessibilityLabel("工具参数")
+    .accessibilityElement(children: .contain).accessibilityLabel(L10n.tr("Tool Parameters"))
     .animation(WorkspaceMotion.layout(reduceMotion: reduceMotion), value: layout.rows.count)
   }
 }
@@ -66,11 +66,11 @@ private struct CompactParameterField<Options: ToolOptions>: View {
   }
   private var label: String {
     switch field.id {
-    case "syntax": "语法"
-    case "path": "查询路径"
-    case "name" where toolID == "json": "类型名称"
-    case "pattern": "表达式"
-    case "replacement": "替换为"
+    case "syntax": L10n.tr("Syntax")
+    case "path": L10n.tr("Query Path")
+    case "name" where toolID == "json": L10n.tr("Type Name")
+    case "pattern": L10n.tr("Expression")
+    case "replacement": L10n.tr("Replace With")
     default: field.label
     }
   }
@@ -79,16 +79,16 @@ private struct CompactParameterField<Options: ToolOptions>: View {
       return (options as? JsonTool.Options)?.syntax == "pointer" ? "/users/0/name" : "$.users[0].name"
     }
     if field.id == "flags" { return "g / i / m" }
-    if field.id == "replacement" { return "留空表示删除匹配内容" }
-    if field.id == "key" { return "请输入密钥" }
+    if field.id == "replacement" { return L10n.tr("Leave empty to delete matches") }
+    if field.id == "key" { return L10n.tr("Enter a secret key") }
     return label
   }
   private var hint: String {
     if field.id == "path" {
       return (options as? JsonTool.Options)?.syntax == "pointer"
-        ? "例如 /users/0/name；留空表示整个文档。" : "例如 $.users[0].name；$ 表示整个文档。"
+        ? L10n.tr("For example: /users/0/name. Leave empty for the entire document.") : L10n.tr("For example: $.users[0].name. $ selects the entire document.")
     }
-    if field.id == "flags" { return "正则标志，例如 g（全局）、i（忽略大小写）、m（多行）。" }
+    if field.id == "flags" { return L10n.tr("Regex flags such as g (global), i (case insensitive), and m (multiline).") }
     return field.label
   }
   var minimumWidth: CGFloat {
@@ -172,11 +172,11 @@ struct OverflowParameterButton<T: ToolModule>: View {
     let defaults = T.Options()
     return fields.filter { $0.read(session.options) != $0.read(defaults) }.count
   }
-  private var title: String { changedCount == 0 ? "更多参数" : "更多参数 · \(changedCount) 项已调整" }
+  private var title: String { changedCount == 0 ? L10n.tr("More Parameters") : L10n.tr("More Parameters · Changed: \(changedCount)") }
   var body: some View {
     Button { presented.toggle() } label: {
       HStack(spacing: 5) {
-        Label("更多", systemImage: "slider.horizontal.3")
+        Label(L10n.tr("More"), systemImage: "slider.horizontal.3")
         if changedCount > 0 {
           Text("\(changedCount)").font(.system(size: 10, weight: .medium)).monospacedDigit()
             .padding(.horizontal, 5).padding(.vertical, 1)
@@ -187,9 +187,9 @@ struct OverflowParameterButton<T: ToolModule>: View {
       .popover(isPresented: $presented, arrowEdge: .bottom) {
         VStack(alignment: .leading, spacing: 14) {
           HStack {
-            Text("更多参数").font(.headline)
+            Text(L10n.tr("More Parameters")).font(.headline)
             Spacer()
-            Button("恢复默认") {
+            Button(L10n.tr("Restore Defaults")) {
               var value = session.options
               let defaults = T.Options()
               for field in fields { field.write(&value, field.read(defaults)) }

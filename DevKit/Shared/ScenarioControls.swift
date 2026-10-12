@@ -21,7 +21,7 @@ struct ColorValueControl: View {
     VStack(alignment: .leading, spacing: 10) {
       ToolFormRow(title: title) { ColorPicker(title, selection: color, supportsOpacity: supportsOpacity).labelsHidden() }
       TextField("#3478F6 / rgb() / hsl()", text: $text).textFieldStyle(.roundedBorder)
-        .font(.system(.body, design: .monospaced)).accessibilityLabel(title + "色值")
+        .font(.system(.body, design: .monospaced)).accessibilityLabel(title + L10n.tr("Color Value"))
       RoundedRectangle(cornerRadius: 10).fill(color.wrappedValue).frame(height: 72)
         .overlay { RoundedRectangle(cornerRadius: 10).stroke(.separator) }
     }
@@ -52,10 +52,10 @@ struct TimeZoneControl: View {
     HStack(spacing: 6) {
       NativeTimeZoneMenu(title: title, selection: $selection)
       Button { searching = true; query = "" } label: { Image(systemName: "magnifyingglass") }
-        .accessibilityLabel("搜索" + title).help("按城市、时区标识或偏移搜索")
+        .accessibilityLabel(L10n.tr("Search") + title).help(L10n.tr("Search by city, time zone identifier, or offset"))
         .popover(isPresented: $searching) {
           VStack(spacing: 10) {
-            TextField("搜索城市、标识或 UTC 偏移", text: $query).textFieldStyle(.roundedBorder)
+            TextField(L10n.tr("Search cities, identifiers, or UTC offsets"), text: $query).textFieldStyle(.roundedBorder)
             let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
             let now = Date()
             let matches = NativeTimeZoneMenu.entries.filter { entry in
@@ -75,7 +75,7 @@ struct TimeZoneControl: View {
                     Text(entry.1).frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 4)
                   }.buttonStyle(.plain)
                 }
-                if matches.isEmpty { Text("没有匹配的时区").foregroundStyle(.secondary) }
+                if matches.isEmpty { Text(L10n.tr("No Matching Time Zones")).foregroundStyle(.secondary) }
               }
             }
           }.padding(14).frame(width: 380, height: 360)
@@ -90,7 +90,7 @@ private struct NativeTimeZoneMenu: NSViewRepresentable {
   @Environment(\.isEnabled) private var isEnabled
   static let entries = Dates.timeZoneIdentifiers.map { identifier in
     let zone = TimeZone(identifier: identifier)!
-    let name = zone.localizedName(for: .generic, locale: Locale(identifier: "zh_CN")) ?? identifier
+    let name = zone.localizedName(for: .generic, locale: L10n.locale) ?? identifier
     return (identifier, name + " · " + identifier)
   }
   private static let common = Set([TimeZone.current.identifier, "UTC", "Asia/Shanghai", "Asia/Hong_Kong",
@@ -109,14 +109,14 @@ private struct NativeTimeZoneMenu: NSViewRepresentable {
     context.coordinator.parent = self
     button.isEnabled = isEnabled
     button.setAccessibilityLabel(title)
-    button.toolTip = "从列表选择时区；日期显示会同步使用所选时区。"
+    button.toolTip = L10n.tr("Choose a time zone from the list. Dates will display in that time zone.")
     guard button.selectedItem?.representedObject as? String != selection else { return }
     if let item = button.itemArray.first(where: { $0.representedObject as? String == selection }) {
       button.select(item)
     } else {
       button.removeAllItems()
       let zone = TimeZone(identifier: selection)
-      let name = zone?.localizedName(for: .generic, locale: Locale(identifier: "zh_CN")) ?? selection
+      let name = zone?.localizedName(for: .generic, locale: L10n.locale) ?? selection
       button.addItem(withTitle: name + " · " + selection)
       button.lastItem?.representedObject = selection
     }
@@ -131,7 +131,7 @@ private struct NativeTimeZoneMenu: NSViewRepresentable {
     func menuNeedsUpdate(_ menu: NSMenu) {
       guard menu.items.count <= 1, let button else { return }
       menu.removeAllItems()
-      for (heading, common) in [("常用时区", true), ("所有时区", false)] {
+      for (heading, common) in [(L10n.tr("Common Time Zones"), true), (L10n.tr("All Time Zones"), false)] {
         let section = NSMenuItem(title: heading, action: nil, keyEquivalent: "")
         section.isEnabled = false
         menu.addItem(section)
@@ -170,12 +170,12 @@ struct DateValueControl: View {
     ToolFormRow(title: title) {
       VStack(alignment: .leading, spacing: 8) {
         if allowsCurrent {
-          Toggle("执行时使用当前时间", isOn: Binding(get: { text.isEmpty }, set: { text = $0 ? "" : Dates.iso(Date()) }))
+          Toggle(L10n.tr("Use the current time when running"), isOn: Binding(get: { text.isEmpty }, set: { text = $0 ? "" : Dates.iso(Date()) }))
             .toggleStyle(.checkbox)
         }
         HStack(spacing: 8) {
           if allowsCurrent && text.isEmpty {
-            Text("执行时取当前时间").font(.system(size: 12, design: .monospaced))
+            Text(L10n.tr("Use Current Time on Run")).font(.system(size: 12, design: .monospaced))
               .foregroundStyle(.tertiary).frame(width: 230, height: 26, alignment: .leading)
               .accessibilityLabel(title)
           } else {
@@ -183,27 +183,27 @@ struct DateValueControl: View {
               .frame(width: 230, height: 26)
           }
           Button { calendarPresented = true } label: { Image(systemName: "calendar") }
-            .buttonStyle(.bordered).buttonBorderShape(.capsule).help("打开日历选择日期").accessibilityLabel(title + "选择日期")
+            .buttonStyle(.bordered).buttonBorderShape(.capsule).help(L10n.tr("Open the calendar to choose a date")).accessibilityLabel(title + L10n.tr("Choose Date"))
             .popover(isPresented: $calendarPresented) {
               VStack(alignment: .leading, spacing: 12) {
                 DatePicker(title, selection: date, in: Dates.supportedRange, displayedComponents: [.date])
                   .datePickerStyle(.graphical).labelsHidden()
-                  .environment(\.timeZone, timeZone).environment(\.locale, Locale(identifier: "zh_CN"))
-                Button("完成") { calendarPresented = false }.buttonStyle(.bordered)
+                  .environment(\.timeZone, timeZone).environment(\.locale, L10n.locale)
+                Button(L10n.tr("Done")) { calendarPresented = false }.buttonStyle(.bordered)
               }.padding(16).frame(width: 290)
             }
           Button { text = Dates.iso(Date()) } label: { Image(systemName: "clock") }
-            .buttonStyle(.bordered).buttonBorderShape(.capsule).help("使用现在的日期时间").accessibilityLabel(title + "设为现在")
+            .buttonStyle(.bordered).buttonBorderShape(.capsule).help(L10n.tr("Use the current date and time")).accessibilityLabel(title + L10n.tr("Set to Now"))
         }
         if !text.isEmpty && Dates.parse(text, timeZone: timeZone) == nil {
-          Text("日期无效，请重新选择日期时间。").font(.caption).foregroundStyle(.red)
+          Text(L10n.tr("Invalid date. Choose the date and time again.")).font(.caption).foregroundStyle(.red)
         }
         Text(Dates.display(date.wrappedValue, timeZone: timeZone, milliseconds: true))
           .font(.system(.caption, design: .monospaced)).foregroundStyle(.secondary)
-          .accessibilityLabel("完整日期时间（含毫秒）")
+          .accessibilityLabel(L10n.tr("Full date and time (including milliseconds)"))
           .accessibilityValue(Dates.display(date.wrappedValue, timeZone: timeZone, milliseconds: true))
         Text(Dates.zoneLabel(timeZone, at: date.wrappedValue)).font(.caption).foregroundStyle(.secondary)
-        Text("夏令时不存在的时刻不接受；重复时刻默认取第一次。编辑日期控件会将毫秒归零。")
+        Text(L10n.tr("Times skipped by daylight saving changes are not accepted. Repeated times use the first occurrence. Editing the date control resets milliseconds to zero."))
           .font(.caption).foregroundStyle(.tertiary)
       }
     }
@@ -222,7 +222,7 @@ private struct NativeDateTimePicker: NSViewRepresentable {
     picker.datePickerStyle = .textFieldAndStepper
     picker.datePickerElements = [.yearMonthDay, .hourMinuteSecond]
     picker.presentsCalendarOverlay = true
-    picker.locale = Locale(identifier: "zh_CN")
+    picker.locale = L10n.locale
     picker.calendar = Calendar(identifier: .gregorian)
     picker.isBezeled = true
     picker.font = .monospacedDigitSystemFont(ofSize: 12, weight: .regular)
@@ -274,25 +274,25 @@ struct KeyValueEditor: View {
     VStack(alignment: .leading, spacing: 10) {
       ForEach($rows) { $row in
         HStack(alignment: .center, spacing: 8) {
-          TextField(kind == .headers ? "Header" : "名称", text: $row.name)
-            .accessibilityLabel(kind == .headers ? "请求头名称" : "字段名称")
+          TextField(kind == .headers ? "Header" : L10n.tr("Name"), text: $row.name)
+            .accessibilityLabel(kind == .headers ? L10n.tr("Header Name") : L10n.tr("Field Name"))
           if kind == .template {
-            Picker("字段类型", selection: $row.value) {
+            Picker(L10n.tr("Field Type"), selection: $row.value) {
               ForEach(["index", "name", "email", "boolean", "integer", "uuid"], id: \.self) { type in
                 Text(ToolOptionLabels.title(type)).tag(type)
               }
             }.labelsHidden()
           } else {
-            TextField("值", text: $row.value).disabled(!row.hasValue)
-              .accessibilityLabel(kind == .headers ? "请求头值" : "参数值")
+            TextField(L10n.tr("Value"), text: $row.value).disabled(!row.hasValue)
+              .accessibilityLabel(kind == .headers ? L10n.tr("Header Value") : L10n.tr("Parameter Value"))
           }
-          if kind == .query { Toggle("有值", isOn: $row.hasValue).toggleStyle(.checkbox).fixedSize() }
+          if kind == .query { Toggle(L10n.tr("Has a value"), isOn: $row.hasValue).toggleStyle(.checkbox).fixedSize() }
           Button { rows.removeAll { $0.id == row.id } } label: { Image(systemName: "minus.circle") }
-            .buttonStyle(.plain).accessibilityLabel("删除这一行")
+            .buttonStyle(.plain).accessibilityLabel(L10n.tr("Delete This Row"))
         }.textFieldStyle(.roundedBorder)
       }
       Button { rows.append(Entry(value: kind == .template ? "name" : "")) } label: {
-        Label(kind == .headers ? "添加请求头" : "添加字段", systemImage: "plus")
+        Label(kind == .headers ? L10n.tr("Add Header") : L10n.tr("Add Field"), systemImage: "plus")
       }.buttonStyle(.bordered).buttonBorderShape(.capsule)
       if let error { Text(error).font(.caption).foregroundStyle(.orange) }
     }
@@ -310,16 +310,16 @@ struct KeyValueEditor: View {
         rows = values.map { Entry(name: $0["name"] as? String ?? "", value: $0["value"] as? String ?? "", hasValue: $0["value"] is String) }
       } else if kind != .query, let values = object as? [String: String] {
         rows = values.keys.sorted().map { Entry(name: $0, value: values[$0]!) }
-      } else { throw ToolFailure("字段格式无效。") }
+      } else { throw ToolFailure(L10n.tr("Invalid field format.")) }
       error = nil
-    } catch { self.error = "无法读取字段，请清空后重新添加。"; rows = [] }
+    } catch { self.error = L10n.tr("Could not read fields. Clear them and add them again."); rows = [] }
   }
   private func write() {
     let active = rows.filter { !$0.name.isEmpty || !$0.value.isEmpty }
     let names = active.map { kind == .headers ? $0.name.lowercased() : $0.name }
     let validationError: String? = kind == .query ? nil
-      : Set(names).count != active.count ? "名称不能重复。"
-      : active.contains(where: { $0.name.isEmpty }) ? "请填写名称。" : nil
+      : Set(names).count != active.count ? L10n.tr("Names must be unique.")
+      : active.contains(where: { $0.name.isEmpty }) ? L10n.tr("Enter a name.") : nil
     // Keep the editable rows even when invalid. The core validates these rows
     // before generating data or sending a request; never serialize error prose.
     let value: Any = active.map { ["name": $0.name, "value": $0.hasValue ? $0.value as Any : NSNull()] }
@@ -349,7 +349,7 @@ struct ToolParameterFields<Options: ToolOptions>: View {
   @ViewBuilder private func fieldView(_ field: OptionField<Options>) -> some View {
     if field.id == "headers" {
       VStack(alignment: .leading, spacing: 8) {
-        Text("请求头").font(.callout.weight(.medium))
+        Text(L10n.tr("Headers")).font(.callout.weight(.medium))
         KeyValueEditor(text: binding(field), kind: .headers)
       }
     } else if field.id == "background" {
@@ -357,7 +357,7 @@ struct ToolParameterFields<Options: ToolOptions>: View {
     } else if ["timezone", "zone", "sourceZone"].contains(field.id) {
       ToolFormRow(title: field.label) { TimeZoneControl(title: field.label, selection: binding(field)) }
     } else if ["start", "other"].contains(field.id) {
-      DateValueControl(title: field.id == "start" ? "起始时间" : "对比日期", text: binding(field), timeZone: timeZone, allowsCurrent: field.id == "start")
+      DateValueControl(title: field.id == "start" ? L10n.tr("Start Time") : L10n.tr("Comparison Date"), text: binding(field), timeZone: timeZone, allowsCurrent: field.id == "start")
     } else {
       ToolFormRow(title: field.label) {
         switch field.kind {
@@ -398,7 +398,7 @@ struct RasterImagePreview: View {
   var body: some View {
     Group {
       if let image { Image(decorative: image, scale: 1).resizable().interpolation(pixelated ? .none : .high).scaledToFit() }
-      else if completed { Text("预览不可用，仍可导出原文件。").foregroundStyle(.secondary) }
+      else if completed { Text(L10n.tr("Preview unavailable. You can still export the original file.")).foregroundStyle(.secondary) }
       else { ProgressView().controlSize(.small) }
     }.task(id: data) {
       completed = false

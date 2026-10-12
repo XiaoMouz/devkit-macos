@@ -8,15 +8,15 @@ public enum TextLinesTool: ToolModule {
     public init() {}
   }
   public static let metadata = ToolMetadata(
-    "text-lines", "文本行处理", .text, "排序、去重、去空行、编号和添加前后缀。", sample: "banana\napple\nbanana\n\ncherry",
+    "text-lines", "Line Operations", .text, "Sort, deduplicate, remove empty lines, number lines, and add prefixes or suffixes.", sample: "banana\napple\nbanana\n\ncherry",
     secondary: "", input: .text, network: false)
   public static var fields: [OptionField<Options>] {
     [
       .init(
-        "mode", "操作", \.mode,
+        "mode", L10n.tr("Operation"), \.mode,
         choices: ["deduplicate", "sort", "reverse-sort", "remove-empty", "number", "affix"]),
-      .init("prefix", "前缀", \.prefix),
-      .init("suffix", "后缀", \.suffix),
+      .init("prefix", L10n.tr("Prefix"), \.prefix),
+      .init("suffix", L10n.tr("Suffix"), \.suffix),
     ]
   }
   public static func visibleFields(for options: Options) -> [OptionField<Options>] {

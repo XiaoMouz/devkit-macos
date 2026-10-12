@@ -2,3 +2,7 @@
 # Review their engine sources; regenerate them through Vendor/build.mjs.
 Sources/DevKitCore/Resources/engines.js -whitespace linguist-generated=true
 Sources/DevKitCore/Resources/syntax.js -whitespace linguist-generated=true
+
+# Native catalogs are generated from the editable JSON translation sources.
+DevKit/Resources/Localizable.xcstrings linguist-generated=true
+DevKit/Resources/AppShortcuts.xcstrings linguist-generated=true

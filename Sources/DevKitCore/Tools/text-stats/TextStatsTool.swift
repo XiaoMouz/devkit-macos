@@ -3,7 +3,7 @@ import Foundation
 public enum TextStatsTool: ToolModule {
   public typealias Options = EmptyOptions
   public static let metadata = ToolMetadata(
-    "text-stats", "文本统计", .text, "区分字素、Unicode 码点、UTF-16 和 UTF-8 字节。", sample: "Hello 世界 👩‍💻",
+    "text-stats", "Text Statistics", .text, "Count graphemes, Unicode code points, UTF-16 units, and UTF-8 bytes separately.", sample: "Hello 世界 👩‍💻",
     secondary: "", input: .text, network: false)
   public static var fields: [OptionField<Options>] {
     [
@@ -24,13 +24,13 @@ public enum TextStatsTool: ToolModule {
       previous = value
     }
     let rows = [
-      ResultRow("字素", String(input.text.count)),
-      ResultRow("Unicode 码点", String(input.text.unicodeScalars.count)),
-      ResultRow("UTF-16 单元", String(input.text.utf16.count)),
-      ResultRow("UTF-8 字节", String(input.text.utf8.count)),
+      ResultRow(L10n.tr("Graphemes"), String(input.text.count)),
+      ResultRow(L10n.tr("Unicode Code Points"), String(input.text.unicodeScalars.count)),
+      ResultRow(L10n.tr("UTF-16 Units"), String(input.text.utf16.count)),
+      ResultRow(L10n.tr("UTF-8 Bytes"), String(input.text.utf8.count)),
       ResultRow(
-        "行", String(lineCount)),
-      ResultRow("词（空白分隔）", String(input.text.split(whereSeparator: { $0.isWhitespace }).count)),
+        L10n.tr("Lines"), String(lineCount)),
+      ResultRow(L10n.tr("Words (Whitespace-Separated)"), String(input.text.split(whereSeparator: { $0.isWhitespace }).count)),
     ]
     return ToolOutput(rows.map { "\($0.label): \($0.value)" }.joined(separator: "\n"), rows: rows)
   }

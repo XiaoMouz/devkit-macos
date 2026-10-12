@@ -9,14 +9,14 @@ public enum TextReplaceTool: ToolModule {
     public init() {}
   }
   public static let metadata = ToolMetadata(
-    "text-replace", "查找替换", .text, "普通文本或 ECMAScript 正则，保留原文并预览结果。",
+    "text-replace", "Find and Replace", .text, "Plain text or ECMAScript regex, preserving the original and previewing the result.",
     sample: "hello world\nhello DevKit", secondary: "", input: .text, network: false)
   public static var fields: [OptionField<Options>] {
     [
-      .init("search", "查找", \.search),
-      .init("replacement", "替换", \.replacement),
-      .init("regex", "正则模式", \.regex),
-      .init("flags", "正则标志", \.flags),
+      .init("search", L10n.tr("Find"), \.search),
+      .init("replacement", L10n.tr("Replace"), \.replacement),
+      .init("regex", L10n.tr("Regex Mode"), \.regex),
+      .init("flags", L10n.tr("Regex Flags"), \.flags),
     ]
   }
   public static func visibleFields(for options: Options) -> [OptionField<Options>] {

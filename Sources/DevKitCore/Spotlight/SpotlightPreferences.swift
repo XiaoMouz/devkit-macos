@@ -24,13 +24,13 @@ public struct SpotlightPreferences: Codable, Equatable, Sendable {
   }
   public mutating func setAliases(_ text: String, for toolID: String) throws {
     let aliases = text.lowercased().split(whereSeparator: { $0 == "," || $0 == "，" || $0.isWhitespace }).map(String.init)
-    try require(!aliases.isEmpty, "至少保留一个命令别名。")
-    try require(Set(aliases).count == aliases.count, "别名不能重复。")
+    try require(!aliases.isEmpty, L10n.tr("Keep at least one command alias."))
+    try require(Set(aliases).count == aliases.count, L10n.tr("Aliases must be unique."))
     for alias in aliases {
       try require(alias.range(of: "^[a-z][a-z0-9-]{0,23}$", options: .regularExpression) != nil,
-        "别名以英文字母开头，可含字母、数字和连字符，最多 24 个字符。")
+        L10n.tr("Aliases must start with an English letter and contain only letters, digits, and hyphens, up to 24 characters."))
       for other in SpotlightCatalog.tools where other.id != toolID {
-        try require(other.id != alias && !self.aliases(for: other.id).contains(alias), "别名 \(alias) 已用于\(other.name)。")
+        try require(other.id != alias && !self.aliases(for: other.id).contains(alias), L10n.tr("Alias \(alias) is already used by \(other.name)."))
       }
     }
     var entry = tools[toolID] ?? SpotlightToolPreference()

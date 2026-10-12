@@ -32,7 +32,7 @@ enum WorkspacePane: String, CaseIterable, Identifiable {
 }
 
 @MainActor @Observable final class WorkspaceBridge {
-  var actionTitle = "执行"
+  var actionTitle = L10n.tr("Run")
   var runRequest = 0
   var copyRequest = 0
   var showOptions = false

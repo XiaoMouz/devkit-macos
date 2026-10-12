@@ -7,33 +7,33 @@ public struct CommandResult: Sendable {
 }
 
 public enum DevKitCommandLine {
-  public static let help = """
-    DevKit CLI — 本机开发工具
+  public static var help: String { L10n.tr("""
+    DevKit CLI — Local developer tools
 
     devkit list [--format human|json]
     devkit describe <tool-id> [--option key=value ...] [--format human|json]
     devkit run <tool-id> [flags]
     devkit run --request <path|-> [--format human|json|text] [--allow-network]
 
-    执行选项：
-      --text <text>             UTF-8 原文；未指定输入时从管道读取（终端为空输入）
-      --input-file <path>       UTF-8 文本文件
-      --file <path>             二进制文件，最多 32 MiB
-      --secondary <text>        第二份文本（对比、Schema、HTTP 正文等）
-      --secondary-file <path>   从 UTF-8 文件读取第二份文本
-      --option <key=value>      可重复；布尔值为 true/false
-      --options-file <path>     JSON 参数对象；可与不重复的 --option 合用
+    Run options:
+      --text <text>             UTF-8 text; otherwise read a pipe (empty input in a terminal)
+      --input-file <path>       UTF-8 text file
+      --file <path>             Binary file, up to 32 MiB
+      --secondary <text>        Second text (diff, Schema, HTTP body, etc.)
+      --secondary-file <path>   Read the second text from a UTF-8 file
+      --option <key=value>      Repeatable; booleans are true/false
+      --options-file <path>     JSON options; may be combined with distinct --option values
       --request <path|->        JSON: {"id":"base64","input":{"text":"hello"},"options":{}}
       --format <human|json|text>
-                               默认排版显示；json 用于 AI / 脚本；text 输出精确原文
-      --allow-network           允许所选联网工具发送请求
+                               Formatted by default; json for AI/scripts; text for exact output
+      --allow-network           Allow the selected network tool to send requests
 
-    成功结果写 stdout，错误写 stderr。--format json 对结果和错误都生效。
-    退出码：0 成功，1 执行失败，2 参数/输入错误，124 超时。
-    text 仅用于 run，不补换行。附件在 JSON 的 output.artifacts 中以 Base64 返回。
-    正文和密钥建议使用 stdin、--request - 或文件，避免进入进程参数。
-    --help / help 显示此说明。生成器默认空输入，不会自动填充示例。
-    """
+    Success goes to stdout; errors go to stderr. --format json applies to both.
+    Exit codes: 0 success, 1 execution failure, 2 argument/input error, 124 timeout.
+    text is only for run and adds no newline. JSON output.artifacts contains Base64 attachments.
+    Use stdin, --request -, or files for content and secrets to keep them out of process arguments.
+    --help / help shows this help. Generators default to empty input and never load examples automatically.
+    """) }
 
   public static func run(arguments: [String], isInputTerminal: Bool,
     readInput: @Sendable () throws -> Data,
@@ -48,14 +48,14 @@ public enum DevKitCommandLine {
       }
       if command == "list" {
         let parsed = try Arguments(Array(arguments.dropFirst()), command: command)
-        guard parsed.id == nil else { throw usage("list 不接受工具 ID。") }
+        guard parsed.id == nil else { throw usage(L10n.tr("list does not accept a tool ID.")) }
         if parsed.flags["--format"] != "json" { return plain(CommandPresentation.list()) }
         return try json(["protocolVersion": CommandCatalog.protocolVersion, "tools": CommandCatalog.list()])
       }
-      guard ["describe", "run"].contains(command) else { throw usage("未知命令；请用 devkit --help 查看。") }
+      guard ["describe", "run"].contains(command) else { throw usage(L10n.tr("Unknown command. See devkit --help.")) }
       let parsed = try Arguments(Array(arguments.dropFirst()), command: command)
       if command == "describe" {
-        guard let id = parsed.id else { throw usage("需要工具 ID。") }
+        guard let id = parsed.id else { throw usage(L10n.tr("A tool ID is required.")) }
         let options = try parsed.options(id: id)
         let description = try CommandCatalog.describe(id, options: options)
         if parsed.flags["--format"] != "json" { return plain(CommandPresentation.describe(description)) }
@@ -66,17 +66,17 @@ public enum DevKitCommandLine {
       if let source = parsed.flags["--request"] {
         guard parsed.id == nil, parsed.assignments.isEmpty,
           Set(parsed.flags.keys).isSubset(of: ["--request", "--format", "--allow-network"])
-        else { throw usage("--request 不能与工具 ID 或其他输入参数混用。") }
-        if source == "-", isInputTerminal { throw usage("--request - 需要通过管道提供 JSON。") }
+        else { throw usage(L10n.tr("--request cannot be combined with a tool ID or other input options.")) }
+        if source == "-", isInputTerminal { throw usage(L10n.tr("--request - requires JSON from a pipe.")) }
         let data = try source == "-" ? readInput() : readFile(source, limit: requestLimit)
-        guard data.count <= requestLimit else { throw usage("请求超过 60 MiB。") }
+        guard data.count <= requestLimit else { throw usage(L10n.tr("Request exceeds 60 MiB.")) }
         let object = try object(data)
         guard Set(object.keys).isSubset(of: ["id", "input", "options"]), let id = object["id"] as? String else {
-          throw usage("请求需要 id，仅支持 id、input、options 字段。")
+          throw usage(L10n.tr("The request requires id and only supports id, input, and options fields."))
         }
         let inputObject = try dictionary(object["input"] ?? [:], name: "input")
         guard Set(inputObject.keys).isSubset(of: ["text", "secondary", "file", "fileName"]) else {
-          throw usage("input 包含未知字段。")
+          throw usage(L10n.tr("input contains unknown fields."))
         }
         var filled = inputObject
         if filled["text"] == nil { filled["text"] = "" }
@@ -85,7 +85,7 @@ public enum DevKitCommandLine {
         request = try CommandCatalog.request(id, input: input,
           options: dictionary(object["options"] ?? [:], name: "options"))
       } else {
-        guard let id = parsed.id else { throw usage("需要工具 ID 或 --request。") }
+        guard let id = parsed.id else { throw usage(L10n.tr("A tool ID or --request is required.")) }
         // Validate options before reading a potentially blocking stdin.
         let options = try parsed.options(id: id)
         _ = try CommandCatalog.describe(id, options: options)
@@ -97,7 +97,7 @@ public enum DevKitCommandLine {
           input.fileName = URL(fileURLWithPath: path).lastPathComponent
         } else if !isInputTerminal {
           let data = try readInput()
-          guard data.count <= Limits.textBytes else { throw usage("文本超过 5 MiB。") }
+          guard data.count <= Limits.textBytes else { throw usage(L10n.tr("Text exceeds 5 MiB.")) }
           input.text = try text(data)
         }
         if let text = parsed.flags["--secondary"] { input.secondary = text }
@@ -105,12 +105,12 @@ public enum DevKitCommandLine {
         request = try CommandCatalog.request(id, input: input, options: options)
       }
       if ToolRegistry.find(request.id)?.metadata.network == true, parsed.flags["--allow-network"] == nil {
-        throw usage("此工具会发送网络请求；需要 --allow-network。")
+        throw usage(L10n.tr("This tool sends network requests and requires --allow-network."))
       }
       let output: ToolOutput
       do { output = try await execute(request) }
       catch let failure as ToolFailure { throw failure }
-      catch { throw ToolFailure("工具执行失败：\(error.localizedDescription)", code: "internal") }
+      catch { throw ToolFailure(L10n.tr("Tool execution failed: \(error.localizedDescription)"), code: "internal") }
       if parsed.flags["--format"] == "text" { return plain(output.text) }
       if parsed.flags["--format"] != "json" { return plain(CommandPresentation.output(output)) }
       return try json(["protocolVersion": CommandCatalog.protocolVersion, "id": request.id,
@@ -118,9 +118,9 @@ public enum DevKitCommandLine {
     } catch let failure as ToolFailure {
       return error(failure, json: jsonErrors)
     } catch is DecodingError {
-      return error(usage("JSON 字段类型无效；input 文本必须是字符串，file 必须是 Base64。"), json: jsonErrors)
+      return error(usage(L10n.tr("Invalid JSON field type. Input text must be a string; file must be Base64.")), json: jsonErrors)
     } catch {
-      return Self.error(usage("无法读取输入或解析 JSON：\(error.localizedDescription)"), json: jsonErrors)
+      return Self.error(usage(L10n.tr("Could not read input or parse JSON: \(error.localizedDescription)")), json: jsonErrors)
     }
   }
 
@@ -131,7 +131,7 @@ public enum DevKitCommandLine {
     var data = Data()
     while let part = try handle.read(upToCount: min(65_536, limit - data.count + 1)), !part.isEmpty {
       data.append(part)
-      guard data.count <= limit else { throw usage("输入超过大小限制。") }
+      guard data.count <= limit else { throw usage(L10n.tr("Input exceeds the size limit.")) }
     }
     return data
   }
@@ -139,7 +139,7 @@ public enum DevKitCommandLine {
   private static func readFile(_ path: String, limit: Int) throws -> Data {
     let url = URL(fileURLWithPath: path)
     guard try url.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile == true else {
-      throw usage("输入路径必须是普通文件。")
+      throw usage(L10n.tr("The input path must be a regular file."))
     }
     let handle = try FileHandle(forReadingFrom: url)
     defer { try? handle.close() }
@@ -150,14 +150,14 @@ public enum DevKitCommandLine {
     try text(readFile(path, limit: Limits.textBytes))
   }
   private static func text(_ data: Data) throws -> String {
-    guard let value = String(data: data, encoding: .utf8) else { throw usage("文本输入必须是有效的 UTF-8。") }
+    guard let value = String(data: data, encoding: .utf8) else { throw usage(L10n.tr("Text input must be valid UTF-8.")) }
     return value
   }
   private static func object(_ data: Data) throws -> [String: Any] {
     try dictionary(JSONSerialization.jsonObject(with: data), name: "JSON")
   }
   private static func dictionary(_ value: Any, name: String) throws -> [String: Any] {
-    guard let object = value as? [String: Any] else { throw usage("\(name) 必须是 JSON 对象。") }
+    guard let object = value as? [String: Any] else { throw usage(L10n.tr("\(name) must be a JSON object.")) }
     return object
   }
   private static func json(_ object: [String: Any]) throws -> CommandResult {
@@ -173,7 +173,7 @@ public enum DevKitCommandLine {
     let data = json
       ? (try? Self.json(["protocolVersion": CommandCatalog.protocolVersion,
         "error": ["code": failure.code, "message": failure.message]]).stdout) ?? Data()
-      : Data("错误：\(failure.message)\n".utf8)
+      : Data(L10n.tr("Error: \(failure.message)\n").utf8)
     return CommandResult(stdout: Data(), stderr: data,
       exitCode: failure.code == "timeout" ? 124 : (["usage", "limit"].contains(failure.code) ? 2 : 1))
   }
@@ -210,38 +210,38 @@ public enum DevKitCommandLine {
       }
       while index < arguments.count {
         let flag = arguments[index]; index += 1
-        guard allowed.contains(flag) else { throw usage("未知参数：\(flag)") }
+        guard allowed.contains(flag) else { throw usage(L10n.tr("Unknown option: \(flag)")) }
         if flag == "--allow-network" {
-          guard flags[flag] == nil else { throw usage("参数重复：\(flag)") }
+          guard flags[flag] == nil else { throw usage(L10n.tr("Duplicate option: \(flag)")) }
           flags[flag] = "true"; continue
         }
-        guard index < arguments.count else { throw usage("参数缺少值：\(flag)") }
+        guard index < arguments.count else { throw usage(L10n.tr("Missing option value: \(flag)")) }
         let value = arguments[index]; index += 1
         if flag == "--option" {
           guard let separator = value.firstIndex(of: "="), separator != value.startIndex else {
-            throw usage("--option 需要 key=value。")
+            throw usage(L10n.tr("--option requires key=value."))
           }
           let key = String(value[..<separator])
-          guard assignments[key] == nil else { throw usage("参数重复：\(key)") }
+          guard assignments[key] == nil else { throw usage(L10n.tr("Duplicate option: \(key)")) }
           assignments[key] = String(value[value.index(after: separator)...])
         } else {
-          guard flags[flag] == nil else { throw usage("参数重复：\(flag)") }
+          guard flags[flag] == nil else { throw usage(L10n.tr("Duplicate option: \(flag)")) }
           flags[flag] = value
         }
       }
       for group in [["--text", "--input-file", "--file"], ["--secondary", "--secondary-file"]] {
-        guard group.filter({ flags[$0] != nil }).count <= 1 else { throw usage("不能同时指定多种输入来源。") }
+        guard group.filter({ flags[$0] != nil }).count <= 1 else { throw usage(L10n.tr("Only one input source can be specified.")) }
       }
       let formats = command == "run" ? ["human", "json", "text"] : ["human", "json"]
       if let format = flags["--format"], !formats.contains(format) {
-        throw usage("format 必须是 \(formats.joined(separator: "、"))。")
+        throw usage(L10n.tr("format must be \(formats.joined(separator: "、"))."))
       }
     }
 
     func options(id: String) throws -> [String: Any] {
       var values = try flags["--options-file"].map { try object(readFile($0, limit: Limits.textBytes)) } ?? [:]
       for (key, value) in assignments {
-        guard values[key] == nil else { throw usage("参数重复：\(key)") }
+        guard values[key] == nil else { throw usage(L10n.tr("Duplicate option: \(key)")) }
         values[key] = try CommandCatalog.option(value, id: id, key: key)
       }
       return values

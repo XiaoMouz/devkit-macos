@@ -7,12 +7,12 @@ public enum NumberBaseTool: ToolModule {
     public init() {}
   }
   public static let metadata = ToolMetadata(
-    "number-base", "进制转换", .numbers, "基于大整数精确转换，支持正负数；不隐式套用补码。", sample: "255", secondary: "",
+    "number-base", "Number Base Conversion", .numbers, "Exact conversion with big integers, including negative values, without implicit two’s complement.", sample: "255", secondary: "",
     input: .text, network: false)
   public static var fields: [OptionField<Options>] {
     [
-      .init("from", "源进制", \.from, choices: ["2", "8", "10", "16"]),
-      .init("to", "目标进制", \.to, choices: ["2", "8", "10", "16"]),
+      .init("from", L10n.tr("Source Base"), \.from, choices: ["2", "8", "10", "16"]),
+      .init("to", L10n.tr("Target Base"), \.to, choices: ["2", "8", "10", "16"]),
     ]
   }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {

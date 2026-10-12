@@ -11,12 +11,13 @@ public enum ScriptEngine {
       let url = Bundle.module.url(
         forResource: "engines", withExtension: "js", subdirectory: "Resources")
     else {
-      throw ToolFailure("本地解析器资源缺失，请重新构建应用。", code: "resource")
+      throw ToolFailure(L10n.tr("Local parser resources are missing. Rebuild the app."), code: "resource")
     }
     var exception: String?
     context.exceptionHandler = { _, value in exception = value?.toString() }
+    context.setObject(L10n.translations, forKeyedSubscript: "__devkitTranslations" as NSString)
     context.evaluateScript(try String(contentsOf: url, encoding: .utf8))
-    if let exception { throw ToolFailure("解析器加载失败：\(exception)", code: "resource") }
+    if let exception { throw ToolFailure(L10n.tr("Could not load the parser: \(exception)"), code: "resource") }
     let encoder = JSONEncoder()
     context.setObject(id, forKeyedSubscript: "__id" as NSString)
     context.setObject(try utf8(encoder.encode(input)), forKeyedSubscript: "__input" as NSString)
@@ -31,16 +32,15 @@ public enum ScriptEngine {
       RunLoop.current.run(until: Date().addingTimeInterval(0.001))
     }
     if let exception { throw ToolFailure(exception) }
-    guard let response else { throw ToolFailure("解析超时。请减少输入。", code: "timeout") }
+    guard let response else { throw ToolFailure(L10n.tr("Parsing timed out. Reduce the input."), code: "timeout") }
     let result = try JSONDecoder().decode(WorkerResponse.self, from: Data(response.utf8))
     if let error = result.error {
-      if ["code-format", "code-minify", "svg", "text-replace"].contains(id),
-        error.message.range(of: "[一-龥]", options: .regularExpression) == nil {
-        throw ToolFailure("输入语法无效，请根据下面的位置或说明修正。\n" + error.message, code: error.code)
+      if ["code-format", "code-minify", "svg", "text-replace"].contains(id) {
+        throw ToolFailure(L10n.tr("Invalid input syntax. Correct it using the location or details below.\n") + error.message, code: error.code)
       }
       throw error
     }
-    guard let output = result.output else { throw ToolFailure("解析器未返回结果。", code: "internal") }
+    guard let output = result.output else { throw ToolFailure(L10n.tr("The parser did not return a result."), code: "internal") }
     return output
   }
 }

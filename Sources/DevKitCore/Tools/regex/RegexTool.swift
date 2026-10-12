@@ -9,14 +9,14 @@ public enum RegexTool: ToolModule {
     public init() {}
   }
   public static let metadata = ToolMetadata(
-    "regex", "正则测试", .text, "ECMAScript 正则、捕获组和替换预览；独立进程可取消。",
+    "regex", "Regex Tester", .text, "ECMAScript regex, capture groups, and replacement previews in a cancellable worker process.",
     sample: "user@example.com\nhello@devkit.app", secondary: "", input: .text, network: false)
   public static var fields: [OptionField<Options>] {
     [
-      .init("pattern", "表达式", \.pattern),
-      .init("flags", "标志", \.flags),
-      .init("operation", "操作", \.operation, choices: ["match", "replace"]),
-      .init("replacement", "替换文本", \.replacement),
+      .init("pattern", L10n.tr("Expression"), \.pattern),
+      .init("flags", L10n.tr("Flags"), \.flags),
+      .init("operation", L10n.tr("Operation"), \.operation, choices: ["match", "replace"]),
+      .init("replacement", L10n.tr("Replacement Text"), \.replacement),
     ]
   }
   public static func visibleFields(for options: Options) -> [OptionField<Options>] {

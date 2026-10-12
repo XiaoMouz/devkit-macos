@@ -11,16 +11,16 @@ public enum CssUnitTool: ToolModule {
     public init() {}
   }
   public static let metadata = ToolMetadata(
-    "css-unit", "CSS 单位", .css, "px / rem / em / vw / vh，基准尺寸明确可调。", sample: "24", secondary: "",
+    "css-unit", "CSS Units", .css, "Convert px, rem, em, vw, and vh with explicit, adjustable base dimensions.", sample: "24", secondary: "",
     input: .text, network: false)
   public static var fields: [OptionField<Options>] {
     [
-      .init("from", "源单位", \.from, choices: ["px", "rem", "em", "vw", "vh"]),
-      .init("to", "目标单位", \.to, choices: ["px", "rem", "em", "vw", "vh"]),
-      .init("root", "根字号 px", \.root, range: 1...256),
-      .init("parent", "父字号 px", \.parent, range: 1...256),
-      .init("width", "视口宽度 px", \.width, range: 1...20000),
-      .init("height", "视口高度 px", \.height, range: 1...20000),
+      .init("from", L10n.tr("Source Unit"), \.from, choices: ["px", "rem", "em", "vw", "vh"]),
+      .init("to", L10n.tr("Target Unit"), \.to, choices: ["px", "rem", "em", "vw", "vh"]),
+      .init("root", L10n.tr("Root Font Size (px)"), \.root, range: 1...256),
+      .init("parent", L10n.tr("Parent Font Size (px)"), \.parent, range: 1...256),
+      .init("width", L10n.tr("Viewport Width (px)"), \.width, range: 1...20000),
+      .init("height", L10n.tr("Viewport Height (px)"), \.height, range: 1...20000),
     ]
   }
   public static func visibleFields(for options: Options) -> [OptionField<Options>] {
@@ -29,20 +29,20 @@ public enum CssUnitTool: ToolModule {
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
     guard let value = Double(input.text.trimmingCharacters(in: .whitespacesAndNewlines)),
       value.isFinite
-    else { throw ToolFailure("请输入有限数字。") }
+    else { throw ToolFailure(L10n.tr("Enter a finite number.")) }
     try require(
       (1...256).contains(options.root) && (1...256).contains(options.parent)
         && (1...20000).contains(options.width) && (1...20000).contains(options.height),
-      "根字号和父字号范围为 1–256 px，视口宽高范围为 1–20000 px。")
+      L10n.tr("Root and parent font sizes must be 1–256 px; viewport dimensions must be 1–20,000 px."))
     let scales = [
       "px": 1.0, "rem": Double(options.root), "em": Double(options.parent),
       "vw": Double(options.width) / 100, "vh": Double(options.height) / 100,
     ]
     guard let from = scales[options.from], let to = scales[options.to] else {
-      throw ToolFailure("单位无效。")
+      throw ToolFailure(L10n.tr("Invalid unit."))
     }
     let result = value * from / to
-    try require(result.isFinite, "计算结果超出范围。")
+    try require(result.isFinite, L10n.tr("The result is out of range."))
     return ToolOutput(String(format: "%.8g", result) + options.to)
   }
 }

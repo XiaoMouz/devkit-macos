@@ -41,6 +41,10 @@ CLI 的 `list` / `describe` 从 `ToolRegistry` 和 `OptionField` 生成描述，
 
 布局计算只在实际变化时发布，原生视图更新期间避免回写编辑回调。性能目标与验证方法见[测试要求](acceptance-plan.md)。
 
+## 多语言
+
+`Shared/Localization.swift` 从 Swift Package 的 `Resources/Translations/*.json` 读取语言、显示名称与文案。Swift UI、核心和 JavaScript 引擎共用资源；`Scripts/localization.py` 同步原生菜单与 App Intents 的 string catalogs。英文为源语言和翻译键，新增语言只涉及翻译资源，具体贡献方式、回退与 worker 传递规则见[多语言规范](localization.md)。
+
 ## 模块边界
 
 UI、系统动作和测试调用同一工具核心。工具不能访问其他工具的页面状态；通用算法放在共享层。请求、输出、错误和资源上限以 [ToolContract.swift](../../Sources/DevKitCore/Shared/ToolContract.swift) 为准。

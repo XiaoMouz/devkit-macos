@@ -16,7 +16,7 @@ public enum ComparisonPreview {
       .code{padding:10px;font:13px/1.8 ui-monospace,SFMono-Regular,Menlo,monospace}.line{display:flex;gap:12px;padding:0 5px;white-space:pre-wrap;overflow-wrap:anywhere;min-height:24px}
       .number{color:light-dark(#758195,#9aa8bc);min-width:28px;text-align:right;user-select:none}.add{background:light-dark(#e0f4e8,#173e2b);border-left:3px solid #36a465}.remove,.error{background:light-dark(#fce5e8,#4d252c);border-left:3px solid #d25b70}
       .legend{font-size:12px;color:light-dark(#526174,#becbdc);margin-bottom:12px}
-      </style><div class='legend'>绿色 ＋ 新增 / 实际值　·　红色 − 删除 / 未通过</div><div class='columns'>\(columns)</div>
+      </style><div class='legend'>\(htmlEscape(L10n.tr("Green ＋ Added / Actual value · Red − Removed / Failed")))</div><div class='columns'>\(columns)</div>
       """
   }
 }

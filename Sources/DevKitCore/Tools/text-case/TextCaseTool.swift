@@ -6,12 +6,12 @@ public enum TextCaseTool: ToolModule {
     public init() {}
   }
   public static let metadata = ToolMetadata(
-    "text-case", "命名与大小写", .text, "camelCase、PascalCase、snake_case 与 kebab-case。",
+    "text-case", "Naming and Case", .text, "camelCase, PascalCase, snake_case, and kebab-case.",
     sample: "helloWorld HTTPServer", secondary: "", input: .text, network: false)
   public static var fields: [OptionField<Options>] {
     [
       .init(
-        "mode", "格式", \.mode,
+        "mode", L10n.tr("Output Format"), \.mode,
         choices: ["camelCase", "PascalCase", "snake_case", "kebab-case", "UPPERCASE", "lowercase"])
     ]
   }

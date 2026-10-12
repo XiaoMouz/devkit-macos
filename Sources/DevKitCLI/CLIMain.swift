@@ -20,14 +20,17 @@ struct CLIMain {
   private static func execute(_ request: WorkerRequest) throws -> ToolOutput {
     // Resolve the executable itself, including when invoked through ~/.local/bin/devkit.
     guard let executable = Bundle.main.executableURL?.resolvingSymlinksInPath() else {
-      throw ToolFailure("无法定位 CLI。", code: "resource")
+      throw ToolFailure(L10n.tr("Could not locate the CLI."), code: "resource")
     }
     let worker = executable.deletingLastPathComponent().appendingPathComponent("DevKitWorker")
     guard FileManager.default.isExecutableFile(atPath: worker.path) else {
-      throw ToolFailure("包内 DevKitWorker 缺失，请从应用设置重新安装 CLI。", code: "resource")
+      throw ToolFailure(L10n.tr("The bundled DevKitWorker is missing. Reinstall the CLI from app settings."), code: "resource")
     }
     let process = Process()
     process.executableURL = worker
+    var environment = ProcessInfo.processInfo.environment
+    environment["DEVKIT_LANGUAGE"] = L10n.language
+    process.environment = environment
     let input = Pipe(), output = Pipe()
     process.standardInput = input; process.standardOutput = output
     process.standardError = FileHandle.nullDevice
@@ -58,14 +61,14 @@ struct CLIMain {
     process.waitUntilExit()
     if process.terminationReason == .uncaughtSignal,
       [SIGALRM, SIGXCPU, SIGKILL].contains(process.terminationStatus) {
-      throw ToolFailure("处理超时或超过工作进程资源限制。", code: "timeout")
+      throw ToolFailure(L10n.tr("Processing timed out or exceeded worker resource limits."), code: "timeout")
     }
     guard process.terminationStatus == 0, !data.isEmpty else {
-      throw ToolFailure("工作进程未正常返回结果。", code: "internal")
+      throw ToolFailure(L10n.tr("The worker did not return a valid result."), code: "internal")
     }
     let response = try JSONDecoder().decode(WorkerResponse.self, from: data)
     if let error = response.error { throw error }
-    guard let result = response.output else { throw ToolFailure("没有收到处理结果。", code: "internal") }
+    guard let result = response.output else { throw ToolFailure(L10n.tr("No processing result received."), code: "internal") }
     return result
   }
 }

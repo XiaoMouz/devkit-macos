@@ -4,7 +4,7 @@ DevKit 注册 48 个工具，入口以 [ToolRegistry.swift](../../Sources/DevKit
 
 主窗口提供搜索、收藏、当前工具工作区和共享会话的独立窗口。输入、参数和结果保存在内存中；切换工具时释放非当前页面的原生视图，并保存编辑器选区、滚动和语言选择。
 
-主界面以中文为主，顶部系统菜单与工具菜单包含简体中文、繁体中文和英文资源。完整界面本地化、跨启动正文恢复、跨工具传递和自动转换不属于当前能力。
+界面、工具说明、错误、结果说明与系统动作提供英文和简体中文资源。默认跟随系统语言，设置中切换后需退出并重开；不支持的语言回退到英文。翻译源统一使用英文键，规则见[多语言规范](localization.md)。跨启动正文恢复、跨工具传递和自动转换不属于当前能力。
 
 ## 模块列表
 
@@ -29,7 +29,7 @@ DevKit 注册 48 个工具，入口以 [ToolRegistry.swift](../../Sources/DevKit
 | [hash](../../Sources/DevKitCore/Tools/hash/HashTool.swift) | 哈希摘要 | MD5/SHA-1/SHA-256/SHA-512；旧算法标识为兼容用途。 |
 | [hmac](../../Sources/DevKitCore/Tools/hmac/HmacTool.swift) | HMAC | SHA-256/SHA-512；UTF-8/Hex/Base64 密钥；Hex/Base64 输出。 |
 | [http-client](../../Sources/DevKitCore/Tools/http-client/HttpClientTool.swift) | HTTP 调试 | HTTP/HTTPS 方法、头、正文、状态；临时会话，响应上限 5 MiB。 |
-| [http-status](../../Sources/DevKitCore/Tools/http-status/HttpStatusTool.swift) | HTTP 状态码 | 常见状态使用明确英文名称与中文说明；未收录状态指向 IANA。 |
+| [http-status](../../Sources/DevKitCore/Tools/http-status/HttpStatusTool.swift) | HTTP 状态码 | 常见状态使用标准英文名称与本地化说明；未收录状态指向 IANA。 |
 | [image-compress](../../Sources/DevKitCore/Tools/image-compress/ImageCompressTool.swift) | 图片压缩 | JPEG 有损质量与目标体积；明确提示不能达标；不宣称 PNG 无损优化。 |
 | [image-convert](../../Sources/DevKitCore/Tools/image-convert/ImageConvertTool.swift) | 图片格式转换 | 系统 PNG/JPEG/HEIC 编码，首帧；WebP 编码未开放。 |
 | [image-metadata](../../Sources/DevKitCore/Tools/image-metadata/ImageMetadataTool.swift) | 图片信息 | 信息查看和重新编码移除元数据；尚无逐字段选择性删除。 |

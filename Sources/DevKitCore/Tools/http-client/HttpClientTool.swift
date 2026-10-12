@@ -8,14 +8,14 @@ public enum HttpClientTool: ToolModule {
     public init() {}
   }
   public static let metadata = ToolMetadata(
-    "http-client", "HTTP 调试", .web, "显式发送请求；响应、状态与耗时仅留在当前会话。", sample: "https://example.com",
+    "http-client", "HTTP Client", .web, "Send requests explicitly. Responses, status, and timing stay in the current session.", sample: "https://example.com",
     secondary: "", input: .pair, network: true)
   public static var fields: [OptionField<Options>] {
     [
       .init(
-        "method", "方法", \.method,
+        "method", L10n.tr("Method"), \.method,
         choices: ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]),
-      .init("headers", "请求头 JSON", \.headers),
+      .init("headers", L10n.tr("Headers JSON"), \.headers),
     ]
   }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
@@ -27,7 +27,7 @@ public enum HttpClientTool: ToolModule {
     guard let url = URL(string: input.text.trimmingCharacters(in: .whitespacesAndNewlines)),
       ["http", "https"].contains(url.scheme?.lowercased() ?? ""), url.host != nil, url.user == nil,
       url.password == nil
-    else { throw ToolFailure("需要 HTTP / HTTPS URL，凭证请显式放入请求头。") }
+    else { throw ToolFailure(L10n.tr("An HTTP or HTTPS URL is required. Put credentials explicitly in headers.")) }
     let headers = try NetworkSupport.headers(options.headers)
     var request = URLRequest(url: url)
     request.httpMethod = options.method
@@ -41,16 +41,16 @@ public enum HttpClientTool: ToolModule {
     var body = Data()
     for try await byte in stream {
       try Task.checkCancellation()
-      try require(body.count < 5 * 1024 * 1024, "响应超过 5 MiB，已停止读取。")
+      try require(body.count < 5 * 1024 * 1024, L10n.tr("Response exceeds 5 MiB. Reading has stopped."))
       body.append(byte)
     }
-    guard let http = response as? HTTPURLResponse else { throw ToolFailure("响应不是 HTTP。") }
+    guard let http = response as? HTTPURLResponse else { throw ToolFailure(L10n.tr("The response is not HTTP.")) }
     var rows = [
       ResultRow(
-        "状态",
+        L10n.tr("Status"),
         "\(http.statusCode) \(HttpStatusTool.phrase(http.statusCode))"),
-      ResultRow("耗时", String(format: "%.0f ms", Date().timeIntervalSince(start) * 1000)),
-      ResultRow("最终 URL", response.url?.absoluteString ?? ""),
+      ResultRow(L10n.tr("Duration"), String(format: "%.0f ms", Date().timeIntervalSince(start) * 1000)),
+      ResultRow(L10n.tr("Final URL"), response.url?.absoluteString ?? ""),
     ]
     rows += http.allHeaderFields.map {
       ResultRow(String(describing: $0.key), String(describing: $0.value))
@@ -61,7 +61,7 @@ public enum HttpClientTool: ToolModule {
     var output = textOrArtifact(body, name: filename, mime: mime)
     if !body.isEmpty && output.artifacts.isEmpty { output.artifacts = [Artifact(filename, mime, body)] }
     output.rows = rows
-    output.note = "状态 \(http.statusCode) · \(body.count) 字节"
+    output.note = L10n.tr("Status \(http.statusCode) · \(body.count) bytes")
     return output
   }
 }

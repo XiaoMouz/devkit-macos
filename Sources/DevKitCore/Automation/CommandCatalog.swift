@@ -25,7 +25,7 @@ public enum CommandCatalog {
     let description = try describe(id)
     let fields = description["options"] as? [[String: Any]] ?? []
     guard let field = fields.first(where: { $0["id"] as? String == key }) else {
-      throw ToolFailure("未知参数：\(key)", code: "usage")
+      throw ToolFailure(L10n.tr("Unknown option: \(key)"), code: "usage")
     }
     switch field["type"] as? String {
     case "boolean":
@@ -80,7 +80,7 @@ public enum CommandCatalog {
   private static func resolve<T: ToolModule>(_ tool: T.Type, values: [String: Any]) throws -> T.Options {
     let known = Set(T.fields.map(\.id))
     if let unknown = values.keys.sorted().first(where: { !known.contains($0) }) {
-      throw ToolFailure("未知参数：\(unknown)", code: "usage")
+      throw ToolFailure(L10n.tr("Unknown option: \(unknown)"), code: "usage")
     }
     var options = T.Options()
     // Definition order preserves option dependencies (e.g. JSON syntax resets its default path).
@@ -111,9 +111,9 @@ public enum CommandCatalog {
   }
 
   private static func invalidOption(_ key: String) -> ToolFailure {
-    ToolFailure("参数 \(key) 的类型、取值或范围无效；请用 devkit describe 查看。", code: "usage")
+    ToolFailure(L10n.tr("Invalid type, value, or range for option \(key). See devkit describe."), code: "usage")
   }
   private static func unknownTool() -> ToolFailure {
-    ToolFailure("工具不存在；请用 devkit list 查看。", code: "usage")
+    ToolFailure(L10n.tr("Tool not found. See devkit list."), code: "usage")
   }
 }

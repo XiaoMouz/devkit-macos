@@ -1,3 +1,4 @@
+import DevKitCore
 import Foundation
 import Security
 
@@ -8,7 +9,7 @@ struct SpotlightRuntimeStatus: Sendable {
   static let current = inspect()
   var hasDeveloperIdentity: Bool { teamIdentifier?.isEmpty == false }
   var issue: String? {
-    hasDeveloperIdentity ? nil : "当前为临时签名构建，macOS 无法验证开发者团队，因此拒绝 Spotlight 执行动作。需要使用 Apple 开发证书重新签名；工具箱可正常使用。"
+    hasDeveloperIdentity ? nil : L10n.tr("This build uses ad hoc signing. macOS cannot verify the developer team and refuses to run Spotlight actions. Sign with an Apple development certificate; the main app works normally.")
   }
   private static func inspect() -> Self {
     var code: SecCode?

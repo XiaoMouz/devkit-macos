@@ -1,3 +1,4 @@
+import DevKitCore
 import SwiftUI
 import WebKit
 import OSLog
@@ -61,7 +62,7 @@ struct SafePreview: View {
         if let failure {
           VStack(spacing: 12) {
             Label(failure, systemImage: "exclamationmark.triangle")
-            Button("重新加载预览") { self.failure = nil; reload += 1 }
+            Button(L10n.tr("Reload Preview")) { self.failure = nil; reload += 1 }
           }.padding(24).frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(.background)
         }
@@ -118,7 +119,7 @@ private struct NativeSafePreview: NSViewRepresentable {
     private func failed(_ error: any Error) {
       let code = (error as NSError).code
       guard code != NSURLErrorCancelled else { return }
-      parent.failure = "预览加载失败，可重新加载；原始结果仍可复制或导出。"
+      parent.failure = L10n.tr("Preview could not load. Try reloading; the original result can still be copied or exported.")
       PreviewPool.log.error("navigation failed tool=\(self.parent.toolID, privacy: .public) code=\(code)")
     }
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
@@ -126,7 +127,7 @@ private struct NativeSafePreview: NSViewRepresentable {
       if recoveries == 0 {
         recoveries += 1
         load(webView)
-      } else { parent.failure = "预览进程已退出，请手动重新加载。" }
+      } else { parent.failure = L10n.tr("The preview process exited. Reload it manually.") }
     }
   }
 }

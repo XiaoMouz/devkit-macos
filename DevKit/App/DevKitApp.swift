@@ -1,3 +1,4 @@
+import DevKitCore
 import AppIntents
 import SwiftUI
 
@@ -9,6 +10,7 @@ struct DevKitApp: App {
   var body: some Scene {
     WindowGroup {
       MainWindow()
+        .environment(\.locale, L10n.locale)
         .onChange(of: appearance, initial: true) { _, value in AppAppearance.apply(value) }
     }
     .defaultSize(width: 1280, height: 820)
@@ -19,7 +21,7 @@ struct DevKitApp: App {
       InspectorCommands()
       DevKitCommands()
     }
-    Settings { SettingsView() }
+    Settings { SettingsView().environment(\.locale, L10n.locale) }
   }
 }
 
@@ -52,16 +54,16 @@ struct DevKitApp: App {
 struct DevKitCommands: Commands {
   private var resolved: WorkspaceActions? { WindowCommandRouter.current }
   var body: some Commands {
-    CommandMenu("工具") {
-      Button("搜索工具") { resolved?.search() }.keyboardShortcut("f", modifiers: [.command, .option])
+    CommandMenu(L10n.tr("Tools")) {
+      Button(L10n.tr("Search Tools")) { resolved?.search() }.keyboardShortcut("f", modifiers: [.command, .option])
         .disabled(resolved?.supportsNavigation != true)
-      Button("执行") { resolved?.run() }.keyboardShortcut(.return, modifiers: .command)
-      Button("复制完整结果") { resolved?.copy() }.keyboardShortcut("c", modifiers: [.command, .shift])
+      Button(L10n.tr("Run")) { resolved?.run() }.keyboardShortcut(.return, modifiers: .command)
+      Button(L10n.tr("Copy Full Result")) { resolved?.copy() }.keyboardShortcut("c", modifiers: [.command, .shift])
       Divider()
-      Button("显示输入") { resolved?.selectPane?(0) }.keyboardShortcut(
+      Button(L10n.tr("Show Input")) { resolved?.selectPane?(0) }.keyboardShortcut(
         "1", modifiers: [.command, .option]
       ).disabled(resolved?.canSelectPane() != true)
-      Button("显示结果") { resolved?.selectPane?(1) }.keyboardShortcut(
+      Button(L10n.tr("Show Result")) { resolved?.selectPane?(1) }.keyboardShortcut(
         "2", modifiers: [.command, .option]
       ).disabled(resolved?.canSelectPane() != true)
 

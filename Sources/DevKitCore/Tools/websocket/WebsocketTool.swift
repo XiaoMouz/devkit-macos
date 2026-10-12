@@ -7,19 +7,19 @@ public enum WebsocketTool: ToolModule {
     public init() {}
   }
   public static let metadata = ToolMetadata(
-    "websocket", "WebSocket 调试", .web, "手动连接、发送与接收，断开后不保存会话。", sample: "wss://echo.websocket.org",
+    "websocket", "WebSocket Client", .web, "Connect, send, and receive manually. Sessions are not saved after disconnection.", sample: "wss://echo.websocket.org",
     secondary: "", input: .text, network: true)
   public static var fields: [OptionField<Options>] {
     [
-      .init("message", "发送文本", \.message),
-      .init("count", "接收消息数", \.count, range: 1...100),
+      .init("message", L10n.tr("Send Text"), \.message),
+      .init("count", L10n.tr("Messages to Receive"), \.count, range: 1...100),
     ]
   }
   public static func execute(_ input: ToolInput, options: Options) async throws -> ToolOutput {
     guard let url = URL(string: input.text), ["ws", "wss"].contains(url.scheme ?? ""),
       url.host != nil
-    else { throw ToolFailure("需要 ws:// 或 wss:// 地址。") }
-    try require((1...100).contains(options.count), "消息数量必须为 1–100。")
+    else { throw ToolFailure(L10n.tr("A ws:// or wss:// URL is required.")) }
+    try require((1...100).contains(options.count), L10n.tr("Message count must be between 1 and 100."))
     let session = NetworkSupport.session()
     defer { session.invalidateAndCancel() }
     let socket = session.webSocketTask(with: url)
@@ -35,7 +35,7 @@ public enum WebsocketTool: ToolModule {
       case .data(let value): messages.append(hex(value))
       @unknown default: break
       }
-      try require(messages.reduce(0, { $0 + $1.utf8.count }) <= 5 * 1024 * 1024, "会话结果超过 5 MiB。")
+      try require(messages.reduce(0, { $0 + $1.utf8.count }) <= 5 * 1024 * 1024, L10n.tr("Session results exceed 5 MiB."))
     }
     return ToolOutput(
       messages.joined(separator: "\n"),

@@ -1,3 +1,4 @@
+import { tr } from '../../../../Vendor/localization.mjs';
 import { pretty, result } from "../../../../Vendor/common.mjs";
 export default (i, o) => {
   const tokens = [];
@@ -10,7 +11,7 @@ export default (i, o) => {
       if (c === quote) quote = null;
       else if (c === "\\" && quote === '"') {
         const next = i.text[++n];
-        if (next === undefined) throw Error("转义不完整");
+        if (next === undefined) throw Error(tr("Incomplete escape sequence"));
         token += next;
       } else token += c;
       active = true;
@@ -23,7 +24,7 @@ export default (i, o) => {
         continue;
       }
       const next = i.text[++n];
-      if (next === undefined) throw Error("转义不完整");
+      if (next === undefined) throw Error(tr("Incomplete escape sequence"));
       token += next;
       active = true;
     } else if (/\s/.test(c)) {
@@ -33,21 +34,21 @@ export default (i, o) => {
         active = false;
       }
     } else if (/[|;<>`$]/.test(c)) {
-      throw Error("不支持 Shell 管道、重定向或变量展开");
+      throw Error(tr("Shell pipes, redirection, and variable expansion are unsupported"));
     } else {
       token += c;
       active = true;
     }
   }
-  if (quote) throw Error("引号未闭合");
+  if (quote) throw Error(tr("Unclosed quote"));
   if (active) tokens.push(token);
-  if (tokens.shift() !== "curl") throw Error("命令必须以 curl 开头");
+  if (tokens.shift() !== "curl") throw Error(tr("The command must start with curl"));
   let url = "",
     method = "GET",
     body,
     headers = {};
   const take = () => {
-    if (!tokens.length) throw Error("参数缺少值");
+    if (!tokens.length) throw Error(tr("Missing option value"));
     return tokens.shift();
   };
   while (tokens.length) {
@@ -56,19 +57,19 @@ export default (i, o) => {
     else if (t === "-H" || t === "--header") {
       const h = take(),
         n = h.indexOf(":");
-      if (n < 1) throw Error("请求头缺少冒号");
+      if (n < 1) throw Error(tr("Header is missing a colon"));
       headers[h.slice(0, n)] = h.slice(n + 1).trim();
     } else if (["-d", "--data", "--data-raw", "--data-binary"].includes(t)) {
       body = take();
-      if (body.startsWith("@")) throw Error("不读取 @文件，请直接提供请求体");
+      if (body.startsWith("@")) throw Error(tr("@file input is not read. Provide the request body directly."));
       if (method === "GET") method = "POST";
     } else if (t === "--url") url = take();
     else if (t === "--compressed" || t === "-s" || t === "--silent") {
-    } else if (t.startsWith("-")) throw Error("未支持的 cURL 参数：" + t);
+    } else if (t.startsWith("-")) throw Error(tr("Unsupported cURL option: ") + t);
     else if (!url) url = t;
-    else throw Error("只支持一个 URL");
+    else throw Error(tr("Only one URL is supported"));
   }
-  if (!/^https?:\/\//i.test(url)) throw Error("只支持 HTTP / HTTPS URL");
+  if (!/^https?:\/\//i.test(url)) throw Error(tr("Only HTTP and HTTPS URLs are supported"));
   const request = { method, headers, ...(body === undefined ? {} : { body }) };
   return result(
     o.format === "fetch"
@@ -78,6 +79,6 @@ export default (i, o) => {
           pretty(request) +
           ");\nconst data = await response.text();"
       : pretty({ url, ...request }),
-    { note: "支持 -X、-H、-d、--data-raw、--data-binary、--url；不执行命令。" },
+    { note: tr("Supports -X, -H, -d, --data-raw, --data-binary, and --url. The command is not executed.") },
   );
 };
