@@ -4,6 +4,10 @@
 
 使用 Swift、SwiftUI 和 AppKit 构建，支持 macOS 26 及以上。当前为 **0.1.0 自用预览版**。
 
+**[下载 v0.1.0](https://github.com/luolayo/devkit-macos/releases/tag/v0.1.0)** · **[在线使用手册](https://luolayo.github.io/devkit-macos/)**
+
+![DevKit JSON 工作台](docs/public/images/json-workspace.png)
+
 ## 工具与能力
 
 提供 9 类、48 个工具入口：
@@ -24,7 +28,11 @@ JSON 的格式化、压缩、校验、路径查询、结构对比、Schema 校�
 
 文本、数据和图片处理在本机完成；HTTP、WebSocket、DNS 等网络工具由用户主动触发。正文和密钥默认不跨启动保存。
 
-## 运行
+## 安装与运行
+
+从 [Release](https://github.com/luolayo/devkit-macos/releases/tag/v0.1.0) 下载 `DevKit-v0.1.0-macOS-universal.zip`，解压后将 `DevKit.app` 放入「应用程序」。该通用包包含 Apple Silicon 和 Intel 架构，已由 ShenZhen CodeNav Technology Co., Ltd. 进行 Developer ID 签名并通过 Apple 公证。Release 同时提供 SHA-256 校验文件。
+
+从源码运行：
 
 1. 在 Xcode 中打开 `DevKit.xcodeproj`。
 2. 选择 **DevKit** scheme 和 **My Mac**。
@@ -73,4 +81,4 @@ AGENTS.md               共用开发约定与 Codex 项目入口
 docs/                   面向用户的网页教程
 ```
 
-[使用教程](docs/README.md) · [工具目录](.codex/docs/tool-catalog.md) · [项目资料](.codex/docs/README.md)
+[在线使用手册](https://luolayo.github.io/devkit-macos/) · [工具参考](docs/tools/index.md) · [项目资料](.codex/docs/README.md)

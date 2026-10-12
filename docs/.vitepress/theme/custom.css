@@ -1,0 +1,71 @@
+:root {
+  --vp-font-family-base: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --vp-font-family-mono: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+  --vp-c-brand-1: #285dc9;
+  --vp-c-brand-2: #376fdc;
+  --vp-c-brand-3: #285dc9;
+  --vp-c-brand-soft: #285dc911;
+  --vp-c-bg: #ffffff;
+  --vp-c-bg-soft: #f5f7fb;
+  --vp-c-text-1: #1e293b;
+  --vp-c-text-2: #526176;
+  --vp-sidebar-width: 282px;
+}
+.dark {
+  --vp-c-brand-1: #91b7ff;
+  --vp-c-brand-2: #aac8ff;
+  --vp-c-brand-3: #366dd8;
+  --vp-c-brand-soft: #91b7ff15;
+  --vp-c-bg: #161b24;
+  --vp-c-bg-soft: #202835;
+  --vp-c-text-1: #e3e9f3;
+  --vp-c-text-2: #afbed2;
+}
+.vp-doc { line-height: 1.85; }
+.vp-doc h1 { letter-spacing: -.035em; line-height: 1.35; }
+.vp-doc img { border: 1px solid var(--vp-c-divider); border-radius: 12px; margin: 24px 0 12px; }
+.vp-doc th, .vp-doc td { font-size: 14px; }
+.vp-doc th { white-space: nowrap; }
+.devkit-home { max-width: 1200px; padding: 64px 32px 40px; margin: 0 auto; }
+.home-label, .path-label { color: var(--vp-c-brand-1); font-size: 13px; font-weight: 650; letter-spacing: .03em; }
+.home-intro { max-width: 870px; margin: 0 auto; text-align: center; }
+.home-intro h1 { font-size: clamp(34px, 5.2vw, 62px); line-height: 1.25; font-weight: 650; letter-spacing: -.05em; margin: 20px 0; }
+.home-lead { color: var(--vp-c-text-2); font-size: 19px; line-height: 1.85; max-width: 640px; margin: 0 auto; }
+.home-actions { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin: 28px 0 18px; }
+.home-actions a { padding: 12px 22px; border-radius: 9px; font-size: 15px; font-weight: 600; }
+.primary-action { background: var(--vp-c-brand-3); color: white; }
+.secondary-action { border: 1px solid var(--vp-c-divider); background: var(--vp-c-bg-soft); }
+.home-actions span { margin-left: 20px; }
+.home-requirements { color: var(--vp-c-text-2); font-size: 12px; }
+.workspace-figure { margin: 40px auto 62px; max-width: 1080px; }
+.workspace-figure img { display: block; width: 100%; height: auto; border-radius: 16px; border: 1px solid var(--vp-c-divider); box-shadow: 0 22px 65px #162a4c18; }
+.workspace-figure figcaption { margin-top: 14px; font-size: 12px; text-align: center; color: var(--vp-c-text-2); }
+.section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 18px; margin: 0 0 24px; }
+.section-heading h2, .home-terminal h2 { font-size: 25px; font-weight: 600; letter-spacing: -.025em; line-height: 1.5; }
+.section-heading span { color: var(--vp-c-text-2); font-size: 13px; }
+.path-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.path-card { display: block; border: 1px solid var(--vp-c-divider); border-radius: 12px; padding: 26px 28px; }
+.path-card:hover { border-color: var(--vp-c-brand-1); background: var(--vp-c-brand-soft); }
+.path-card h3 { font-size: 20px; font-weight: 600; margin: 12px 0 8px; }
+.path-card h3 span { float: right; color: var(--vp-c-text-2); }
+.path-card > p:last-child, .home-terminal p { color: var(--vp-c-text-2); line-height: 1.8; font-size: 14px; }
+.home-terminal { display: grid; grid-template-columns: 1fr 1.3fr; gap: 30px; align-items: center; margin-top: 60px; padding: 32px 0; border-top: 1px solid var(--vp-c-divider); }
+.home-terminal h2 { margin: 8px 0 14px; }
+.home-terminal a, .home-note a { color: var(--vp-c-brand-1); text-decoration: underline; text-underline-offset: 4px; }
+.home-terminal a { display: inline-block; margin-top: 16px; font-size: 14px; }
+.terminal-example { border-radius: 12px; padding: 28px; background: var(--vp-c-bg-soft); overflow-x: auto; font: 12px/2.4 var(--vp-font-family-mono); }
+.terminal-example span, .terminal-example strong { display: block; white-space: nowrap; }
+.terminal-example strong { color: var(--vp-c-brand-1); }
+.home-note { color: var(--vp-c-text-2); text-align: center; font-size: 13px; margin: 30px 0 0; }
+a:focus-visible, button:focus-visible { outline: 3px solid var(--vp-c-brand-1); outline-offset: 4px; }
+@media (max-width: 720px) {
+  .devkit-home { padding: 40px 22px 30px; }
+  .home-lead { font-size: 16px; }
+  .section-heading { display: block; }
+  .section-heading span { display: block; margin-top: 8px; }
+  .path-grid, .home-terminal { grid-template-columns: 1fr; }
+  .path-card { padding: 22px; }
+  .workspace-figure { margin-bottom: 42px; }
+  .home-terminal { gap: 24px; margin-top: 36px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }

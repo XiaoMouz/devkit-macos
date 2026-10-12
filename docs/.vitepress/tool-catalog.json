@@ -1,0 +1,287 @@
+[
+  {
+    "name": "编码与转换",
+    "tools": [
+      {
+        "id": "base64",
+        "name": "Base64",
+        "summary": "UTF-8 文本编解码；标准 / URL Safe，支持文本导出。"
+      },
+      {
+        "id": "data-url",
+        "name": "Data URL",
+        "summary": "图片与 Data URL 互转。"
+      },
+      {
+        "id": "url-codec",
+        "name": "URL 编解码",
+        "summary": "组件、完整 URL 和表单模式，明确处理空格与加号。"
+      }
+    ]
+  },
+  {
+    "name": "结构化数据",
+    "tools": [
+      {
+        "id": "json",
+        "name": "JSON 工作台",
+        "summary": "格式化、压缩、JSONPath / Pointer、结构对比、Schema 校验与 TypeScript 类型。"
+      }
+    ]
+  },
+  {
+    "name": "摘要与令牌",
+    "tools": [
+      {
+        "id": "file-checksum",
+        "name": "文件校验",
+        "summary": "计算文件摘要，并与期望值比较；支持取消。"
+      },
+      {
+        "id": "hash",
+        "name": "哈希摘要",
+        "summary": "MD5 / SHA 摘要；MD5 和 SHA-1 仅用于兼容与校验。"
+      },
+      {
+        "id": "hmac",
+        "name": "HMAC",
+        "summary": "SHA-256 / SHA-512 消息认证码；密钥仅在当前会话中使用。"
+      },
+      {
+        "id": "jwt",
+        "name": "JWT 工作台",
+        "summary": "解析 Header / Payload；可选 HS256 验签，解析不代表可信。"
+      },
+      {
+        "id": "pem-certificate",
+        "name": "PEM 与证书",
+        "summary": "本地 X.509 证书主题、有效期与 SHA-256 指纹。"
+      }
+    ]
+  },
+  {
+    "name": "标识与测试数据",
+    "tools": [
+      {
+        "id": "mock-data",
+        "name": "Mock 数据",
+        "summary": "字段模板生成 JSON / CSV；按种子生成可复现测试数据。"
+      },
+      {
+        "id": "nanoid",
+        "name": "Nano ID",
+        "summary": "安全随机与无偏采样，可自定义 Unicode 字符集。"
+      },
+      {
+        "id": "qr-code",
+        "name": "二维码",
+        "summary": "文本生成 QR，或选择图片识别；PNG 导出。"
+      },
+      {
+        "id": "random-string",
+        "name": "随机字符串",
+        "summary": "使用系统安全随机源，自定义字符集与批量生成。"
+      },
+      {
+        "id": "ulid",
+        "name": "ULID",
+        "summary": "Crockford Base32，48 位毫秒时间戳与 80 位安全随机数。"
+      },
+      {
+        "id": "uuid",
+        "name": "UUID",
+        "summary": "RFC 9562 UUID v4 / v7，支持批量与大小写。"
+      }
+    ]
+  },
+  {
+    "name": "文本与匹配",
+    "tools": [
+      {
+        "id": "markdown",
+        "name": "Markdown",
+        "summary": "本地预览和 HTML 导出；移除脚本与外部资源。"
+      },
+      {
+        "id": "regex",
+        "name": "正则测试",
+        "summary": "ECMAScript 正则、捕获组和替换预览；独立进程可取消。"
+      },
+      {
+        "id": "text-case",
+        "name": "命名与大小写",
+        "summary": "camelCase、PascalCase、snake_case 与 kebab-case。"
+      },
+      {
+        "id": "text-diff",
+        "name": "文本对比",
+        "summary": "逐行比较，保留两份输入，输出增删行。"
+      },
+      {
+        "id": "text-lines",
+        "name": "文本行处理",
+        "summary": "排序、去重、去空行、编号和添加前后缀。"
+      },
+      {
+        "id": "text-replace",
+        "name": "查找替换",
+        "summary": "普通文本或 ECMAScript 正则，保留原文并预览结果。"
+      },
+      {
+        "id": "text-stats",
+        "name": "文本统计",
+        "summary": "区分字素、Unicode 码点、UTF-16 和 UTF-8 字节。"
+      }
+    ]
+  },
+  {
+    "name": "时间与数值",
+    "tools": [
+      {
+        "id": "cron",
+        "name": "Cron",
+        "summary": "五字段 Cron，预览后续执行时间，不注册系统任务。"
+      },
+      {
+        "id": "date-time",
+        "name": "日期与时区",
+        "summary": "日期时间选择、时区转换、日期加减与时间差。"
+      },
+      {
+        "id": "number-base",
+        "name": "进制转换",
+        "summary": "基于大整数精确转换，支持正负数；不隐式套用补码。"
+      },
+      {
+        "id": "number-format",
+        "name": "数字格式",
+        "summary": "Decimal 十进制舍入与千分位，最多 38 位有效数字。"
+      },
+      {
+        "id": "timestamp",
+        "name": "时间戳",
+        "summary": "Unix 秒 / 毫秒与日期时间互转，按所选时区显示。"
+      },
+      {
+        "id": "unit-convert",
+        "name": "单位转换",
+        "summary": "文件大小、时长和速率，明确 SI 与 IEC。"
+      }
+    ]
+  },
+  {
+    "name": "Web 与网络",
+    "tools": [
+      {
+        "id": "cookie",
+        "name": "Cookie",
+        "summary": "Cookie / Set-Cookie 字段解析，不修改浏览器。"
+      },
+      {
+        "id": "curl-convert",
+        "name": "cURL 转换",
+        "summary": "静态解析常用 cURL 参数，输出 fetch；不执行 Shell。"
+      },
+      {
+        "id": "dns",
+        "name": "DNS 查询",
+        "summary": "调用系统 dig；A / AAAA / CNAME / MX / TXT / NS，手动执行。"
+      },
+      {
+        "id": "http-client",
+        "name": "HTTP 调试",
+        "summary": "显式发送请求；响应、状态与耗时仅留在当前会话。"
+      },
+      {
+        "id": "http-status",
+        "name": "HTTP 状态码",
+        "summary": "本地查询 HTTP 状态含义；不发送请求。"
+      },
+      {
+        "id": "mime-types",
+        "name": "MIME 类型",
+        "summary": "通过系统 Uniform Type 数据库查询扩展名或 MIME。"
+      },
+      {
+        "id": "query-string",
+        "name": "查询参数",
+        "summary": "保留重复键和空值，JSON 键值对与查询字符串互转。"
+      },
+      {
+        "id": "url-parser",
+        "name": "URL 解析",
+        "summary": "分解协议、主机、端口、路径、查询与片段。"
+      },
+      {
+        "id": "websocket",
+        "name": "WebSocket 调试",
+        "summary": "手动连接、发送与接收，断开后不保存会话。"
+      }
+    ]
+  },
+  {
+    "name": "前端样式",
+    "tools": [
+      {
+        "id": "color",
+        "name": "颜色转换",
+        "summary": "sRGB HEX / RGB / HSL 与透明度，结果点一下复制。"
+      },
+      {
+        "id": "contrast",
+        "name": "颜色对比度",
+        "summary": "WCAG 2.2 相对亮度对比值，普通和大号文字分开。"
+      },
+      {
+        "id": "css-unit",
+        "name": "CSS 单位",
+        "summary": "px / rem / em / vw / vh，基准尺寸明确可调。"
+      }
+    ]
+  },
+  {
+    "name": "代码与图形",
+    "tools": [
+      {
+        "id": "code-format",
+        "name": "代码格式化",
+        "summary": "Prettier 格式化 JS / TS / HTML / CSS；SQL 可选方言。"
+      },
+      {
+        "id": "code-minify",
+        "name": "代码压缩",
+        "summary": "使用解析器压缩 JS / CSS / HTML，不执行输入代码。"
+      },
+      {
+        "id": "favicon",
+        "name": "网站图标",
+        "summary": "从图片生成常用 PNG 尺寸与 ICO；原文件不覆盖。"
+      },
+      {
+        "id": "image-compress",
+        "name": "图片压缩",
+        "summary": "JPEG 有损质量与目标大小；原文件不覆盖。"
+      },
+      {
+        "id": "image-convert",
+        "name": "图片格式转换",
+        "summary": "系统编码器转换 PNG / JPEG / HEIC；首帧，默认移除元数据。"
+      },
+      {
+        "id": "image-metadata",
+        "name": "图片信息",
+        "summary": "查看尺寸、EXIF 与色彩信息；可导出移除元数据的新 PNG。"
+      },
+      {
+        "id": "image-resize",
+        "name": "图片尺寸",
+        "summary": "缩放或居中裁剪到目标尺寸；PNG 导出。"
+      },
+      {
+        "id": "svg",
+        "name": "SVG 工作台",
+        "summary": "清理脚本与外部引用，优化 SVG 并在受限视图预览。"
+      }
+    ]
+  }
+]

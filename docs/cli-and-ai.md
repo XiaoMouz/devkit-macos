@@ -4,6 +4,8 @@ DevKit 提供随应用一起构建的 `devkit` 命令，复用应用内 48 个�
 
 ## 安装
 
+![CLI 与 AI Skill 安装设置](/images/cli-settings.png)
+
 1. 打开 DevKit「设置 → CLI 与 AI」，点击「安装 CLI」。
 2. 安装完成后新开终端，直接使用 `devkit`。已有终端需要重开以读取新配置。
 3. 按需点击 Codex 或 Claude Code 的「安装 Skill」，重新打开 AI 会话后使用 `devkit` Skill。

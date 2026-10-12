@@ -8,6 +8,8 @@
 
 签名在 Signing & Capabilities 和 `Config/Signing.xcconfig` 中配置；机器私有覆盖放在被忽略的 `Config/Signing.local.xcconfig`。不得覆盖用户团队和证书。若本地包被另一 Xcode 窗口占用，关闭单独打开的 Swift Package，再打开应用工程。
 
+日常开发和分发使用不同团队时，在本机配置中用 `DEVELOPMENT_TEAM[config=Release]` 指定经用户选择的发布团队，保留 Debug 的原有设置。通过 Organizer 的 Direct Distribution 完成 Developer ID 签名和 Apple 公证，再 Export 导出已装订票据的应用。上传 Release 附件前检查签名、Gatekeeper、公证票据与包内辅助程序；压缩现有导出应用时保留签名与扩展属性。不要将本机团队配置写入共享工程。
+
 `project.yml` 是工程结构来源，仅在结构变化时使用 XcodeGen 同步；生成前检查工作区，避免覆盖未提交工程修改。应用图标源为 `DevKit/Resources/AppIcon.icon`，使用 Icon Composer 编辑，由 Xcode 编译。
 
 ## 核心与会话测试
@@ -30,6 +32,20 @@ python3 Scripts/check-spotlight-metadata.py "/path/from/Xcode/DevKit.app"
 ```
 
 CLI 集成覆盖包内执行、软链接调用、解析器资源、文件和 JSON 输入、附件、错误与超时、受控本地网络。`swift test` 另覆盖参数校验、注册表默认值、安装冲突与隔离临时目录中的 Shell PATH 配置，不改写测试机器的真实启动文件。修改配套 Skill 时同步 `Sources/DevKitCore/Resources/Skills/devkit` 和面向用户的 [CLI 教程](../../docs/cli-and-ai.md)。
+
+## 用户文档站
+
+`docs/` 是 VitePress 中文手册，部署到 `https://luolayo.github.io/devkit-macos/`。首页、任务指南、48 个工具参考和截图均在此维护；`.vitepress/tool-catalog.json` 维护侧栏分类。新增工具或参数变化时同步对应工具页和目录。
+
+```sh
+npm ci --prefix docs --ignore-scripts
+npm run dev --prefix docs
+npm run build --prefix docs
+```
+
+依赖锁定在 `docs/package-lock.json`。VitePress 1.6 使用兼容的 Vite 6.4.3 override，避开其默认 Vite 5 依赖的已知漏洞；升级后重新验证构建和预览。构建会检查内部 Markdown 链接；额外检查截图、下载地址、搜索和手机布局。
+
+`.github/workflows/docs.yml` 在 main 的文档变更后构建并部署 GitHub Pages，仓库 Pages source 使用 GitHub Actions。构建产物、node_modules 和缓存不入库。截图只来自 Xcode 当前 Run 的应用，使用可公开样例；面向用户的正式截图保存在 `docs/public/images/`，临时验收证据保存在 `build/`。
 
 ## JavaScript 与资源
 
