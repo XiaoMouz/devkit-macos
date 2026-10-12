@@ -21,7 +21,9 @@ struct DevKitApp: App {
       InspectorCommands()
       DevKitCommands()
     }
+    .environment(\.locale, L10n.locale)
     Settings { SettingsView().environment(\.locale, L10n.locale) }
+      .environment(\.locale, L10n.locale)
   }
 }
 
@@ -32,6 +34,7 @@ struct DevKitApp: App {
     AppAppearance.apply(UserDefaults.standard.string(forKey: "appearance") ?? "system")
   }
   func applicationDidFinishLaunching(_ notification: Notification) {
+    NativeMenuLocalization.shared.start()
     SpotlightSettingsStore.shared.refresh()
   }
 }

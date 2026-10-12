@@ -14,7 +14,9 @@ struct SettingsView: View {
             Text(L10n.tr("Follow System")).tag("system")
             ForEach(L10n.languages) { language in Text(language.name).tag(language.id) }
           }
-          Text(L10n.tr("Quit and reopen DevKit after changing the language to apply it to all windows, menus, and Spotlight."))
+          Text(L10n.tr("Changes apply immediately without closing your work. Existing results stay unchanged; new runs use the selected language."))
+            .font(.caption).foregroundStyle(.secondary)
+          Text(L10n.tr("Some macOS dialogs and Spotlight labels update the next time the system loads them."))
             .font(.caption).foregroundStyle(.secondary)
         }
 
@@ -47,9 +49,11 @@ struct SettingsView: View {
       }.frame(maxWidth: .infinity, maxHeight: .infinity).tabItem { Label(L10n.tr("About"), systemImage: "info.circle") }
     }.frame(width: 800, height: 610)
       .onChange(of: language) { _, value in
-        // Native menus and App Intents read Apple's per-app language override at launch.
+        L10n.selectLanguage(value)
+        // Native system components also receive the preference on their next load.
         if value == "system" { UserDefaults.standard.removeObject(forKey: "AppleLanguages") }
         else { UserDefaults.standard.set([value], forKey: "AppleLanguages") }
+        SpotlightSettingsStore.shared.refresh()
       }
       .onChange(of: appearance) { _, value in AppAppearance.apply(value) }
   }

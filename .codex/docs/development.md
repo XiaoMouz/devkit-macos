@@ -20,6 +20,7 @@ DEVKIT_LANGUAGE=zh-Hans swift test
 DEVKIT_LANGUAGE=en swift test --filter LocalizationTests
 zsh Scripts/test-editor.sh
 zsh Scripts/test-appearance.sh
+DEVKIT_LANGUAGE=zh-Hans zsh Scripts/test-menu-localization.sh
 ```
 
 核心与会话测试包含中文报告断言，固定使用 `zh-Hans`；英文行为由独立的本地化回归覆盖，避免测试结果依赖机器语言。编辑器回归编译实际组件，使用隐藏测试窗口和独立粘贴板；它不是另一份 DevKit 验收应用。只修改文档时检查链接和内容即可，不重建应用。

@@ -4,7 +4,8 @@ import SwiftUI
 @MainActor @Observable final class SocketSession {
   struct Message: Identifiable {
     let id = UUID()
-    let direction: String
+    let directionKey: String
+    var direction: String { L10n.text(directionKey) }
     let text: String
     let time = Date()
   }
@@ -15,12 +16,15 @@ import SwiftUI
   var connecting = false
   var messages: [Message] = []
   var error: String?
-  var status = L10n.tr("Not Connected")
+  private var statusMessage: LocalizedMessage = "Not Connected"
+  private var closeReason = ""
+  var status: String { L10n.tr(statusMessage) + (closeReason.isEmpty ? "" : ": " + closeReason) }
   private var session: URLSession?
   private var socket: URLSessionWebSocketTask?
   private var receiver: Task<Void, Never>?
   private var generation = UUID()
   private var totalBytes = 0
+  func setStatus(_ message: LocalizedMessage) { statusMessage = message; closeReason = "" }
   func connect() {
     disconnect()
     do {
@@ -37,7 +41,7 @@ import SwiftUI
       self.socket = socket
       socket.resume()
       connecting = true
-      status = L10n.tr("Connecting…")
+      statusMessage = "Connecting…"; closeReason = ""
       error = nil
       let current = generation
       receiver = Task {
@@ -51,13 +55,13 @@ import SwiftUI
           guard generation == current else { return }
           connected = true
           connecting = false
-          status = L10n.tr("Connected")
+          statusMessage = "Connected"
           while !Task.isCancelled {
             let message = try await socket.receive()
             guard generation == current else { return }
             switch message {
-            case .string(let value): try append(L10n.tr("Received"), value)
-            case .data(let bytes): try append(L10n.tr("Received · Hex"), hex(bytes))
+            case .string(let value): try append("Received", value)
+            case .data(let bytes): try append("Received · Hex", hex(bytes))
             @unknown default: break
             }
           }
@@ -68,10 +72,12 @@ import SwiftUI
           disconnect()
           if code == .normalClosure || code == .goingAway {
             self.error = nil
-            status = L10n.tr("Remote closed normally (\(code.rawValue))") + (reason.isEmpty ? "" : "：" + reason)
+            statusMessage = "Remote closed normally (\(code.rawValue))"
+            closeReason = reason
           } else {
             self.error = NetworkSupport.message(for: error)
-            status = code == .invalid ? L10n.tr("Connection interrupted unexpectedly") : L10n.tr("Remote closed (\(code.rawValue))") + (reason.isEmpty ? "" : "：" + reason)
+            statusMessage = code == .invalid ? "Connection interrupted unexpectedly" : "Remote closed (\(code.rawValue))"
+            closeReason = reason
           }
         }
       }
@@ -89,7 +95,7 @@ import SwiftUI
       do {
         try await socket.send(.string(text))
         guard generation == current else { return }
-        try append(L10n.tr("Send"), text)
+        try append("Send", text)
       } catch { if generation == current { self.error = NetworkSupport.message(for: error) } }
     }
   }
@@ -103,7 +109,7 @@ import SwiftUI
     session = nil
     connected = false
     connecting = false
-    status = L10n.tr("Disconnected")
+    statusMessage = "Disconnected"; closeReason = ""
   }
   func clear() {
     messages = []
@@ -114,7 +120,7 @@ import SwiftUI
       messages.count < 1000 && totalBytes + text.utf8.count <= 5 * 1024 * 1024,
       L10n.tr("The session reached 1,000 messages or 5 MiB. Clear it and reconnect."))
     totalBytes += text.utf8.count
-    messages.append(Message(direction: direction, text: text))
+    messages.append(Message(directionKey: direction, text: text))
   }
 }
 
@@ -182,7 +188,7 @@ struct WebSocketWorkspace: View {
       } else {
         List(model.messages) { message in
           Button {
-            if Clipboard.copy(message.text) { model.status = L10n.tr("Message Copied") }
+            if Clipboard.copy(message.text) { model.setStatus("Message Copied") }
           } label: {
             VStack(alignment: .leading, spacing: 7) {
               HStack {
@@ -210,7 +216,7 @@ struct WebSocketWorkspace: View {
   private func copy() {
     if Clipboard.copy(model.messages.map { "[\($0.direction)] \($0.text)" }.joined(separator: "\n"))
     {
-      model.status = L10n.tr("Session Copied")
+      model.setStatus("Session Copied")
     }
   }
 }

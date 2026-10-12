@@ -369,6 +369,8 @@ private struct SidebarSearchField: NSViewRepresentable {
   }
   func updateNSView(_ field: NSSearchField, context: Context) {
     context.coordinator.parent = self
+    if field.placeholderString != prompt { field.placeholderString = prompt }
+    if field.accessibilityLabel() != prompt { field.setAccessibilityLabel(prompt) }
     if field.stringValue != text { field.stringValue = text }
     if context.coordinator.focusRequest != focusRequest {
       context.coordinator.focusRequest = focusRequest

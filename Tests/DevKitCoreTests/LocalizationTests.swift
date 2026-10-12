@@ -1,9 +1,38 @@
 import Foundation
+import Observation
+import Synchronization
 import Testing
 @testable import DevKitCore
 
 @Suite("Localization and translation resources")
 struct LocalizationTests {
+
+  @Test @MainActor func liveSelectionInvalidatesTranslationsAndCachedMetadata() {
+    let selection = LanguageSelection("zh-Hans")
+    L10n.$selectionOverride.withValue(selection) {
+      let tool = JsonTool.metadata
+      let action = SpotlightCatalog.actions.first { $0.id == "json:format" }!
+      #expect(action.name.contains("JSON 工作台"))
+      let changes = Mutex(0)
+      withObservationTracking {
+        #expect(L10n.tr("Copy") == "复制")
+        #expect(tool.name == "JSON 工作台")
+      } onChange: {
+        changes.withLock { $0 += 1 }
+      }
+      L10n.selectLanguage("en")
+      #expect(changes.withLock { $0 } == 1)
+      #expect(L10n.tr("Copy") == "Copy")
+      #expect(tool.name == "JSON Workspace")
+      #expect(action.name == "JSON Workspace · Format")
+      #expect(L10n.locale.identifier == "en")
+      // This must ignore a cached per-app preference when returning to System.
+      L10n.selectLanguage("system", systemLanguages: ["zh-Hans", "en"])
+      #expect(L10n.language == "zh-Hans")
+      #expect(action.name.contains("JSON 工作台"))
+    }
+  }
+
   @Test func matchesLanguagePreferencesAndFallsBack() {
     #expect(L10n.resolve(preferred: ["en-GB"]) == "en")
     #expect(L10n.resolve(preferred: ["zh-CN"]) == "zh-Hans")

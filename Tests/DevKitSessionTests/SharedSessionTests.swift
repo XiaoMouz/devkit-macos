@@ -20,6 +20,45 @@ private actor Gate {
 }
 
 @Suite("Shared workspace session") @MainActor struct SharedSessionTests {
+
+  @Test func liveLanguageSwitchPreservesWorkAndDoesNotRerun() async {
+    let selection = LanguageSelection("zh-Hans")
+    await L10n.$selectionOverride.withValue(selection) {
+      let gate = Gate()
+      let session = ToolSession<Base64Tool>(id: UUID(), bridge: WorkspaceBridge(), execute: { request in
+        let message = L10n.tr("Completed")
+        _ = await gate.run(request)
+        return ToolOutput(request.input.text, note: message)
+      })
+      session.input = ToolInput(text: "hello 世界 {0}")
+      session.options.urlSafe = true
+      session.viewState.focusedPane = .output
+      session.viewState.inputEditor.selection = NSRange(location: 2, length: 3)
+      let revision = session.revision
+      session.run()
+      while !(await gate.hasStarted("hello 世界 {0}")) { await Task.yield() }
+      L10n.selectLanguage("en")
+      #expect(session.bridge.running)
+      #expect(session.bridge.actionTitle == "Encode")
+      #expect(session.status == "Processing…")
+      await gate.finish("hello 世界 {0}", output: "unused")
+      while session.bridge.running { await Task.yield() }
+      #expect(session.status == "Completed")
+      #expect(session.output?.note == "已完成") // Language frozen at execution start.
+      #expect(session.input.text == "hello 世界 {0}")
+      #expect(session.output?.text == "hello 世界 {0}")
+      #expect(session.options.urlSafe)
+      #expect(session.revision == revision)
+      #expect(session.viewState.focusedPane == .output)
+      #expect(session.viewState.inputEditor.selection == NSRange(location: 2, length: 3))
+      #expect(session.completedRun == 1)
+      L10n.selectLanguage("zh-Hans")
+      #expect(session.status == "已完成")
+      #expect(session.bridge.actionTitle == "编码")
+      #expect(session.completedRun == 1)
+      #expect(session.current)
+    }
+  }
   @Test func identicalParameterCommitDoesNotInvalidateFinishedResult() async throws {
     let session = ToolSession<NumberFormatTool>(id: UUID(), bridge: WorkspaceBridge()) { request in
       try await NumberFormatTool.executeEncoded(request.input, options: request.options)

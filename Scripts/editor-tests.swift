@@ -98,6 +98,15 @@
     check(view.string == multiline && view.selectedRange() == selection)
     print("PASS unchanged editor updates preserve text and selection")
 
+    let couldUndo = view.undoManager?.canUndo
+    host.rootView = CodeEditor(text: Binding(get: { value }, set: { value = $0 }), label: "Translated editor label", language: .json)
+    host.layoutSubtreeIfNeeded()
+    check(editor(in: host) === view)
+    check(view.accessibilityLabel() == "Translated editor label")
+    check(view.string == multiline && view.selectedRange() == selection)
+    check(view.undoManager?.canUndo == couldUndo)
+    print("PASS translated editor labels preserve native identity, text, selection and undo")
+
     for source in ["é", "e\u{301}"] {
       value = source
       host.rootView = CodeEditor(text: Binding(get: { value }, set: { value = $0 }), label: "Editor regression", language: .json)

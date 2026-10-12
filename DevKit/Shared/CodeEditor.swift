@@ -287,6 +287,7 @@ private struct NativeCodeEditor: NSViewRepresentable {
     let scroll = host.scroll
     context.coordinator.parent = self
     guard let view = scroll.documentView as? WorkspaceTextView else { return }
+    if view.accessibilityLabel() != label { view.setAccessibilityLabel(label) }
     guard text.utf16.count <= 131_072 else { return }
     context.coordinator.updatingView = true
     defer { context.coordinator.updatingView = false }

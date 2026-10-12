@@ -1,4 +1,24 @@
 import Foundation
+import Observation
+import Synchronization
+
+/// Synchronous reads are safe in workers; main-thread changes invalidate only
+/// views that read a translation. No view identity or tool session is replaced.
+public final class LanguageSelection: Observable, Sendable {
+  private let storage: Mutex<String>
+  private let registrar = ObservationRegistrar()
+  public init(_ language: String) { storage = Mutex(language) }
+  public var identifier: String {
+    registrar.access(self, keyPath: \.identifier)
+    return storage.withLock { $0 }
+  }
+  @MainActor func select(_ language: String) {
+    guard language != identifier else { return }
+    registrar.withMutation(of: self, keyPath: \.identifier) {
+      storage.withLock { $0 = language }
+    }
+  }
+}
 
 /// An English source message with positional placeholders. Arguments are substituted once,
 /// after lookup, so user input is never interpreted as another translation key.
@@ -31,6 +51,8 @@ public enum L10n {
   public static let preferenceKey = "appLanguage"
   /// Scoped overrides keep tool tests isolated and propagate through async calls.
   @TaskLocal public static var overrideLanguage: String?
+  /// An isolated selection for hosts/tests that must not mutate the app's state.
+  @TaskLocal public static var selectionOverride: LanguageSelection?
   public static let languages: [Language] = {
     guard let directory = Bundle.module.resourceURL?.appendingPathComponent("Resources/Translations"),
       let urls = try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
@@ -41,14 +63,21 @@ public enum L10n {
     }.sorted { $0.id < $1.id }
   }()
   private static let catalogs = Dictionary(uniqueKeysWithValues: languages.map { ($0.id, $0.strings) })
-  /// Fixed for a process lifetime: all windows, menus and cached metadata agree.
-  private static let launchLanguage: String = {
+  private static let selection: LanguageSelection = {
     let explicit = ProcessInfo.processInfo.environment["DEVKIT_LANGUAGE"]
       ?? UserDefaults.standard.string(forKey: preferenceKey)
-    return resolve(preferred: explicit.flatMap { $0 == "system" ? nil : [$0] } ?? Locale.preferredLanguages)
+    return LanguageSelection(resolve(preferred: explicit.flatMap { $0 == "system" ? nil : [$0] } ?? Locale.preferredLanguages))
   }()
-  public static var language: String { overrideLanguage ?? launchLanguage }
+  public static var language: String { overrideLanguage ?? (selectionOverride ?? selection).identifier }
   public static var locale: Locale { Locale(identifier: language) }
+  @MainActor public static func selectLanguage(_ preference: String, systemLanguages: [String]? = nil) {
+    // Locale.preferredLanguages can retain the app's AppleLanguages override.
+    // Read the system domain when returning to Follow System instead.
+    let system = systemLanguages
+      ?? UserDefaults.standard.persistentDomain(forName: UserDefaults.globalDomain)?["AppleLanguages"] as? [String]
+      ?? Locale.preferredLanguages
+    (selectionOverride ?? selection).select(resolve(preferred: preference == "system" ? system : [preference]))
+  }
   public static func resolve(preferred: [String], available: [String]? = nil) -> String {
     let supported = available ?? languages.map(\.id)
     for preference in preferred {

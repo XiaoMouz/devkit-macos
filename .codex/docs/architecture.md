@@ -43,7 +43,7 @@ CLI 的 `list` / `describe` 从 `ToolRegistry` 和 `OptionField` 生成描述，
 
 ## 多语言
 
-`Shared/Localization.swift` 从 Swift Package 的 `Resources/Translations/*.json` 读取语言、显示名称与文案。Swift UI、核心和 JavaScript 引擎共用资源；`Scripts/localization.py` 同步原生菜单与 App Intents 的 string catalogs。英文为源语言和翻译键，新增语言只涉及翻译资源，具体贡献方式、回退与 worker 传递规则见[多语言规范](localization.md)。
+`Shared/Localization.swift` 从 Swift Package 的 `Resources/Translations/*.json` 读取语言、显示名称与文案。Swift UI、核心和 JavaScript 引擎共用资源；`Scripts/localization.py` 同步原生菜单与 App Intents 的 string catalogs。英文为源语言和翻译键，`LanguageSelection` 通过 Observation 让界面实时更新，保留会话与已有结果；执行开始时冻结工作进程语言。新增语言只涉及翻译资源，具体贡献方式、回退与 worker 传递规则见[多语言规范](localization.md)。
 
 ## 模块边界
 

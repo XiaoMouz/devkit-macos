@@ -49,7 +49,6 @@ import OSLog
         output = nil
       }
       if output == nil { elapsed = 0 }
-      bridge.actionTitle = presentation.action
       invalidate()
       refreshLayout()
     }
@@ -64,7 +63,8 @@ import OSLog
   var importFailure: String?
   private(set) var checksumURL: URL?
   private(set) var checksumFileSize: Int64 = 0
-  var status = ""
+  var statusMessage: LocalizedMessage = ""
+  var status: String { L10n.tr(statusMessage) }
   var copied = false
   private(set) var timestampSource = "timestamp"
   var inputTimeZone: TimeZone {
@@ -119,7 +119,7 @@ import OSLog
     self.execute = execute
     self.id = id
     self.bridge = bridge
-    bridge.actionTitle = presentation.action
+    bridge.actionTitleProvider = { [weak self] in self?.presentation.action ?? L10n.tr("Run") }
     bridge.runAction = { [weak self] in self?.run() }
     bridge.copyAction = { [weak self] in self?.copyResult() }
     if presentation.control == .date { input.text = Dates.iso(Date()) }
@@ -158,7 +158,7 @@ import OSLog
       task?.cancel()
       bridge.running = false
     }
-    status = output == nil ? "" : L10n.tr("Content changed. Run again to update the result.")
+    statusMessage = output == nil ? "" : "Content changed. Run again to update the result."
   }
   func cancel() {
     task?.cancel()
@@ -166,7 +166,7 @@ import OSLog
     if bridge.running {
       revision += 1
       bridge.running = false
-      status = L10n.tr("Cancelled")
+      statusMessage = "Cancelled"
     }
   }
   func run() {
@@ -193,28 +193,31 @@ import OSLog
       bridge.running = true
       error = nil
       copied = false
-      status = L10n.tr("Processing…")
+      statusMessage = "Processing…"
       let fileURL = checksumURL
       let checksumOptions = options as? FileChecksumTool.Options
+      let requestedLanguage = L10n.language
       let progress: @Sendable (Int64, Int64) -> Void = { [weak self] read, total in
         Task { @MainActor [weak self] in
           guard let self, self.revision == version, self.bridge.running else { return }
-          self.status = L10n.tr("Read \(ByteCountFormatter.string(fromByteCount: read, countStyle: .file)) / \(ByteCountFormatter.string(fromByteCount: total, countStyle: .file))")
+          self.statusMessage = "Read \(ByteCountFormatter.string(fromByteCount: read, countStyle: .file)) / \(ByteCountFormatter.string(fromByteCount: total, countStyle: .file))"
         }
       }
       task = Task { @MainActor in
         let start = Date()
         do {
-          let result: ToolOutput
-          if let fileURL, let checksumOptions {
-            result = try await FileChecksumTool.stream(fileURL, options: checksumOptions, progress: progress)
-          } else { result = try await execute(request) }
+          let result = try await L10n.$overrideLanguage.withValue(requestedLanguage) {
+            if let fileURL, let checksumOptions {
+              return try await FileChecksumTool.stream(fileURL, options: checksumOptions, progress: progress)
+            }
+            return try await execute(request)
+          }
           guard !Task.isCancelled && version == revision else { return }
           output = result
           resultRevision = version
           elapsed = Date().timeIntervalSince(start)
           bridge.running = false
-          status = L10n.tr("Completed")
+          statusMessage = "Completed"
           task = nil
           completedRun += 1
           refreshLayout()
@@ -224,7 +227,7 @@ import OSLog
           output = nil
           resultRevision = -1
           bridge.running = false
-          status = L10n.tr("Check the input")
+          statusMessage = "Check the input"
           task = nil
         }
       }
@@ -234,10 +237,10 @@ import OSLog
     guard current, let output else { return }
     if metadata.id != "image-metadata", let artifact = imageArtifact {
       copied = Clipboard.copyImage(artifact)
-      status = copied ? L10n.tr("Image Copied") : L10n.tr("Could not copy. Try again.")
+      statusMessage = copied ? "Image Copied" : "Could not copy. Try again."
     } else {
       copied = Clipboard.copy(output.text)
-      status = copied ? L10n.tr("Full Result Copied") : L10n.tr("Could not copy. Try again.")
+      statusMessage = copied ? "Full Result Copied" : "Could not copy. Try again."
     }
   }
   func useExample() {
@@ -293,7 +296,7 @@ import OSLog
     secondaryDrafts.removeAll()
     importFailure = nil
     error = nil
-    status = ""
+    statusMessage = ""
     elapsed = 0
     refreshLayout()
   }
@@ -334,7 +337,7 @@ import OSLog
       return
     }
     invalidate()
-    status = L10n.tr("Reading file…")
+    statusMessage = "Reading file…"
     let version = revision
     Task { @MainActor in
       do {
@@ -365,7 +368,7 @@ import OSLog
         let message = L10n.tr("Could not import “\(url.lastPathComponent)”: \(error.localizedDescription) The current input has not been replaced. Import again or confirm that you want to keep using it.")
         importFailure = message
         self.error = message
-        status = L10n.tr("Read Failed")
+        statusMessage = "Read Failed"
       }
     }
   }
@@ -386,7 +389,7 @@ import OSLog
     panel.canCreateDirectories = true
     present(panel) { [weak self] response in
       guard response == .OK, let url = panel.url else { return }
-      self?.status = L10n.tr("Exporting…")
+      self?.statusMessage = "Exporting…"
       Task { @MainActor in
         do {
           try await Task.detached(priority: .utility) {
@@ -394,7 +397,7 @@ import OSLog
             defer { if access { url.stopAccessingSecurityScopedResource() } }
             try autoreleasepool { try artifact.data.write(to: url, options: .atomic) }
           }.value
-          self?.status = L10n.tr("Exported \(url.lastPathComponent)")
+          self?.statusMessage = "Exported \(url.lastPathComponent)"
         } catch { self?.error = error.localizedDescription }
       }
     }
@@ -410,7 +413,7 @@ import OSLog
     let folderName = "DevKit-\(metadata.id)-\(UUID().uuidString.prefix(8))"
     present(panel) { [weak self] response in
       guard response == .OK, let destination = panel.url else { return }
-      self?.status = L10n.tr("Exporting…")
+      self?.statusMessage = "Exporting…"
       Task { @MainActor in
         do {
           try await Task.detached(priority: .utility) {
@@ -423,7 +426,7 @@ import OSLog
               try artifact.data.write(to: folder.appendingPathComponent(name), options: .atomic)
             }
           }.value
-          self?.status = L10n.tr("Exported to \(folderName) (files: \(artifacts.count))")
+          self?.statusMessage = "Exported to \(folderName) (files: \(artifacts.count))"
         } catch { self?.error = error.localizedDescription }
       }
     }

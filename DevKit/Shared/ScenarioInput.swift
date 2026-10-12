@@ -51,7 +51,7 @@ struct ScenarioInput<T: ToolModule>: View {
       if let failure = session.importFailure {
         VStack(alignment: .leading, spacing: 8) {
           Label(failure, systemImage: "exclamationmark.triangle").foregroundStyle(.orange)
-          Button(L10n.tr("Continue with Current Input")) { session.importFailure = nil; session.error = nil; session.status = "" }
+          Button(L10n.tr("Continue with Current Input")) { session.importFailure = nil; session.error = nil; session.statusMessage = "" }
         }.font(.callout).padding(12).frame(maxWidth: .infinity, alignment: .leading)
       }
       if form.isForm {

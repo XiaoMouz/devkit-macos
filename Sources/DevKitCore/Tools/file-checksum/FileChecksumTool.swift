@@ -26,28 +26,31 @@ public enum FileChecksumTool: ToolModule {
   /// worker's JSON envelope or a full-size in-memory Data allocation.
   public static func stream(_ url: URL, options: Options,
     progress: @escaping @Sendable (Int64, Int64) -> Void = { _, _ in }) async throws -> ToolOutput {
+    let language = L10n.language
     let work = Task.detached(priority: .userInitiated) {
-      let access = url.startAccessingSecurityScopedResource()
-      defer { if access { url.stopAccessingSecurityScopedResource() } }
-      var inspectedURL = url
-      inspectedURL.removeAllCachedResourceValues()
-      let initial = try inspectedURL.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey, .isRegularFileKey])
-      try require(initial.isRegularFile == true, L10n.tr("Choose a regular file."))
-      let total = Int64(initial.fileSize ?? 0)
-      let result: (String, Int64)
-      switch options.algorithm {
-      case "MD5": result = try read(url, hasher: Insecure.MD5(), total: total, progress: progress)
-      case "SHA-1": result = try read(url, hasher: Insecure.SHA1(), total: total, progress: progress)
-      case "SHA-256": result = try read(url, hasher: SHA256(), total: total, progress: progress)
-      case "SHA-512": result = try read(url, hasher: SHA512(), total: total, progress: progress)
-      default: throw ToolFailure(L10n.tr("Invalid digest algorithm."))
+      try L10n.$overrideLanguage.withValue(language) {
+        let access = url.startAccessingSecurityScopedResource()
+        defer { if access { url.stopAccessingSecurityScopedResource() } }
+        var inspectedURL = url
+        inspectedURL.removeAllCachedResourceValues()
+        let initial = try inspectedURL.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey, .isRegularFileKey])
+        try require(initial.isRegularFile == true, L10n.tr("Choose a regular file."))
+        let total = Int64(initial.fileSize ?? 0)
+        let result: (String, Int64)
+        switch options.algorithm {
+        case "MD5": result = try read(url, hasher: Insecure.MD5(), total: total, progress: progress)
+        case "SHA-1": result = try read(url, hasher: Insecure.SHA1(), total: total, progress: progress)
+        case "SHA-256": result = try read(url, hasher: SHA256(), total: total, progress: progress)
+        case "SHA-512": result = try read(url, hasher: SHA512(), total: total, progress: progress)
+        default: throw ToolFailure(L10n.tr("Invalid digest algorithm."))
+        }
+        inspectedURL.removeAllCachedResourceValues()
+        let final = try inspectedURL.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey])
+        try require(result.1 == total && initial.fileSize == final.fileSize
+          && initial.contentModificationDate == final.contentModificationDate,
+          L10n.tr("The file changed while being read. Select it again and recalculate."))
+        return output(result.0, size: result.1, name: url.lastPathComponent, options: options)
       }
-      inspectedURL.removeAllCachedResourceValues()
-      let final = try inspectedURL.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey])
-      try require(result.1 == total && initial.fileSize == final.fileSize
-        && initial.contentModificationDate == final.contentModificationDate,
-        L10n.tr("The file changed while being read. Select it again and recalculate."))
-      return output(result.0, size: result.1, name: url.lastPathComponent, options: options)
     }
     return try await withTaskCancellationHandler { try await work.value } onCancel: { work.cancel() }
   }

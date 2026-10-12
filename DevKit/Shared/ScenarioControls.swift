@@ -88,10 +88,17 @@ private struct NativeTimeZoneMenu: NSViewRepresentable {
   let title: String
   @Binding var selection: String
   @Environment(\.isEnabled) private var isEnabled
-  static let entries = Dates.timeZoneIdentifiers.map { identifier in
-    let zone = TimeZone(identifier: identifier)!
-    let name = zone.localizedName(for: .generic, locale: L10n.locale) ?? identifier
-    return (identifier, name + " · " + identifier)
+  private static var cachedEntries: [String: [(String, String)]] = [:]
+  static var entries: [(String, String)] {
+    let language = L10n.language
+    if let cached = cachedEntries[language] { return cached }
+    let values = Dates.timeZoneIdentifiers.map { identifier in
+      let zone = TimeZone(identifier: identifier)!
+      let name = zone.localizedName(for: .generic, locale: L10n.locale) ?? identifier
+      return (identifier, name + " · " + identifier)
+    }
+    cachedEntries[language] = values
+    return values
   }
   private static let common = Set([TimeZone.current.identifier, "UTC", "Asia/Shanghai", "Asia/Hong_Kong",
     "Asia/Tokyo", "Asia/Singapore", "Europe/London", "Europe/Paris", "America/New_York", "America/Los_Angeles", "Australia/Sydney"])
@@ -110,6 +117,10 @@ private struct NativeTimeZoneMenu: NSViewRepresentable {
     button.isEnabled = isEnabled
     button.setAccessibilityLabel(title)
     button.toolTip = L10n.tr("Choose a time zone from the list. Dates will display in that time zone.")
+    if context.coordinator.language != L10n.language {
+      context.coordinator.language = L10n.language
+      button.removeAllItems()
+    }
     guard button.selectedItem?.representedObject as? String != selection else { return }
     if let item = button.itemArray.first(where: { $0.representedObject as? String == selection }) {
       button.select(item)
@@ -125,6 +136,7 @@ private struct NativeTimeZoneMenu: NSViewRepresentable {
     CGSize(width: max(160, proposal.width ?? 240), height: nsView.intrinsicContentSize.height)
   }
   @MainActor final class Coordinator: NSObject, NSMenuDelegate {
+    var language = ""
     var parent: NativeTimeZoneMenu
     weak var button: NSPopUpButton?
     init(_ parent: NativeTimeZoneMenu) { self.parent = parent }
@@ -234,6 +246,7 @@ private struct NativeDateTimePicker: NSViewRepresentable {
   }
   func updateNSView(_ picker: NSDatePicker, context: Context) {
     context.coordinator.parent = self
+    if picker.locale != L10n.locale { picker.locale = L10n.locale }
     if picker.timeZone != timeZone {
       var calendar = Calendar(identifier: .gregorian)
       calendar.timeZone = timeZone

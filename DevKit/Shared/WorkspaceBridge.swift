@@ -32,7 +32,8 @@ enum WorkspacePane: String, CaseIterable, Identifiable {
 }
 
 @MainActor @Observable final class WorkspaceBridge {
-  var actionTitle = L10n.tr("Run")
+  @ObservationIgnored var actionTitleProvider: (() -> String)?
+  var actionTitle: String { actionTitleProvider?() ?? L10n.tr("Run") }
   var runRequest = 0
   var copyRequest = 0
   var showOptions = false

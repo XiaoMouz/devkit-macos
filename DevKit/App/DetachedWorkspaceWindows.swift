@@ -64,6 +64,19 @@ private struct DetachedWorkspaceRoot<T: ToolModule>: View {
   }
   var body: some View {
     ToolWorkspace(session: session, detachedPane: pane)
+      .environment(\.locale, L10n.locale)
+      .background(DetachedWindowTitle(title: "\(session.metadata.name) · \(pane.title)"))
       .background(WindowCommandScope(actions: actions))
+  }
+}
+
+private struct DetachedWindowTitle: NSViewRepresentable {
+  let title: String
+  func makeNSView(context: Context) -> NSView { NSView() }
+  func updateNSView(_ view: NSView, context: Context) {
+    if let window = view.window { window.title = title }
+    else {
+      DispatchQueue.main.async { [weak view, title] in view?.window?.title = title }
+    }
   }
 }

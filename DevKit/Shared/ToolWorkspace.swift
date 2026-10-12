@@ -389,7 +389,7 @@ struct ToolWorkspace<T: ToolModule>: View {
                 ? String(row.value.prefix(1200)) + L10n.tr("\n…(Copy or export for the full content)") : row.value,
                 language: output.report == nil ? .automatic : .plain, fontSize: fontSize)
                 .textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
-              Button { if Clipboard.copy(row.value) { session.status = L10n.tr("Copied") } } label: { Image(systemName: "doc.on.doc") }
+              Button { if Clipboard.copy(row.value) { session.statusMessage = "Copied" } } label: { Image(systemName: "doc.on.doc") }
                 .buttonStyle(.bordered).buttonBorderShape(.capsule).controlSize(.small)
                 .disabled(!session.current).accessibilityLabel(L10n.tr("Copy ") + row.label)
             }.padding(14)

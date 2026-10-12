@@ -3,13 +3,15 @@ import Foundation
 public struct SpotlightAction: Sendable, Identifiable {
   public let id: String
   public let toolID: String
-  public let name: String
+  public let sourceName: String
+  public var name: String { L10n.text(sourceName) + (operation.map { " · " + SpotlightCatalog.operationTitle($0) } ?? "") }
   public let operation: String?
   public let request: @Sendable (String) throws -> WorkerRequest
 }
 public struct SpotlightTool: Sendable, Identifiable {
   public let id: String
-  public let name: String
+  public let sourceName: String
+  public var name: String { L10n.text(sourceName) }
   public let symbol: String
   public let generator: Bool
   public let actions: [SpotlightAction]
@@ -44,7 +46,7 @@ public enum SpotlightCatalog {
     if let field, case .choice(let choices) = field.kind { operations = choices.filter { T.metadata.id != "json" || !["query", "schema", "diff"].contains($0) }.map(Optional.some) }
     let actions = operations.map { operation in
       SpotlightAction(id: T.metadata.id + ":" + (operation ?? "run"), toolID: T.metadata.id,
-        name: T.metadata.name + (operation.map { " · " + operationTitle($0) } ?? ""), operation: operation,
+        sourceName: T.metadata.sourceName, operation: operation,
         request: { payload in
           var options = T.Options()
           if let operation, let field { field.write(&options, operation) }
@@ -58,10 +60,10 @@ public enum SpotlightCatalog {
           return WorkerRequest(id: T.metadata.id, input: ToolInput(text: activeGenerator ? "" : payload), options: try JSONEncoder().encode(options))
         })
     }
-    return SpotlightTool(id: T.metadata.id, name: T.metadata.name, symbol: T.metadata.symbol,
+    return SpotlightTool(id: T.metadata.id, sourceName: T.metadata.sourceName, symbol: T.metadata.symbol,
       generator: generator, actions: actions)
   }
-  private static func operationTitle(_ operation: String) -> String {
+  fileprivate static func operationTitle(_ operation: String) -> String {
     ["encode":L10n.tr("Encode"), "decode":L10n.tr("Decode"), "format":L10n.tr("Format"), "minify":L10n.tr("Minify"), "validate":L10n.tr("Validate"),
      "parse":L10n.tr("Parse"), "generate":L10n.tr("Generate"), "build":L10n.tr("Build"), "unique":L10n.tr("Remove Duplicates"), "sort":L10n.tr("Sort")][operation] ?? operation
   }
