@@ -20,7 +20,7 @@ export default defineConfig({
       { text: '开始使用', link: '/getting-started' },
       { text: '工具目录', link: '/tools/' },
       { text: 'CLI 与 AI', link: '/cli-and-ai' },
-      { text: 'v0.1.0', link: 'https://github.com/luolayo/devkit-macos/releases/tag/v0.1.0' },
+      { text: '下载', link: 'https://github.com/luolayo/devkit-macos/releases/latest' },
     ],
     sidebar: [
       { text: '开始使用', items: [
@@ -41,7 +41,7 @@ export default defineConfig({
         items: group.tools.map(tool => ({text: tool.name, link: `/tools/${tool.id}`})),
       })) },
       { text: '帮助', items: [
-        { text: '隐私与数据边界', link: '/privacy' },
+        { text: '数据保存', link: '/privacy' },
         { text: '常见问题', link: '/faq' },
         { text: '版本说明', link: '/release-notes' },
       ] },
@@ -59,6 +59,6 @@ export default defineConfig({
     editLink: { pattern: 'https://github.com/luolayo/devkit-macos/edit/main/docs/:path', text: '在 GitHub 上改进此页' },
     returnToTopLabel: '返回顶部', sidebarMenuLabel: '目录', darkModeSwitchLabel: '外观',
     lightModeSwitchTitle: '切换浅色', darkModeSwitchTitle: '切换深色',
-    footer: { message: '在 Mac 上处理开发中的小事。', copyright: 'DevKit for macOS · v0.1.0 使用手册' },
+    footer: { copyright: 'DevKit for macOS' },
   },
 })

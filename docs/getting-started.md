@@ -1,20 +1,14 @@
 # 安装与第一步
 
-DevKit 把常见开发工具放进一个原生 Mac 工作区。先从 Base64 或 JSON 开始，熟悉输入、执行和复制，再按任务查阅[工具目录](tools/index.md)。
+## 安装
 
-## 系统要求与下载
+需要 macOS 26 或更新版本。
 
-- macOS 26 或更新版本。
-- 当前版本为 **v0.1.0**，主界面以中文为主。
-- [下载 v0.1.0 通用版 ZIP](https://github.com/luolayo/devkit-macos/releases/download/v0.1.0/DevKit-v0.1.0-macOS-universal.zip)，同时包含 Apple Silicon 和 Intel 架构。
+1. 从 [Releases](https://github.com/luolayo/devkit-macos/releases/latest) 下载应用压缩包。
+2. 解压后将 `DevKit.app` 放入「应用程序」，双击打开。
+3. 如需使用命令行，在「设置 → CLI 与 AI」中安装，见 [CLI 教程](cli-and-ai.md)。
 
-拿到应用压缩包后，解压并把 `DevKit.app` 放入「应用程序」，再打开它。先固定应用位置，再安装 CLI 和 Skill；这两个入口会链接到应用内的资源。升级时退出应用，替换原位置的应用，重新打开即可。
-
-需要核对下载完整性时，将同一 Release 的 [SHA256SUMS.txt](https://github.com/luolayo/devkit-macos/releases/download/v0.1.0/SHA256SUMS.txt) 与 ZIP 放在同一目录，在该目录运行 `shasum -a 256 -c SHA256SUMS.txt`。
-
-::: info 源码运行
-也可下载源码，在 Xcode 打开 `DevKit.xcodeproj`，选择 **DevKit / My Mac**，配置自己的开发团队，按 **⌘R**。归档和导出通过 Xcode 的 **Product → Archive** 与 Organizer 完成。
-:::
+升级时退出应用，用下载的新版本替换原位置的应用。
 
 ## 第一次转换
 
@@ -26,7 +20,7 @@ DevKit 把常见开发工具放进一个原生 Mac 工作区。先从 Base64 或
 
 ![Base64 将 hello 编码为 aGVsbG8=](/images/base64.png)
 
-示例不会自动执行，修改内容也不会在后台自动转换。输入或选项变化后，旧结果会标为「待更新」，重新执行后才能复制或导出。
+修改输入或选项后，点击顶部主按钮重新执行。
 
 ## 找到常用工具
 
@@ -42,4 +36,4 @@ DevKit 把常见开发工具放进一个原生 Mac 工作区。先从 Base64 或
 
 ## 保存结果与退出
 
-复制和导出都使用完整结果，不受预览截断影响。正文、密钥和工具会话默认只保存在内存中；关闭最后一个关联窗口或退出应用后，先前输入不会自动恢复。需要保留的内容请提前[导出](files.md)。
+需要保留的内容请在退出前[导出](files.md)。应用不会在下次启动时恢复输入和结果。

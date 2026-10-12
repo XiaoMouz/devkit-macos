@@ -1,6 +1,6 @@
 # 网络调试
 
-HTTP、WebSocket 和 DNS 会在主动执行时联网；URL 解析、查询参数和 cURL 转换在本机处理。用你有权访问的测试服务进行调试，示例地址 `example.com` 用于演示。
+使用 HTTP 发送请求、WebSocket 收发消息，或通过 DNS 查询域名记录。
 
 ## 发送 HTTP 请求
 
@@ -34,7 +34,7 @@ devkit run --request request.json --allow-network --format json
 
 ## DNS 查询
 
-输入域名，选择 A、AAAA、MX 等记录类型。解析器留空使用系统默认设置，也可指定解析器 IP 和端口。执行后查看服务器、答案和耗时。单次查询超时为 3 秒，不会自动轮询。
+输入域名，选择 A、AAAA、MX 等记录类型。解析器留空使用系统默认设置，也可指定解析器 IP 和端口。执行后查看服务器、答案和耗时。单次查询超时为 3 秒。
 
 ```sh
 devkit run dns --text example.com --option record=A --allow-network

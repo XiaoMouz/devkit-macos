@@ -5,7 +5,7 @@
       {
         "id": "base64",
         "name": "Base64",
-        "summary": "UTF-8 文本编解码；标准 / URL Safe，支持文本导出。"
+        "summary": "UTF-8 文本的 Base64 编码与解码，支持标准和 URL Safe 格式。"
       },
       {
         "id": "data-url",
@@ -15,7 +15,7 @@
       {
         "id": "url-codec",
         "name": "URL 编解码",
-        "summary": "组件、完整 URL 和表单模式，明确处理空格与加号。"
+        "summary": "URL 参数、完整 URL 和表单内容的编码与解码。"
       }
     ]
   },
@@ -25,7 +25,7 @@
       {
         "id": "json",
         "name": "JSON 工作台",
-        "summary": "格式化、压缩、JSONPath / Pointer、结构对比、Schema 校验与 TypeScript 类型。"
+        "summary": "格式化、压缩、路径查询、结构对比、Schema 校验与 TypeScript 类型生成。"
       }
     ]
   },
@@ -35,27 +35,27 @@
       {
         "id": "file-checksum",
         "name": "文件校验",
-        "summary": "计算文件摘要，并与期望值比较；支持取消。"
+        "summary": "计算文件摘要，并与预期值比较。"
       },
       {
         "id": "hash",
         "name": "哈希摘要",
-        "summary": "MD5 / SHA 摘要；MD5 和 SHA-1 仅用于兼容与校验。"
+        "summary": "计算 MD5、SHA-1、SHA-256 和 SHA-512 摘要。"
       },
       {
         "id": "hmac",
         "name": "HMAC",
-        "summary": "SHA-256 / SHA-512 消息认证码；密钥仅在当前会话中使用。"
+        "summary": "使用密钥计算 SHA-256 或 SHA-512 消息认证码。"
       },
       {
         "id": "jwt",
         "name": "JWT 工作台",
-        "summary": "解析 Header / Payload；可选 HS256 验签，解析不代表可信。"
+        "summary": "解析 JWT Header、Payload，并支持 HS256 验签。"
       },
       {
         "id": "pem-certificate",
         "name": "PEM 与证书",
-        "summary": "本地 X.509 证书主题、有效期与 SHA-256 指纹。"
+        "summary": "查看 X.509 证书的主题、有效期和 SHA-256 指纹。"
       }
     ]
   },
@@ -65,32 +65,32 @@
       {
         "id": "mock-data",
         "name": "Mock 数据",
-        "summary": "字段模板生成 JSON / CSV；按种子生成可复现测试数据。"
+        "summary": "根据字段模板生成 JSON 或 CSV 测试数据。"
       },
       {
         "id": "nanoid",
         "name": "Nano ID",
-        "summary": "安全随机与无偏采样，可自定义 Unicode 字符集。"
+        "summary": "按长度和字符集生成 Nano ID。"
       },
       {
         "id": "qr-code",
         "name": "二维码",
-        "summary": "文本生成 QR，或选择图片识别；PNG 导出。"
+        "summary": "生成二维码 PNG，或从图片中识别二维码。"
       },
       {
         "id": "random-string",
         "name": "随机字符串",
-        "summary": "使用系统安全随机源，自定义字符集与批量生成。"
+        "summary": "按字符集、长度和数量生成随机字符串。"
       },
       {
         "id": "ulid",
         "name": "ULID",
-        "summary": "Crockford Base32，48 位毫秒时间戳与 80 位安全随机数。"
+        "summary": "生成 ULID，或解析其中的时间。"
       },
       {
         "id": "uuid",
         "name": "UUID",
-        "summary": "RFC 9562 UUID v4 / v7，支持批量与大小写。"
+        "summary": "生成 UUID v4 或 v7，支持批量、大小写与连字符设置。"
       }
     ]
   },
@@ -100,22 +100,22 @@
       {
         "id": "markdown",
         "name": "Markdown",
-        "summary": "本地预览和 HTML 导出；移除脚本与外部资源。"
+        "summary": "预览 Markdown，导出 HTML。"
       },
       {
         "id": "regex",
         "name": "正则测试",
-        "summary": "ECMAScript 正则、捕获组和替换预览；独立进程可取消。"
+        "summary": "测试 ECMAScript 正则表达式，查看捕获组和替换结果。"
       },
       {
         "id": "text-case",
         "name": "命名与大小写",
-        "summary": "camelCase、PascalCase、snake_case 与 kebab-case。"
+        "summary": "转换 camelCase、PascalCase、snake_case、kebab-case 和大小写。"
       },
       {
         "id": "text-diff",
         "name": "文本对比",
-        "summary": "逐行比较，保留两份输入，输出增删行。"
+        "summary": "逐行比较两份文本，查看增加与删除的内容。"
       },
       {
         "id": "text-lines",
@@ -125,12 +125,12 @@
       {
         "id": "text-replace",
         "name": "查找替换",
-        "summary": "普通文本或 ECMAScript 正则，保留原文并预览结果。"
+        "summary": "使用普通文本或正则表达式查找替换。"
       },
       {
         "id": "text-stats",
         "name": "文本统计",
-        "summary": "区分字素、Unicode 码点、UTF-16 和 UTF-8 字节。"
+        "summary": "统计字符、Unicode 码点、UTF-16、UTF-8 字节与行数。"
       }
     ]
   },
@@ -140,32 +140,32 @@
       {
         "id": "cron",
         "name": "Cron",
-        "summary": "五字段 Cron，预览后续执行时间，不注册系统任务。"
+        "summary": "根据五字段 Cron 表达式查询后续执行时间。"
       },
       {
         "id": "date-time",
         "name": "日期与时区",
-        "summary": "日期时间选择、时区转换、日期加减与时间差。"
+        "summary": "时区转换、日期加减与时间差计算。"
       },
       {
         "id": "number-base",
         "name": "进制转换",
-        "summary": "基于大整数精确转换，支持正负数；不隐式套用补码。"
+        "summary": "整数进制转换，支持大整数和负数。"
       },
       {
         "id": "number-format",
         "name": "数字格式",
-        "summary": "Decimal 十进制舍入与千分位，最多 38 位有效数字。"
+        "summary": "设置小数位、舍入方式和千分位。"
       },
       {
         "id": "timestamp",
         "name": "时间戳",
-        "summary": "Unix 秒 / 毫秒与日期时间互转，按所选时区显示。"
+        "summary": "Unix 秒、毫秒与日期时间互转。"
       },
       {
         "id": "unit-convert",
         "name": "单位转换",
-        "summary": "文件大小、时长和速率，明确 SI 与 IEC。"
+        "summary": "文件大小、时长和速率换算。"
       }
     ]
   },
@@ -175,47 +175,47 @@
       {
         "id": "cookie",
         "name": "Cookie",
-        "summary": "Cookie / Set-Cookie 字段解析，不修改浏览器。"
+        "summary": "解析 Cookie 和 Set-Cookie 字段。"
       },
       {
         "id": "curl-convert",
         "name": "cURL 转换",
-        "summary": "静态解析常用 cURL 参数，输出 fetch；不执行 Shell。"
+        "summary": "将 cURL 命令转换为 fetch 代码或 JSON。"
       },
       {
         "id": "dns",
         "name": "DNS 查询",
-        "summary": "调用系统 dig；A / AAAA / CNAME / MX / TXT / NS，手动执行。"
+        "summary": "查询 A、AAAA、CNAME、MX、TXT 等 DNS 记录。"
       },
       {
         "id": "http-client",
         "name": "HTTP 调试",
-        "summary": "显式发送请求；响应、状态与耗时仅留在当前会话。"
+        "summary": "发送 HTTP 请求，查看响应正文、状态码、请求耗时与响应头。"
       },
       {
         "id": "http-status",
         "name": "HTTP 状态码",
-        "summary": "本地查询 HTTP 状态含义；不发送请求。"
+        "summary": "查询 HTTP 状态码的名称和含义。"
       },
       {
         "id": "mime-types",
         "name": "MIME 类型",
-        "summary": "通过系统 Uniform Type 数据库查询扩展名或 MIME。"
+        "summary": "查询扩展名与 MIME 类型。"
       },
       {
         "id": "query-string",
         "name": "查询参数",
-        "summary": "保留重复键和空值，JSON 键值对与查询字符串互转。"
+        "summary": "解析、生成和排序查询参数，保留重复键与空值。"
       },
       {
         "id": "url-parser",
         "name": "URL 解析",
-        "summary": "分解协议、主机、端口、路径、查询与片段。"
+        "summary": "查看 URL 的协议、主机、端口、路径、查询和片段。"
       },
       {
         "id": "websocket",
         "name": "WebSocket 调试",
-        "summary": "手动连接、发送与接收，断开后不保存会话。"
+        "summary": "连接 WebSocket 服务，发送消息并查看收发记录。"
       }
     ]
   },
@@ -225,17 +225,17 @@
       {
         "id": "color",
         "name": "颜色转换",
-        "summary": "sRGB HEX / RGB / HSL 与透明度，结果点一下复制。"
+        "summary": "转换 HEX、RGB、HSL 颜色值与透明度。"
       },
       {
         "id": "contrast",
         "name": "颜色对比度",
-        "summary": "WCAG 2.2 相对亮度对比值，普通和大号文字分开。"
+        "summary": "计算前景色与背景色的对比度，查看 WCAG AA / AAA 结果。"
       },
       {
         "id": "css-unit",
         "name": "CSS 单位",
-        "summary": "px / rem / em / vw / vh，基准尺寸明确可调。"
+        "summary": "在 px、rem、em、vw 和 vh 之间换算。"
       }
     ]
   },
@@ -245,42 +245,42 @@
       {
         "id": "code-format",
         "name": "代码格式化",
-        "summary": "Prettier 格式化 JS / TS / HTML / CSS；SQL 可选方言。"
+        "summary": "格式化 JavaScript、TypeScript、HTML、CSS 和 SQL。"
       },
       {
         "id": "code-minify",
         "name": "代码压缩",
-        "summary": "使用解析器压缩 JS / CSS / HTML，不执行输入代码。"
+        "summary": "压缩 JavaScript、CSS 和 HTML。"
       },
       {
         "id": "favicon",
         "name": "网站图标",
-        "summary": "从图片生成常用 PNG 尺寸与 ICO；原文件不覆盖。"
+        "summary": "从图片生成多尺寸 PNG 和 ICO 网站图标。"
       },
       {
         "id": "image-compress",
         "name": "图片压缩",
-        "summary": "JPEG 有损质量与目标大小；原文件不覆盖。"
+        "summary": "调整 JPEG 质量，或按目标体积压缩图片。"
       },
       {
         "id": "image-convert",
         "name": "图片格式转换",
-        "summary": "系统编码器转换 PNG / JPEG / HEIC；首帧，默认移除元数据。"
+        "summary": "在 PNG、JPEG 和 HEIC 格式之间转换。"
       },
       {
         "id": "image-metadata",
         "name": "图片信息",
-        "summary": "查看尺寸、EXIF 与色彩信息；可导出移除元数据的新 PNG。"
+        "summary": "查看图片尺寸、EXIF 和色彩信息，或移除元数据。"
       },
       {
         "id": "image-resize",
         "name": "图片尺寸",
-        "summary": "缩放或居中裁剪到目标尺寸；PNG 导出。"
+        "summary": "等比缩放、填充画布或居中裁剪图片。"
       },
       {
         "id": "svg",
         "name": "SVG 工作台",
-        "summary": "清理脚本与外部引用，优化 SVG 并在受限视图预览。"
+        "summary": "优化 SVG 源码并预览图形。"
       }
     ]
   }
