@@ -40,7 +40,7 @@ struct SpotlightToolActionQuery: EntityStringQuery {
 }
 struct DevKitCommandIntent: AppIntent {
   static let title: LocalizedStringResource = "DevKit Command"
-  static let description = IntentDescription("Use an enabled tool’s command alias, such as b64 encode hello. Edit aliases in DevKit settings.")
+  static let description = IntentDescription("Enter a command for an enabled tool, such as base64 encode hello. See command examples in DevKit settings.")
   static var supportedModes: IntentModes { .background }
   @Parameter(title: "Command") var command: String
   static var parameterSummary: some ParameterSummary { Summary("DevKit Command \(\.$command)") }

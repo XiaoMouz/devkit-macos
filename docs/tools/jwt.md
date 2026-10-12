@@ -1,12 +1,12 @@
 # JWT 工作台
 
-解析 JWT Header、Payload，并支持 HS256 验签。
+解析 JWT 头部与载荷，并支持 HS256 验签。
 
 CLI：`jwt`
 
 ## 使用方法
 
-粘贴三段式 JWT，先解码 Header 和 Payload。需要 HS256 验签时启用验签并输入密钥；分别检查签名结论和 exp / nbf 时间状态。示例令牌仅用于解码演示。
+粘贴三段式 JWT，先解码头部和载荷。需要 HS256 验签时启用验签并输入密钥；分别检查签名结论和 exp / nbf 时间状态。示例令牌仅用于解码演示。
 
 ## 示例
 
@@ -16,7 +16,7 @@ CLI：`jwt`
 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkFkYSJ9.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 ```
 
-该样例的签名是演示占位内容。默认用于查看 Header/Payload，不代表验签通过。
+该样例的签名是演示占位内容。默认用于查看头部与载荷，不代表验签通过。
 
 ## 参数参考
 

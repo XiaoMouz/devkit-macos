@@ -6,37 +6,39 @@
 
 1. 打开「设置 → Spotlight」。
 2. 打开启用总开关，再开启需要的工具。
-3. 按页面引导在系统 Spotlight 绑定快捷短语。
+3. 每个工具页提供命令示例和支持的操作；首次使用、快捷短语及常见问题统一放在右上角「Spotlight 使用帮助」。
 
-![Spotlight 设置中的工具开关与快捷短语说明](/images/spotlight-settings.png)
+从源码运行时，Xcode 启动的是 **DevKit Debug**，与安装的 DevKit 正式版分别保存设置和 Spotlight 索引。测试时请选择来源为 DevKit Debug 的动作，正式版无需删除。系统动作需要有效的开发者签名。快捷短语由用户在系统 Spotlight 中管理，DevKit 不提供快捷短语或命令别名编辑框。
 
-从源码运行时，系统动作需要有效的开发者签名。快捷短语在 Spotlight 中单独设置。
-
-## Base64 首次绑定
+## Base64 首次使用
 
 1. 按 `⌘Space` 打开 Spotlight，再按 `⌘3` 进入操作列表。
 2. 搜索 **Base64 命令**，确认来源为 DevKit。
-3. 点击动作旁的「添加快捷短语」，填写 `base64`。
-4. 之后尝试 `base64 encode 123`，预期结果为 `MTIz`；`base64 decode MTIz` 则还原 `123`。
+3. 选择动作，在参数栏输入 `编码 hello`，预期结果为 `aGVsbG8=`；输入 `解码 aGVsbG8=` 则还原 `hello`。
 
-不设置快捷短语时，也可以先选择「Base64 命令」，在命令栏输入 `encode 123`。希望逐步选择操作时，搜索「Base64 编码或解码」。
+快捷短语是可选的。在 Spotlight 中点击动作旁的「添加快捷短语」，填写 `base64`，之后就可以输入 `base64 编码 hello`。希望逐步选择操作时，搜索「Base64 编码或解码」。
 
 如果只看到「搜索网页」或「搜索 iCloud 云盘」，说明还在普通搜索，没有进入 DevKit 动作。
 
-## 通用入口与别名
+## 通用入口与命令语言
 
-选择「DevKit 命令」，输入完整工具命令；也可以给这个动作设置 `dk` 快捷短语。引导式入口叫「DevKit 工具操作」。
+选择「DevKit 命令」，输入完整工具命令；也可以在 Spotlight 为这个动作设置 `dk` 快捷短语，再输入 `dk` 加完整命令。引导式入口叫「DevKit 工具操作」。
 
-应用内别名以逗号分隔，不得与其他工具冲突；它不会更改系统快捷短语，原工具 ID 始终可用。下面的 `b64` 需要先配置为 Base64 的应用内别名：
+命令示例跟随应用语言。中文可输入「编码」「解码」「格式化」等操作，英文仍使用 `encode`、`decode`、`format`。工具名和算法名保持不变，例如 `base64`、`MD5`。命名格式也支持中文操作词，例如 `text-case 小驼峰 hello world`、`case 大写 hello world`；`camelCase`、`UPPERCASE` 等原始格式值继续兼容。
 
 ```text
-b64 encode hello
-base64 dec aGVsbG8=
+base64 编码 hello
+base64 解码 aGVsbG8=
+json 格式化 {"hello":"world"}
 uuid 3
 hash MD5 hello
 ```
 
-`b64 encode --` 表示空文本；`b64 encode --  hello` 会保留 `hello` 前的一个空格。含空白的输入应按该命令入口的约定填写。
+英文命令和原有简写仍可使用，例如 `base64 encode hello`、`b64 dec aGVsbG8=`。旧版本保存的自定义命令别名继续兼容。
+
+`base64 编码 --` 表示空文本；`base64 编码 --  hello` 会保留 `hello` 前的一个空格。输入正文的 Unicode、空格和尾部换行不会被翻译或清理。
+
+目前随应用提供中文和英文；新增翻译资源后，对应语言的操作词会自动用于命令解析。切换语言后，已支持语言的命令仍可使用，避免系统缓存的动作说明与应用语言暂时不一致。
 
 ## 关闭和排查
 

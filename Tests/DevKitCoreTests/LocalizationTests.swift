@@ -82,6 +82,54 @@ struct LocalizationTests {
     }
   }
 
+  @Test func everyToolMetadataAndFieldLabelUsesContributedTranslations() {
+    for tool in ToolRegistry.all { checkTranslatedFields(tool) }
+  }
+  private func checkTranslatedFields<T: ToolModule>(_ tool: T.Type) {
+    let sourceFields = L10n.$overrideLanguage.withValue("en") { T.fields }
+    // Product/format names are deliberately invariant; descriptions and field labels are not.
+    let invariantNames: Set<String> = ["ULID", "HMAC", "Nano ID", "Data URL", "Markdown", "Base64", "Cookie", "UUID", "Cron"]
+    for language in L10n.languages {
+      L10n.$overrideLanguage.withValue(language.id) {
+        #expect(invariantNames.contains(T.metadata.sourceName) || language.strings[T.metadata.sourceName] != nil,
+          "Missing tool name: \(T.metadata.id) / \(T.metadata.sourceName)")
+        #expect(language.strings[T.metadata.sourceSummary] != nil)
+        for field in T.fields {
+          guard let source = sourceFields.first(where: { $0.id == field.id }) else {
+            Issue.record("Field identity changed with language: \(T.metadata.id) / \(field.id)")
+            continue
+          }
+          #expect(language.strings[source.label] != nil, "Missing field label: \(T.metadata.id) / \(source.label)")
+          #expect(field.label == L10n.text(source.label), "Untranslated field: \(T.metadata.id) / \(field.id)")
+        }
+      }
+    }
+  }
+
+  @Test func securityResultLabelsTranslateWithoutChangingTokenOrCertificateData() async throws {
+    let certificateURL = try #require(Bundle.module.url(forResource: "certificate", withExtension: "pem", subdirectory: "Fixtures"))
+    let pem = try String(contentsOf: certificateURL, encoding: .utf8)
+    for (language, headerTitle, payloadTitle, subjectTitle) in [
+      ("zh-Hans", "头部", "载荷", "证书主体"), ("en", "Header", "Payload", "Certificate Subject"),
+    ] {
+      try await L10n.$overrideLanguage.withValue(language) {
+        let header = Data(#"{"alg":"HS256","typ":"JWT"}"#.utf8).base64EncodedString()
+        let payload = Data(#"{"Header":"Payload","name":"你好"}"#.utf8).base64EncodedString()
+        let output = try await JwtTool.execute(.init(text: header + "." + payload + ".AA"), options: .init())
+        #expect(output.rows[0].label == headerTitle)
+        #expect(output.rows[1].label == payloadTitle)
+        #expect(output.rows[0].value.contains("HS256"))
+        #expect(output.rows[1].value.contains("\"Header\""))
+        #expect(output.rows[1].value.contains("\"Payload\""))
+        #expect(output.rows[1].value.contains("你好"))
+        let certificate = try await PemCertificateTool.execute(.init(text: pem), options: .init())
+        #expect(certificate.rows.first?.label == subjectTitle)
+        #expect(certificate.rows.first?.value == "devkit-fixture.test")
+        #expect(certificate.rows.contains { $0.label == "SHA-256" })
+      }
+    }
+  }
+
   @Test func englishExecutionPreservesUserDataAndStructuredErrorLocations() async throws {
     try await L10n.$overrideLanguage.withValue("en") {
       let original = "你好，世界 {0} %@\n"

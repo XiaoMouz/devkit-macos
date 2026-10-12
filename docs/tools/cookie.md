@@ -6,7 +6,7 @@ CLI：`cookie`
 
 ## 使用方法
 
-选择 Cookie 或 Set-Cookie 模式，粘贴请求 Cookie 或响应 Set-Cookie 文本后解析。多行 Set-Cookie 会保留属性，Expires 中的逗号不会当成条目分隔。
+选择“Cookie 请求头”或“Set-Cookie 响应头”模式，粘贴请求 Cookie 或响应 Set-Cookie 文本后解析。多行 Set-Cookie 会保留属性，Expires 中的逗号不会当成条目分隔。
 
 ## 示例
 

@@ -13,7 +13,7 @@ public enum Base64Tool: ToolModule {
   public static var fields: [OptionField<Options>] {
     [
       .init("operation", L10n.tr("Operation"), \.operation, choices: ["encode", "decode"]),
-      .init("urlSafe", "URL Safe", \.urlSafe),
+      .init("urlSafe", L10n.tr("URL Safe"), \.urlSafe),
       .init("padding", L10n.tr("Keep Encoding Padding"), \.padding),
     ]
   }

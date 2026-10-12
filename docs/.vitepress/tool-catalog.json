@@ -5,7 +5,7 @@
       {
         "id": "base64",
         "name": "Base64",
-        "summary": "UTF-8 文本的 Base64 编码与解码，支持标准和 URL Safe 格式。"
+        "summary": "UTF-8 文本的 Base64 编码与解码，支持标准和 URL 安全模式。"
       },
       {
         "id": "data-url",
@@ -50,12 +50,12 @@
       {
         "id": "jwt",
         "name": "JWT 工作台",
-        "summary": "解析 JWT Header、Payload，并支持 HS256 验签。"
+        "summary": "解析 JWT 头部与载荷，并支持 HS256 验签。"
       },
       {
         "id": "pem-certificate",
         "name": "PEM 与证书",
-        "summary": "查看 X.509 证书的主题、有效期和 SHA-256 指纹。"
+        "summary": "查看 X.509 证书的主体、有效期和 SHA-256 指纹。"
       }
     ]
   },
@@ -110,7 +110,7 @@
       {
         "id": "text-case",
         "name": "命名与大小写",
-        "summary": "转换 camelCase、PascalCase、snake_case、kebab-case 和大小写。"
+        "summary": "转换为小驼峰、大驼峰、下划线、短横线命名，或统一大写、小写。"
       },
       {
         "id": "text-diff",

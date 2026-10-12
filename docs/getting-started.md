@@ -33,7 +33,7 @@
 | 格式化、比较或检查 JSON | [JSON 八种操作](guides/json.md) |
 | 调试 API、WebSocket 或 DNS | [网络调试](guides/network.md) |
 | 改图片尺寸、格式和网站图标 | [图片与网站图标](guides/images.md) |
-| 在终端或 AI 中调用工具 | [CLI 与 AI Skill](cli-and-ai.md) |
+| 在终端或 AI 中调用工具 | [CLI 与 AI 技能](cli-and-ai.md) |
 | 同时查看输入与结果 | [工作区与多窗口](workspace.md) |
 
 ## 保存结果与退出

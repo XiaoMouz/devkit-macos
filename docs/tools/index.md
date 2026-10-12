@@ -6,7 +6,7 @@
 
 | 工具 | 用途 |
 | --- | --- |
-| [Base64](base64.md) | UTF-8 文本的 Base64 编码与解码，支持标准和 URL Safe 格式。 |
+| [Base64](base64.md) | UTF-8 文本的 Base64 编码与解码，支持标准和 URL 安全模式。 |
 | [Data URL](data-url.md) | 图片与 Data URL 互转。 |
 | [URL 编解码](url-codec.md) | URL 参数、完整 URL 和表单内容的编码与解码。 |
 
@@ -23,8 +23,8 @@
 | [文件校验](file-checksum.md) | 计算文件摘要，并与预期值比较。 |
 | [哈希摘要](hash.md) | 计算 MD5、SHA-1、SHA-256 和 SHA-512 摘要。 |
 | [HMAC](hmac.md) | 使用密钥计算 SHA-256 或 SHA-512 消息认证码。 |
-| [JWT 工作台](jwt.md) | 解析 JWT Header、Payload，并支持 HS256 验签。 |
-| [PEM 与证书](pem-certificate.md) | 查看 X.509 证书的主题、有效期和 SHA-256 指纹。 |
+| [JWT 工作台](jwt.md) | 解析 JWT 头部与载荷，并支持 HS256 验签。 |
+| [PEM 与证书](pem-certificate.md) | 查看 X.509 证书的主体、有效期和 SHA-256 指纹。 |
 
 ## 标识与测试数据
 
@@ -43,7 +43,7 @@
 | --- | --- |
 | [Markdown](markdown.md) | 预览 Markdown，导出 HTML。 |
 | [正则测试](regex.md) | 测试 ECMAScript 正则表达式，查看捕获组和替换结果。 |
-| [命名与大小写](text-case.md) | 转换 camelCase、PascalCase、snake_case、kebab-case 和大小写。 |
+| [命名与大小写](text-case.md) | 转换为小驼峰、大驼峰、下划线、短横线命名，或统一大写、小写。 |
 | [文本对比](text-diff.md) | 逐行比较两份文本，查看增加与删除的内容。 |
 | [文本行处理](text-lines.md) | 排序、去重、去空行、编号和添加前后缀。 |
 | [查找替换](text-replace.md) | 使用普通文本或正则表达式查找替换。 |

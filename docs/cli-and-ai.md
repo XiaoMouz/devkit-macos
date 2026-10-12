@@ -1,23 +1,23 @@
-# CLI 与 AI Skill
+# CLI 与 AI 技能
 
-使用 `devkit` 命令查询工具、处理文件，或接入 AI Skill。
+使用 `devkit` 命令查询工具、处理文件，或接入 AI 技能。
 
 ## 安装
 
-![CLI 与 AI Skill 安装设置](/images/cli-settings.png)
+![CLI 与 AI 技能安装设置](/images/cli-settings.png)
 
 1. 打开 DevKit「设置 → CLI 与 AI」，点击「安装 CLI」。
 2. 安装完成后新开终端，直接使用 `devkit`。已有终端需要重开以读取新配置。
-3. 按需点击 Codex 或 Claude Code 的「安装 Skill」，重新打开 AI 会话后使用 `devkit` Skill。
+3. 按需点击 Codex 或 Claude Code 的「安装技能」，重新打开 AI 会话后使用 `devkit` 技能。
 
 命令安装到 `~/.local/bin/devkit`，支持为 zsh 和 bash 配置 PATH。移动应用后，在设置中点击「更新链接」。
 
-Codex Skill 安装到 `~/.codex/skills/devkit`，Claude Code 使用 `~/.claude/skills/devkit`。其他 AI 可通过「查看 Skill 文件」取得 `SKILL.md`，放入相应目录。
+Codex 技能安装到 `~/.codex/skills/devkit`，Claude Code 使用 `~/.claude/skills/devkit`。其他 AI 可通过「查看技能文件」取得 `SKILL.md`，放入相应目录。
 
 ::: details 自定义目录与卸载
-配置了绝对路径 `CODEX_HOME` 时，Codex Skill 使用该路径下的 `skills` 目录。zsh 的配置位置遵循应用环境中的 `ZDOTDIR`。
+配置了绝对路径 `CODEX_HOME` 时，Codex 技能使用该路径下的 `skills` 目录。zsh 的配置位置遵循应用环境中的 `ZDOTDIR`。
 
-卸载时删除设置页显示的 CLI / Skill 链接，并移除 Shell 配置中带 DevKit 标记的 PATH 块。
+卸载时删除设置页显示的 CLI / 技能链接，并移除 Shell 配置中带 DevKit 标记的 PATH 块。
 :::
 
 ## 发现工具

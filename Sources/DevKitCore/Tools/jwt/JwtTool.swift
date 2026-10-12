@@ -39,7 +39,7 @@ public enum JwtTool: ToolModule {
       if key == "nbf", now < number.doubleValue { temporalIssues.append(L10n.tr("Not Yet Valid")) }
     }
     var rows = [
-      ResultRow("Header", try prettyJSON(header)), ResultRow("Payload", try prettyJSON(payload)),
+      ResultRow(L10n.tr("Header"), try prettyJSON(header)), ResultRow(L10n.tr("Payload"), try prettyJSON(payload)),
     ]
     var state = L10n.tr("Signature not verified. Do not trust a token based only on its parsed content.")
     var verification: ResultReport?

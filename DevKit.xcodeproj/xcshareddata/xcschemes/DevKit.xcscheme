@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "AAD0EABBE4B8F0FA74B8C455"
-               BuildableName = "DevKit.app"
+               BuildableName = "DevKit Debug.app"
                BlueprintName = "DevKit"
                ReferencedContainer = "container:DevKit.xcodeproj">
             </BuildableReference>
@@ -31,7 +31,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "AAD0EABBE4B8F0FA74B8C455"
-            BuildableName = "DevKit.app"
+            BuildableName = "DevKit Debug.app"
             BlueprintName = "DevKit"
             ReferencedContainer = "container:DevKit.xcodeproj">
          </BuildableReference>
@@ -54,7 +54,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "AAD0EABBE4B8F0FA74B8C455"
-            BuildableName = "DevKit.app"
+            BuildableName = "DevKit Debug.app"
             BlueprintName = "DevKit"
             ReferencedContainer = "container:DevKit.xcodeproj">
          </BuildableReference>
@@ -71,7 +71,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "AAD0EABBE4B8F0FA74B8C455"
-            BuildableName = "DevKit.app"
+            BuildableName = "DevKit Debug.app"
             BlueprintName = "DevKit"
             ReferencedContainer = "container:DevKit.xcodeproj">
          </BuildableReference>

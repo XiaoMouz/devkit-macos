@@ -6,8 +6,17 @@ public enum TextCaseTool: ToolModule {
     public init() {}
   }
   public static let metadata = ToolMetadata(
-    "text-case", "Naming and Case", .text, "camelCase, PascalCase, snake_case, and kebab-case.",
+    "text-case", "Naming and Case", .text, "Convert text to camel case, Pascal case, snake case, kebab case, uppercase, or lowercase.",
     sample: "helloWorld HTTPServer", secondary: "", input: .text, network: false)
+  /// Shared by app controls and Spotlight; option values remain stable for saved requests and the CLI.
+  public static let modeTitleKeys = [
+    "camelCase": "Camel Case", "PascalCase": "Pascal Case",
+    "snake_case": "Snake Case", "kebab-case": "Kebab Case",
+    "UPPERCASE": "Uppercase", "lowercase": "Lowercase",
+  ]
+  public static func modeTitle(_ value: String, language: String? = nil) -> String? {
+    modeTitleKeys[value].map { L10n.text($0, language: language) }
+  }
   public static var fields: [OptionField<Options>] {
     [
       .init(

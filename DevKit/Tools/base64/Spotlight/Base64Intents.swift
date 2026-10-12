@@ -12,7 +12,7 @@ struct Base64CommandIntent: AppIntent {
   static let isDiscoverable = true
   static let title: LocalizedStringResource = "Base64 Command"
   static let description = IntentDescription(
-    "Set the Quick Key base64 for this action, then enter base64 encode 123. You can also select the action and enter encode 123.",
+    "Enter encode hello or decode aGVsbG8=. You can also include the tool name: base64 encode hello.",
     searchKeywords: ["base64", "b64", "Encode", "Decode"], resultValueName: "Base64 Result")
   static var supportedModes: IntentModes { .background }
   @Parameter(title: "Command", description: "encode hello / decode aGVsbG8=") var command: String

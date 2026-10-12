@@ -30,8 +30,23 @@ print('PASS: 4 discoverable background actions, complete parameter summaries and
 # Every contributed locale must reach the native resources, including App Intents
 # and App Shortcuts, with the same English keys as the runtime JSON catalogs.
 translations = Path(__file__).resolve().parent.parent / 'Sources/DevKitCore/Resources/Translations'
+# Check what compiled metadata actually references, so adding a title, enum case,
+# parameter or summary without a translation cannot pass a catalog-only check.
+def localization_keys(value):
+    if isinstance(value, dict):
+        for key, child in value.items():
+            if key in ('key', 'formatString') and isinstance(child, str):
+                yield child
+            yield from localization_keys(child)
+    elif isinstance(value, list):
+        for child in value:
+            yield from localization_keys(child)
+
+metadata_keys = set(localization_keys(metadata)) - {'base64', 'b64'}  # literal search aliases
 for path in sorted(translations.glob('*.json')):
     catalog = json.loads(path.read_text())
+    missing = metadata_keys - catalog['strings'].keys()
+    assert not missing, f"Missing metadata translations: {catalog['id']} / {sorted(missing)}"
     for table, shortcuts in [('Localizable', False), ('AppShortcuts', True)]:
         resource = args.app / 'Contents/Resources' / (catalog['id'] + '.lproj') / (table + '.strings')
         values = json.loads(subprocess.check_output(['plutil', '-convert', 'json', '-o', '-', str(resource)]))

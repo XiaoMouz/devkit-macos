@@ -56,10 +56,15 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.devkit.macos
         PRODUCT_NAME: DevKit
+        PRODUCT_MODULE_NAME: DevKit
         INFOPLIST_FILE: DevKit/Resources/Info.plist
         GENERATE_INFOPLIST_FILE: NO
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         SWIFT_EMIT_LOC_STRINGS: NO
+      configs:
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: app.devkit.macos.debug
+          PRODUCT_NAME: DevKit Debug
     postBuildScripts:
       - name: Embed command-line helpers
         script: |

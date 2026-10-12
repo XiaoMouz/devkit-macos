@@ -9,7 +9,6 @@ import Observation
   private final class Binding: NSObject {
     let key: String
     var rendered: String
-    var overridesAccessibilityTitle = false
     init(key: String, rendered: String) { self.key = key; self.rendered = rendered }
   }
   private let bindings = NSMapTable<NSMenuItem, Binding>.weakToStrongObjects()
@@ -33,13 +32,8 @@ import Observation
   @objc private func menuChanged(_ notification: Notification) {
     guard !applying else { return }
     if let menu = notification.object as? NSMenu, !belongsToMainMenu(menu) { return }
-    if notification.name == NSMenu.didBeginTrackingNotification
-      || notification.name == NSMenu.didChangeItemNotification {
-      // Validation can restore native titles while a menu is tracking. The
-      // normal dispatch queue may not run until it closes, so update titles now.
-      if let menu = NSApp.mainMenu { apply(to: menu) }
-      return
-    }
+    // AppKit can post item changes while holding its key-equivalent lock.
+    // Mutating/inspecting menus in that callback can reenter menu population.
     schedule()
   }
   private func observeLanguage() {
@@ -58,10 +52,14 @@ import Observation
   private func schedule() {
     guard !scheduled else { return }
     scheduled = true
-    DispatchQueue.main.async { [weak self] in
-      guard let self else { return }
-      self.scheduled = false
-      if let menu = NSApp.mainMenu { self.apply(to: menu) }
+    // Common modes also run while a menu is tracking, without updating it
+    // synchronously inside AppKit's notification/validation call stack.
+    RunLoop.main.perform(inModes: [.common]) { [weak self] in
+      MainActor.assumeIsolated {
+        guard let self else { return }
+        self.scheduled = false
+        if let menu = NSApp.mainMenu { self.apply(to: menu) }
+      }
     }
   }
 
@@ -103,18 +101,18 @@ import Observation
     let title = L10n.text(key)
     let previous = bindings.object(forKey: item)
     let binding = previous?.key == key ? previous! : Binding(key: key, rendered: "")
-    if previous?.overridesAccessibilityTitle == true { binding.overridesAccessibilityTitle = true }
-    let refreshOverride = binding.rendered != title || !binding.overridesAccessibilityTitle
+    let titleChanged = item.title != title || binding.rendered != title
     binding.rendered = title
     bindings.setObject(binding, forKey: item)
     if item.title != title { item.title = title }
-    // SwiftUIMenuItem keeps a separate accessibility title after creation.
-    if item.accessibilityTitle() != title { item.setAccessibilityTitle(title) }
-    if item.accessibilityLabel() != title { item.setAccessibilityLabel(title) }
-    if refreshOverride && (binding.overridesAccessibilityTitle || item.accessibilityTitle() != title) {
-      // SwiftUI's menu subclass can ignore the protocol setter. AppKit's public
-      // per-instance override is the fallback; do not swizzle framework classes.
-      binding.overridesAccessibilityTitle = item.accessibilitySetOverrideValue(title, forAttribute: .title)
+    if titleChanged {
+      // Never read accessibilityTitle/Label here: AppKit may open/populate
+      // another menu to answer the query. Update through NSAccessibility's
+      // supported setters and notify clients without probing through AX.
+      // SwiftUI can retain a cached AXTitle; accessibilityLabel supplies the
+      // localized name used by VoiceOver without overriding legacy attributes.
+      item.setAccessibilityTitle(title)
+      item.setAccessibilityLabel(title)
       NSAccessibility.post(element: item, notification: .titleChanged)
     }
     // AppKit uses the submenu title for top-level menu-bar labels.

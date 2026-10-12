@@ -2,7 +2,7 @@ import DevKitCore
 import SwiftUI
 
 struct AutomationSettingsView: View {
-  @State private var message: String?
+  @State private var message: LocalizedMessage?
   @State private var failed = false
   @State private var revision = 0
   private let home = FileManager.default.homeDirectoryForCurrentUser
@@ -28,7 +28,7 @@ struct AutomationSettingsView: View {
           Button(L10n.tr("Copy Command")) { Clipboard.copy("devkit list") }
         }
       }
-      Section("AI Skill") {
+      Section(L10n.tr("AI Skill")) {
         Text(L10n.tr("Install the devkit Skill so AI can discover tools, inspect parameters, and run the CLI. Install the CLI above first, then install the Skill for your AI."))
           .font(.callout)
         skillRow("Codex", directory: codexSkills, key: "codex")
@@ -47,7 +47,7 @@ struct AutomationSettingsView: View {
       }
       if let message {
         Section {
-          Label(message, systemImage: failed ? "exclamationmark.triangle" : "checkmark.circle")
+          Label(L10n.tr(message), systemImage: failed ? "exclamationmark.triangle" : "checkmark.circle")
             .foregroundStyle(failed ? Color.orange : Color.secondary)
             .textSelection(.enabled)
         }
@@ -94,11 +94,11 @@ struct AutomationSettingsView: View {
       UserDefaults.standard.set(source.path, forKey: setting)
       if key == "cli" {
         try AutomationInstallation.configureCommandPath(home: home, shell: AutomationInstallation.loginShell)
-        message = L10n.tr("CLI installed. Open a new terminal and run devkit list.")
-      } else { message = L10n.tr("Installed at \(destination.path)") }
+        message = "CLI installed. Open a new terminal and run devkit list."
+      } else { message = "Installed at \(destination.path)" }
       failed = false
     } catch {
-      message = error.localizedDescription; failed = true
+      message = "\(error.localizedDescription)"; failed = true
     }
     revision += 1
   }

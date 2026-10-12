@@ -945,8 +945,9 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = app.devkit.macos;
-				PRODUCT_NAME = DevKit;
+				PRODUCT_BUNDLE_IDENTIFIER = app.devkit.macos.debug;
+				PRODUCT_MODULE_NAME = DevKit;
+				PRODUCT_NAME = "DevKit Debug";
 				SDKROOT = macosx;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 			};
@@ -1030,6 +1031,7 @@
 					"@executable_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = app.devkit.macos;
+				PRODUCT_MODULE_NAME = DevKit;
 				PRODUCT_NAME = DevKit;
 				SDKROOT = macosx;
 				SWIFT_EMIT_LOC_STRINGS = NO;

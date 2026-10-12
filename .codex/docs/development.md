@@ -4,6 +4,8 @@
 
 遵守根目录 [AGENTS.md](../../AGENTS.md)。打开 `DevKit.xcodeproj`，选择 `DevKit / My Mac`，通过 `⌘R` 运行 Debug；交互验收只使用 Xcode 当前启动的这份应用。
 
+Debug 产物为 `DevKit Debug.app`（`app.devkit.macos.debug`），Release 为 `DevKit.app`（`app.devkit.macos`），同一 DevKit scheme 分别使用 Debug 和 Release 配置。应用名由 `PRODUCT_NAME` 写入 Info.plist，Swift 模块名保持 `DevKit`。两者分别保存语言、工具开关、收藏和索引状态；新 Debug 不自动复制或改写 Release 的偏好。包内 CLI/worker 按当前 bundle 的路径定位，已有 CLI/Skill 安装链接继续遵守冲突保护，不自动改指向 Debug。
+
 归档使用 `Product → Archive`，在 Organizer 中完成分发签名、导出或上传。只有用户明确要求实际发布时才上传。不要添加独立构建、打包、重签名、安装、启动或注册清理脚本。
 
 签名在 Signing & Capabilities 和 `Config/Signing.xcconfig` 中配置；机器私有覆盖放在被忽略的 `Config/Signing.local.xcconfig`。不得覆盖用户团队和证书。若本地包被另一 Xcode 窗口占用，关闭单独打开的 Swift Package，再打开应用工程。
@@ -30,9 +32,11 @@ DEVKIT_LANGUAGE=zh-Hans zsh Scripts/test-menu-localization.sh
 检查 worker、CLI 和 Spotlight 元数据时，显式传入从 Xcode 获取的应用路径：
 
 ```sh
-DEVKIT_LANGUAGE=zh-Hans python3 Scripts/integration-tests.py "/path/from/Xcode/DevKit.app"
-python3 Scripts/check-spotlight-metadata.py "/path/from/Xcode/DevKit.app"
+DEVKIT_LANGUAGE=zh-Hans python3 Scripts/integration-tests.py "/path/from/Xcode/DevKit Debug.app"
+python3 Scripts/check-spotlight-metadata.py "/path/from/Xcode/DevKit Debug.app"
 ```
+
+上例使用 Xcode Run 的 Debug 产物；检查归档时传入 Organizer 中实际导出的 `DevKit.app` 路径。
 
 CLI 集成覆盖包内执行、软链接调用、解析器资源、文件和 JSON 输入、附件、错误与超时、受控本地网络。`swift test` 另覆盖参数校验、注册表默认值、安装冲突与隔离临时目录中的 Shell PATH 配置，不改写测试机器的真实启动文件。修改配套 Skill 时同步 `Sources/DevKitCore/Resources/Skills/devkit` 和面向用户的 [CLI 教程](../../docs/cli-and-ai.md)。
 
@@ -83,6 +87,6 @@ python3 Scripts/update-registry.py
 
 worker 支持取消和超时终止，但不等于操作系统安全沙箱或严格的内存硬上限。网络、文件和解析器错误应保留可定位原因，日志不得包含正文或密钥。
 
-Spotlight 需要有效开发者签名；索引可见和元数据存在不能替代执行验证。证书问题通过 Xcode 账户和签名设置处理，不使用私有权限或关闭系统保护。
+Spotlight 需要有效开发者签名；索引可见和元数据存在不能替代执行验证。开发签名与 Developer ID 分发签名的应用共用 Bundle ID 时，Core Spotlight 可能拒绝开发版连接（日志包含 `higher-provenance (developer-id)`，界面表现为 `CSIndexErrorDomain -1003`）。使用上述 Debug/Release 独立标识避免身份冲突，无需删除 Release 或清理系统注册数据库。证书问题通过 Xcode 账户和签名设置处理，不使用私有权限或关闭系统保护。
 
 临时构建、日志、截图、进程采样和测试报告保存在被忽略的 `build/` 或仓库外。知识文档只维护当前约束，不累计执行记录。

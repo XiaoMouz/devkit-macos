@@ -42,6 +42,8 @@ printf '%s' '{"hello":"DevKit"}' | devkit run json --format text
 
 在 Xcode 中打开 `DevKit.xcodeproj`，选择 **DevKit / My Mac**，配置开发团队后按 **⌘R** 运行。
 
+Debug 以 **DevKit Debug** 启动，与正式版 DevKit 的设置和 Spotlight 索引独立；Release 归档保留正式版名称。
+
 ```sh
 DEVKIT_LANGUAGE=zh-Hans swift test
 ```

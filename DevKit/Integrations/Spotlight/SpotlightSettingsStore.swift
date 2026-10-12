@@ -6,16 +6,12 @@ import SwiftUI
 @MainActor @Observable final class SpotlightSettingsStore {
   static let shared = SpotlightSettingsStore()
   private(set) var preferences = SpotlightPreferences.load()
-  private(set) var status = ""
+  private var statusMessage: LocalizedMessage = ""
+  var status: String { L10n.tr(statusMessage) }
   private(set) var updating = false
   private var generation = 0
   func setEnabled(_ value: Bool) { preferences.enabled = value; save() }
   func setTool(_ id: String, enabled: Bool) { preferences.setEnabled(enabled, for: id); save() }
-  func setAliases(_ text: String, for id: String) throws { try preferences.setAliases(text, for: id); save() }
-  func setQuickKeyReminder(_ value: String) {
-    preferences.quickKeyReminder = String(value.prefix(24))
-    do { try preferences.save() } catch { status = error.localizedDescription }
-  }
   func clearAndDisable() {
     preferences.enabled = false
     for tool in SpotlightCatalog.tools { preferences.setEnabled(false, for: tool.id) }
@@ -23,24 +19,24 @@ import SwiftUI
   }
   private func save() {
     do { try preferences.save(); refresh() }
-    catch { status = error.localizedDescription }
+    catch { statusMessage = "Index update failed: \(error.localizedDescription)" }
   }
   func refresh() {
     generation += 1
     let current = generation
     let snapshot = preferences
-    updating = true; status = L10n.tr("Updating the DevKit index…")
+    updating = true; statusMessage = "Updating the DevKit index…"
     Task {
       do {
         try await SpotlightIndexManager.shared.synchronize(snapshot)
         if generation == current {
           updating = false
-          status = !snapshot.enabled ? L10n.tr("DevKit’s tool index is cleared and quick execution is disabled")
-            : !SpotlightRuntimeStatus.current.hasDeveloperIdentity ? L10n.tr("Tool index synced; the current signature cannot run Spotlight actions")
-            : L10n.tr("Tool index synced (\(SpotlightCatalog.tools.filter { snapshot.allows($0.id) }.count)); bind Quick Keys in Spotlight")
+          statusMessage = !snapshot.enabled ? "DevKit’s tool index is cleared and quick execution is disabled"
+            : !SpotlightRuntimeStatus.current.hasDeveloperIdentity ? "Tool index synced; the current signature cannot run Spotlight actions"
+            : "Tool index synced (\(SpotlightCatalog.tools.filter { snapshot.allows($0.id) }.count))"
         }
       } catch {
-        if generation == current { updating = false; status = L10n.tr("Index update failed: \(error.localizedDescription)") }
+        if generation == current { updating = false; statusMessage = "Index update failed: \(error.localizedDescription)" }
       }
     }
   }

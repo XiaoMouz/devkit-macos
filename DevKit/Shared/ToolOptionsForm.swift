@@ -43,8 +43,10 @@ enum ToolOptionLabels {
     ][value]
   }
   static func title(_ value: String) -> String {
-    [
-      "utf8": "UTF-8", "hex": "Hex", "base64": "Base64",
+    TextCaseTool.modeTitle(value) ?? [
+      "utf8": "UTF-8", "hex": L10n.tr("Hex"), "base64": "Base64",
+      "cookie": L10n.tr("Cookie Request Header"), "set-cookie": L10n.tr("Set-Cookie Response Header"),
+      "fetch": L10n.tr("Fetch Code"),
       "mysql": "MySQL", "postgresql": "PostgreSQL", "sqlite": "SQLite", "transactsql": "T-SQL",
       "encode": L10n.tr("Encode"), "decode": L10n.tr("Decode"), "format": L10n.tr("Format"), "minify": L10n.tr("Minify"), "validate": L10n.tr("Validate"),
       "tree": L10n.tr("Path List"), "parse": L10n.tr("Parse"), "build": L10n.tr("Generate"), "sort": L10n.tr("Sort"), "component": L10n.tr("URL Component"),
@@ -58,8 +60,7 @@ enum ToolOptionLabels {
       "deduplicate": L10n.tr("Remove Duplicates"), "reverse-sort": L10n.tr("Sort Descending"), "remove-empty": L10n.tr("Remove Empty Lines"), "number": L10n.tr("Add Line Numbers"), "affix": L10n.tr("Add Prefix and Suffix"),
       "javascript": "JavaScript", "html": "HTML", "css": "CSS", "sql": "SQL", "png": "PNG", "jpeg": "JPEG", "heic": "HEIC",
       "index": L10n.tr("Index"), "name": L10n.tr("Full Name"), "email": L10n.tr("Email"), "boolean": L10n.tr("Boolean"), "integer": L10n.tr("Integer"), "uuid": "UUID",
-      "camelCase": "camelCase", "PascalCase": "PascalCase", "snake_case": "snake_case", "kebab-case": "kebab-case",
-      "lowercase": L10n.tr("Lowercase"), "uppercase": L10n.tr("Uppercase"), "L": L10n.tr("L · Approx. 7%"), "M": L10n.tr("M · Approx. 15%"), "Q": L10n.tr("Q · Approx. 25%"), "H": L10n.tr("H · Approx. 30%"),
+      "uppercase": L10n.tr("Uppercase"), "L": L10n.tr("L · Approx. 7%"), "M": L10n.tr("M · Approx. 15%"), "Q": L10n.tr("Q · Approx. 25%"), "H": L10n.tr("H · Approx. 30%"),
     ][value] ?? value
   }
 }

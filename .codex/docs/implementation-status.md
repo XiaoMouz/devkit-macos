@@ -35,14 +35,14 @@ DevKit 注册 48 个工具，入口以 [ToolRegistry.swift](../../Sources/DevKit
 | [image-metadata](../../Sources/DevKitCore/Tools/image-metadata/ImageMetadataTool.swift) | 图片信息 | 信息查看和重新编码移除元数据；尚无逐字段选择性删除。 |
 | [image-resize](../../Sources/DevKitCore/Tools/image-resize/ImageResizeTool.swift) | 图片尺寸 | 默认等比缩放到宽高边界内，可选透明画布或居中裁剪；PNG 输出；批量队列未实现。 |
 | [json](../../Sources/DevKitCore/Tools/json/JsonTool.swift) | JSON 工作台 | 统一入口：格式化、压缩、校验、路径列表、JSONPath/Pointer、结构对比、Draft 2020-12 Schema 校验与 TypeScript 类型推断。模式切换保留源 JSON，并分别保留对比文档与 Schema。 |
-| [jwt](../../Sources/DevKitCore/Tools/jwt/JwtTool.swift) | JWT 工作台 | Header/Payload 对象解析；HS256 验签与 exp/nbf 时间状态分别展示；不判断 aud/iss 业务可信度。 |
+| [jwt](../../Sources/DevKitCore/Tools/jwt/JwtTool.swift) | JWT 工作台 | 头部与载荷对象解析；HS256 验签与 exp/nbf 时间状态分别展示；不判断 aud/iss 业务可信度。 |
 | [markdown](../../Sources/DevKitCore/Tools/markdown/MarkdownTool.swift) | Markdown | HTML 白名单清理；禁止外部资源；不支持活动嵌入。 |
 | [mime-types](../../Sources/DevKitCore/Tools/mime-types/MimeTypesTool.swift) | MIME 类型 | 系统 UTType 数据库；范围随系统版本变化。 |
 | [mock-data](../../Sources/DevKitCore/Tools/mock-data/MockDataTool.swift) | Mock 数据 | 六类字段，JSON/CSV，可重复种子；不提供真实身份，不用于安全凭证。 |
 | [nanoid](../../Sources/DevKitCore/Tools/nanoid/NanoidTool.swift) | Nano ID | 安全随机与自定义字符集；总字符上限 100000。 |
 | [number-base](../../Sources/DevKitCore/Tools/number-base/NumberBaseTool.swift) | 进制转换 | BigInt 精确进制转换，带符号；不提供固定位宽补码模式。 |
 | [number-format](../../Sources/DevKitCore/Tools/number-format/NumberFormatTool.swift) | 数字格式 | Decimal，38 位有效数字，舍入/分组；暂不输出科学计数法。 |
-| [pem-certificate](../../Sources/DevKitCore/Tools/pem-certificate/PemCertificateTool.swift) | PEM 与证书 | 首张 PEM/DER X.509 的主题、有效期、SHA-256；不验信任链，不解析私钥。 |
+| [pem-certificate](../../Sources/DevKitCore/Tools/pem-certificate/PemCertificateTool.swift) | PEM 与证书 | 首张 PEM/DER X.509 的主体、有效期、SHA-256；不验信任链，不解析私钥。 |
 | [qr-code](../../Sources/DevKitCore/Tools/qr-code/QrCodeTool.swift) | 二维码 | Core Image 生成带静区 PNG；Vision 识别文本 QR；最多 2000 UTF-8 字节。 |
 | [query-string](../../Sources/DevKitCore/Tools/query-string/QueryStringTool.swift) | 查询参数 | 有序键值 JSON、重复键、空值、排序、生成；不提供电子表格式编辑。 |
 | [random-string](../../Sources/DevKitCore/Tools/random-string/RandomStringTool.swift) | 随机字符串 | 安全随机、无偏采样、Unicode 字符集；总字符上限 100000。 |

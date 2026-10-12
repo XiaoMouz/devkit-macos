@@ -1,6 +1,7 @@
 # DevKit 的 Xcode 工作流
 
 - 用户指定：构建、交互验收、签名、归档和发布都统一使用 Xcode。打开 `DevKit.xcodeproj`，选择 `DevKit` scheme 和 `My Mac`。
+- Debug 使用应用名 `DevKit Debug` 和 Bundle ID `app.devkit.macos.debug`；Release 使用 `DevKit` 和 `app.devkit.macos`。保持两者的系统注册、Spotlight 索引和偏好独立，签名团队仍由现有本机配置维护。
 - 日常验收使用 `⌘R`（Run / Debug），只操作 Xcode 当前启动的这一份应用。不要安装或直接打开另一份 Debug/Release App，不复制 UI Review / Layout Check 等独立 bundle ID 的预览应用。
 - 打包发布使用 `Product → Archive`（Release），在 `Window → Organizer → Archives` 中通过 `Distribute App` 选择分发渠道并完成签名、导出或上传。只有用户明确要求实际发布时才执行上传。
 - 不要重新添加独立的构建、打包、重签名、安装、启动、产物定位或注册清理脚本。不要用命令行生成另一套 App 作为验收版本。

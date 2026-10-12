@@ -21,7 +21,7 @@ struct ColorValueControl: View {
     VStack(alignment: .leading, spacing: 10) {
       ToolFormRow(title: title) { ColorPicker(title, selection: color, supportsOpacity: supportsOpacity).labelsHidden() }
       TextField("#3478F6 / rgb() / hsl()", text: $text).textFieldStyle(.roundedBorder)
-        .font(.system(.body, design: .monospaced)).accessibilityLabel(title + L10n.tr("Color Value"))
+        .font(.system(.body, design: .monospaced)).accessibilityLabel(L10n.tr("Color Value for \(title)"))
       RoundedRectangle(cornerRadius: 10).fill(color.wrappedValue).frame(height: 72)
         .overlay { RoundedRectangle(cornerRadius: 10).stroke(.separator) }
     }
@@ -52,7 +52,7 @@ struct TimeZoneControl: View {
     HStack(spacing: 6) {
       NativeTimeZoneMenu(title: title, selection: $selection)
       Button { searching = true; query = "" } label: { Image(systemName: "magnifyingglass") }
-        .accessibilityLabel(L10n.tr("Search") + title).help(L10n.tr("Search by city, time zone identifier, or offset"))
+        .accessibilityLabel(L10n.tr("Search \(title)")).help(L10n.tr("Search by city, time zone identifier, or offset"))
         .popover(isPresented: $searching) {
           VStack(spacing: 10) {
             TextField(L10n.tr("Search cities, identifiers, or UTC offsets"), text: $query).textFieldStyle(.roundedBorder)
@@ -195,7 +195,7 @@ struct DateValueControl: View {
               .frame(width: 230, height: 26)
           }
           Button { calendarPresented = true } label: { Image(systemName: "calendar") }
-            .buttonStyle(.bordered).buttonBorderShape(.capsule).help(L10n.tr("Open the calendar to choose a date")).accessibilityLabel(title + L10n.tr("Choose Date"))
+            .buttonStyle(.bordered).buttonBorderShape(.capsule).help(L10n.tr("Open the calendar to choose a date")).accessibilityLabel(L10n.tr("Choose Date for \(title)"))
             .popover(isPresented: $calendarPresented) {
               VStack(alignment: .leading, spacing: 12) {
                 DatePicker(title, selection: date, in: Dates.supportedRange, displayedComponents: [.date])
@@ -205,7 +205,7 @@ struct DateValueControl: View {
               }.padding(16).frame(width: 290)
             }
           Button { text = Dates.iso(Date()) } label: { Image(systemName: "clock") }
-            .buttonStyle(.bordered).buttonBorderShape(.capsule).help(L10n.tr("Use the current date and time")).accessibilityLabel(title + L10n.tr("Set to Now"))
+            .buttonStyle(.bordered).buttonBorderShape(.capsule).help(L10n.tr("Use the current date and time")).accessibilityLabel(L10n.tr("Set \(title) to Now"))
         }
         if !text.isEmpty && Dates.parse(text, timeZone: timeZone) == nil {
           Text(L10n.tr("Invalid date. Choose the date and time again.")).font(.caption).foregroundStyle(.red)
@@ -282,12 +282,12 @@ struct KeyValueEditor: View {
   @State private var rows: [Entry] = []
   @State private var serialized = ""
   @State private var sourceRows: [Entry] = []
-  @State private var error: String?
+  @State private var error: LocalizedMessage?
   var body: some View {
     VStack(alignment: .leading, spacing: 10) {
       ForEach($rows) { $row in
         HStack(alignment: .center, spacing: 8) {
-          TextField(kind == .headers ? "Header" : L10n.tr("Name"), text: $row.name)
+          TextField(kind == .headers ? L10n.tr("Header Name") : L10n.tr("Name"), text: $row.name)
             .accessibilityLabel(kind == .headers ? L10n.tr("Header Name") : L10n.tr("Field Name"))
           if kind == .template {
             Picker(L10n.tr("Field Type"), selection: $row.value) {
@@ -307,7 +307,7 @@ struct KeyValueEditor: View {
       Button { rows.append(Entry(value: kind == .template ? "name" : "")) } label: {
         Label(kind == .headers ? L10n.tr("Add Header") : L10n.tr("Add Field"), systemImage: "plus")
       }.buttonStyle(.bordered).buttonBorderShape(.capsule)
-      if let error { Text(error).font(.caption).foregroundStyle(.orange) }
+      if let error { Text(L10n.tr(error)).font(.caption).foregroundStyle(.orange) }
     }
     .onAppear { read() }
     .onChange(of: text) { _, value in if value != serialized { read() } }
@@ -325,14 +325,14 @@ struct KeyValueEditor: View {
         rows = values.keys.sorted().map { Entry(name: $0, value: values[$0]!) }
       } else { throw ToolFailure(L10n.tr("Invalid field format.")) }
       error = nil
-    } catch { self.error = L10n.tr("Could not read fields. Clear them and add them again."); rows = [] }
+    } catch { self.error = "Could not read fields. Clear them and add them again."; rows = [] }
   }
   private func write() {
     let active = rows.filter { !$0.name.isEmpty || !$0.value.isEmpty }
     let names = active.map { kind == .headers ? $0.name.lowercased() : $0.name }
-    let validationError: String? = kind == .query ? nil
-      : Set(names).count != active.count ? L10n.tr("Names must be unique.")
-      : active.contains(where: { $0.name.isEmpty }) ? L10n.tr("Enter a name.") : nil
+    let validationError: LocalizedMessage? = kind == .query ? nil
+      : Set(names).count != active.count ? "Names must be unique."
+      : active.contains(where: { $0.name.isEmpty }) ? "Enter a name." : nil
     // Keep the editable rows even when invalid. The core validates these rows
     // before generating data or sending a request; never serialize error prose.
     let value: Any = active.map { ["name": $0.name, "value": $0.hasValue ? $0.value as Any : NSNull()] }

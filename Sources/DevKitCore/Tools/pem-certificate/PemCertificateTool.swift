@@ -26,9 +26,9 @@ public enum PemCertificateTool: ToolModule {
     guard let certificate = SecCertificateCreateWithData(nil, data as CFData) else {
       throw ToolFailure(L10n.tr("Could not parse the X.509 certificate."))
     }
-    let subject = SecCertificateCopySubjectSummary(certificate) as String? ?? "Unknown"
+    let subject = SecCertificateCopySubjectSummary(certificate) as String? ?? L10n.tr("Unknown")
     var rows = [
-      ResultRow(L10n.tr("Theme"), subject), ResultRow("SHA-256", Digest.compute(data, algorithm: "SHA-256")),
+      ResultRow(L10n.tr("Certificate Subject"), subject), ResultRow("SHA-256", Digest.compute(data, algorithm: "SHA-256")),
     ]
     if let values = SecCertificateCopyValues(
       certificate,
