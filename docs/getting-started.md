@@ -5,9 +5,8 @@ DevKit 把常见开发工具放进一个原生 Mac 工作区。先从 Base64 或
 ## 系统要求与下载
 
 - macOS 26 或更新版本。
-- 当前版本为 **v0.1.0 预览版**，主界面以中文为主。
+- 当前版本为 **v0.1.0**，主界面以中文为主。
 - [下载 v0.1.0 通用版 ZIP](https://github.com/luolayo/devkit-macos/releases/download/v0.1.0/DevKit-v0.1.0-macOS-universal.zip)，同时包含 Apple Silicon 和 Intel 架构。
-- 安装包由 **ShenZhen CodeNav Technology Co., Ltd.** 进行 Developer ID 签名，已通过 Apple 公证并装订票据。
 
 拿到应用压缩包后，解压并把 `DevKit.app` 放入「应用程序」，再打开它。先固定应用位置，再安装 CLI 和 Skill；这两个入口会链接到应用内的资源。升级时退出应用，替换原位置的应用，重新打开即可。
 

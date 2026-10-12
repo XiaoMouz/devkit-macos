@@ -47,6 +47,8 @@ npm run build --prefix docs
 
 `.github/workflows/docs.yml` 在 main 的文档变更后构建并部署 GitHub Pages，仓库 Pages source 使用 GitHub Actions。构建产物、node_modules 和缓存不入库。截图只来自 Xcode 当前 Run 的应用，使用可公开样例；面向用户的正式截图保存在 `docs/public/images/`，临时验收证据保存在 `build/`。
 
+官网、根 README 和 GitHub Release 的对外介绍使用中性版本号，聚焦功能、下载、安装与使用。不展示签名公司、Developer ID、公证票据、自用/预览版标签及内部验收记录；具体工具的使用限制与必要配置在相应教程中说明。
+
 ## JavaScript 与资源
 
 仓库已包含运行所需 bundle，普通 Swift 构建不需要 Node.js。修改 JavaScript 引擎或依赖时使用 Node.js 22+：

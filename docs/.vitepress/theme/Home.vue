@@ -18,7 +18,7 @@ const routes = [
         <a class="primary-action" :href="withBase('/getting-started.html')">开始使用 <span aria-hidden="true">↗</span></a>
         <a class="secondary-action" :href="withBase('/tools/')">浏览全部工具 <span aria-hidden="true">→</span></a>
       </div>
-      <p class="home-requirements">v0.1.0 预览版 · macOS 26 及以上 · 本机处理</p>
+      <p class="home-requirements">v0.1.0 · macOS 26 及以上 · 本机处理</p>
     </section>
     <figure class="workspace-figure">
       <img :src="withBase('/images/json-workspace.png')" alt="DevKit 的 JSON 工作台：左侧为工具目录，右侧并排显示输入与格式化后的 JSON" width="2560" height="1640" fetchpriority="high">
@@ -36,6 +36,6 @@ const routes = [
       <div><p class="path-label">同一套工具，另一种入口</p><h2 id="terminal-title">窗口之外，也能直接用。</h2><p>在设置中安装 devkit，工具发现与执行都只需一条命令。</p><a :href="withBase('/cli-and-ai.html')">配置 CLI 与 AI Skill →</a></div>
       <div class="terminal-example" aria-label="CLI 示例"><span>$ devkit describe base64</span><span>$ printf '%s' 'hello' | devkit run base64 --format text</span><strong>aGVsbG8=</strong></div>
     </section>
-    <p class="home-note">已签名并通过 Apple 公证 · Apple Silicon / Intel 通用包 · <a href="https://github.com/luolayo/devkit-macos/releases/download/v0.1.0/DevKit-v0.1.0-macOS-universal.zip">下载 v0.1.0</a></p>
+    <p class="home-note">Apple Silicon / Intel 通用包 · <a href="https://github.com/luolayo/devkit-macos/releases/download/v0.1.0/DevKit-v0.1.0-macOS-universal.zip">下载 v0.1.0</a></p>
   </div>
 </template>

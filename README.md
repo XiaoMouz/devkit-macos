@@ -2,7 +2,7 @@
 
 面向 Web 开发者的原生 macOS 工具箱。把编码转换、JSON、文本处理、日期计算、网络调试和图片处理集中在一个工作区。
 
-使用 Swift、SwiftUI 和 AppKit 构建，支持 macOS 26 及以上。当前为 **0.1.0 自用预览版**。
+使用 Swift、SwiftUI 和 AppKit 构建，支持 macOS 26 及以上。当前版本为 **v0.1.0**。
 
 **[下载 v0.1.0](https://github.com/luolayo/devkit-macos/releases/tag/v0.1.0)** · **[在线使用手册](https://luolayo.github.io/devkit-macos/)**
 
@@ -30,7 +30,7 @@ JSON 的格式化、压缩、校验、路径查询、结构对比、Schema 校�
 
 ## 安装与运行
 
-从 [Release](https://github.com/luolayo/devkit-macos/releases/tag/v0.1.0) 下载 `DevKit-v0.1.0-macOS-universal.zip`，解压后将 `DevKit.app` 放入「应用程序」。该通用包包含 Apple Silicon 和 Intel 架构，已由 ShenZhen CodeNav Technology Co., Ltd. 进行 Developer ID 签名并通过 Apple 公证。Release 同时提供 SHA-256 校验文件。
+从 [Release](https://github.com/luolayo/devkit-macos/releases/tag/v0.1.0) 下载 `DevKit-v0.1.0-macOS-universal.zip`，解压后将 `DevKit.app` 放入「应用程序」。该通用包包含 Apple Silicon 和 Intel 架构，Release 同时提供 SHA-256 校验文件。
 
 从源码运行：
 
