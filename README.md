@@ -1,5 +1,7 @@
 # DevKit for macOS
 
+**简体中文** · [English](README.en.md)
+
 面向 Web 开发者的 macOS 工具箱，提供编码转换、JSON、文本处理、日期计算、网络调试和图片处理工具。
 
 [下载](https://github.com/luolayo/devkit-macos/releases/latest) · [使用手册](https://luolayo.github.io/devkit-macos/)
@@ -48,8 +50,12 @@ Debug 以 **DevKit Debug** 启动，与正式版 DevKit 的设置和 Spotlight �
 DEVKIT_LANGUAGE=zh-Hans swift test
 ```
 
+测试包含对中文输出的断言，因此运行时需指定 `DEVKIT_LANGUAGE=zh-Hans`。
+
 [开发指南](.codex/docs/development.md) · [项目结构](.codex/docs/architecture.md) · [贡献约定](AGENTS.md)
 
 ## 翻译贡献
 
 目前支持简体中文和英文，默认跟随系统语言；在设置中更改后，界面与菜单即时更新，保留当前输入和结果。代码和源文案统一使用英文，新增语言只需参考英文提供翻译 JSON，无需理解中文或修改业务代码；步骤见[多语言与翻译贡献](.codex/docs/localization.md)。
+
+使用手册也提供[简体中文](https://luolayo.github.io/devkit-macos/)和[英文](https://luolayo.github.io/devkit-macos/en/)版本，可通过语言菜单切换当前文章。文档截图目前展示中文界面。

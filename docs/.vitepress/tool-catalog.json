@@ -5,19 +5,26 @@
       {
         "id": "base64",
         "name": "Base64",
-        "summary": "UTF-8 文本的 Base64 编码与解码，支持标准和 URL 安全模式。"
+        "summary": "UTF-8 文本的 Base64 编码与解码，支持标准和 URL 安全模式。",
+        "nameEn": "Base64",
+        "summaryEn": "Encode and decode UTF-8 text with standard or URL-safe Base64."
       },
       {
         "id": "data-url",
         "name": "Data URL",
-        "summary": "图片与 Data URL 互转。"
+        "summary": "图片与 Data URL 互转。",
+        "nameEn": "Data URL",
+        "summaryEn": "Convert images to and from Data URLs."
       },
       {
         "id": "url-codec",
         "name": "URL 编解码",
-        "summary": "URL 参数、完整 URL 和表单内容的编码与解码。"
+        "summary": "URL 参数、完整 URL 和表单内容的编码与解码。",
+        "nameEn": "URL Encoder / Decoder",
+        "summaryEn": "Encode and decode URL components, full URLs, and form data."
       }
-    ]
+    ],
+    "nameEn": "Encoding & Conversion"
   },
   {
     "name": "结构化数据",
@@ -25,9 +32,12 @@
       {
         "id": "json",
         "name": "JSON 工作台",
-        "summary": "格式化、压缩、路径查询、结构对比、Schema 校验与 TypeScript 类型生成。"
+        "summary": "格式化、压缩、路径查询、结构对比、Schema 校验与 TypeScript 类型生成。",
+        "nameEn": "JSON Workspace",
+        "summaryEn": "Format, minify, query, compare, validate against a Schema, and generate TypeScript types."
       }
-    ]
+    ],
+    "nameEn": "Structured Data"
   },
   {
     "name": "摘要与令牌",
@@ -35,29 +45,40 @@
       {
         "id": "file-checksum",
         "name": "文件校验",
-        "summary": "计算文件摘要，并与预期值比较。"
+        "summary": "计算文件摘要，并与预期值比较。",
+        "nameEn": "File Checksum",
+        "summaryEn": "Calculate a file digest and compare it with an expected value."
       },
       {
         "id": "hash",
         "name": "哈希摘要",
-        "summary": "计算 MD5、SHA-1、SHA-256 和 SHA-512 摘要。"
+        "summary": "计算 MD5、SHA-1、SHA-256 和 SHA-512 摘要。",
+        "nameEn": "Hash",
+        "summaryEn": "Calculate MD5, SHA-1, SHA-256, and SHA-512 digests."
       },
       {
         "id": "hmac",
         "name": "HMAC",
-        "summary": "使用密钥计算 SHA-256 或 SHA-512 消息认证码。"
+        "summary": "使用密钥计算 SHA-256 或 SHA-512 消息认证码。",
+        "nameEn": "HMAC",
+        "summaryEn": "Calculate SHA-256 or SHA-512 message authentication codes with a key."
       },
       {
         "id": "jwt",
         "name": "JWT 工作台",
-        "summary": "解析 JWT 头部与载荷，并支持 HS256 验签。"
+        "summary": "解析 JWT 头部与载荷，并支持 HS256 验签。",
+        "nameEn": "JWT Workspace",
+        "summaryEn": "Decode JWT headers and payloads, with optional HS256 signature verification."
       },
       {
         "id": "pem-certificate",
         "name": "PEM 与证书",
-        "summary": "查看 X.509 证书的主体、有效期和 SHA-256 指纹。"
+        "summary": "查看 X.509 证书的主体、有效期和 SHA-256 指纹。",
+        "nameEn": "PEM & Certificates",
+        "summaryEn": "Inspect an X.509 certificate's subject, validity period, and SHA-256 fingerprint."
       }
-    ]
+    ],
+    "nameEn": "Hashes & Tokens"
   },
   {
     "name": "标识与测试数据",
@@ -65,34 +86,47 @@
       {
         "id": "mock-data",
         "name": "Mock 数据",
-        "summary": "根据字段模板生成 JSON 或 CSV 测试数据。"
+        "summary": "根据字段模板生成 JSON 或 CSV 测试数据。",
+        "nameEn": "Mock Data",
+        "summaryEn": "Generate JSON or CSV test data from a field template."
       },
       {
         "id": "nanoid",
         "name": "Nano ID",
-        "summary": "按长度和字符集生成 Nano ID。"
+        "summary": "按长度和字符集生成 Nano ID。",
+        "nameEn": "Nano ID",
+        "summaryEn": "Generate Nano IDs with a chosen length and alphabet."
       },
       {
         "id": "qr-code",
         "name": "二维码",
-        "summary": "生成二维码 PNG，或从图片中识别二维码。"
+        "summary": "生成二维码 PNG，或从图片中识别二维码。",
+        "nameEn": "QR Code",
+        "summaryEn": "Generate QR code PNGs or read QR codes from images."
       },
       {
         "id": "random-string",
         "name": "随机字符串",
-        "summary": "按字符集、长度和数量生成随机字符串。"
+        "summary": "按字符集、长度和数量生成随机字符串。",
+        "nameEn": "Random String",
+        "summaryEn": "Generate random strings with a chosen alphabet, length, and count."
       },
       {
         "id": "ulid",
         "name": "ULID",
-        "summary": "生成 ULID，或解析其中的时间。"
+        "summary": "生成 ULID，或解析其中的时间。",
+        "nameEn": "ULID",
+        "summaryEn": "Generate ULIDs or extract their timestamps."
       },
       {
         "id": "uuid",
         "name": "UUID",
-        "summary": "生成 UUID v4 或 v7，支持批量、大小写与连字符设置。"
+        "summary": "生成 UUID v4 或 v7，支持批量、大小写与连字符设置。",
+        "nameEn": "UUID",
+        "summaryEn": "Generate UUID v4 or v7 in batches, with letter case and hyphen options."
       }
-    ]
+    ],
+    "nameEn": "IDs & Test Data"
   },
   {
     "name": "文本与匹配",
@@ -100,39 +134,54 @@
       {
         "id": "markdown",
         "name": "Markdown",
-        "summary": "预览 Markdown，导出 HTML。"
+        "summary": "预览 Markdown，导出 HTML。",
+        "nameEn": "Markdown",
+        "summaryEn": "Preview Markdown and export HTML."
       },
       {
         "id": "regex",
         "name": "正则测试",
-        "summary": "测试 ECMAScript 正则表达式，查看捕获组和替换结果。"
+        "summary": "测试 ECMAScript 正则表达式，查看捕获组和替换结果。",
+        "nameEn": "Regex Tester",
+        "summaryEn": "Test ECMAScript regular expressions, inspect capture groups, and preview replacements."
       },
       {
         "id": "text-case",
         "name": "命名与大小写",
-        "summary": "转换为小驼峰、大驼峰、下划线、短横线命名，或统一大写、小写。"
+        "summary": "转换为小驼峰、大驼峰、下划线、短横线命名，或统一大写、小写。",
+        "nameEn": "Text Case",
+        "summaryEn": "Convert camelCase, PascalCase, snake_case, kebab-case, uppercase, and lowercase."
       },
       {
         "id": "text-diff",
         "name": "文本对比",
-        "summary": "逐行比较两份文本，查看增加与删除的内容。"
+        "summary": "逐行比较两份文本，查看增加与删除的内容。",
+        "nameEn": "Text Diff",
+        "summaryEn": "Compare two texts line by line and inspect additions and deletions."
       },
       {
         "id": "text-lines",
         "name": "文本行处理",
-        "summary": "排序、去重、去空行、编号和添加前后缀。"
+        "summary": "排序、去重、去空行、编号和添加前后缀。",
+        "nameEn": "Text Lines",
+        "summaryEn": "Sort, deduplicate, remove empty lines, number lines, and add prefixes or suffixes."
       },
       {
         "id": "text-replace",
         "name": "查找替换",
-        "summary": "使用普通文本或正则表达式查找替换。"
+        "summary": "使用普通文本或正则表达式查找替换。",
+        "nameEn": "Find & Replace",
+        "summaryEn": "Find and replace literal text or regular expressions."
       },
       {
         "id": "text-stats",
         "name": "文本统计",
-        "summary": "统计字符、Unicode 码点、UTF-16、UTF-8 字节与行数。"
+        "summary": "统计字符、Unicode 码点、UTF-16、UTF-8 字节与行数。",
+        "nameEn": "Text Statistics",
+        "summaryEn": "Count graphemes, Unicode code points, UTF-16 units, UTF-8 bytes, and lines."
       }
-    ]
+    ],
+    "nameEn": "Text & Matching"
   },
   {
     "name": "时间与数值",
@@ -140,34 +189,47 @@
       {
         "id": "cron",
         "name": "Cron",
-        "summary": "根据五字段 Cron 表达式查询后续执行时间。"
+        "summary": "根据五字段 Cron 表达式查询后续执行时间。",
+        "nameEn": "Cron",
+        "summaryEn": "Preview upcoming times for a five-field Cron expression."
       },
       {
         "id": "date-time",
         "name": "日期与时区",
-        "summary": "时区转换、日期加减与时间差计算。"
+        "summary": "时区转换、日期加减与时间差计算。",
+        "nameEn": "Date & Time Zones",
+        "summaryEn": "Convert time zones, add or subtract days, and calculate time differences."
       },
       {
         "id": "number-base",
         "name": "进制转换",
-        "summary": "整数进制转换，支持大整数和负数。"
+        "summary": "整数进制转换，支持大整数和负数。",
+        "nameEn": "Number Base",
+        "summaryEn": "Convert signed integers between bases, including large integers."
       },
       {
         "id": "number-format",
         "name": "数字格式",
-        "summary": "设置小数位、舍入方式和千分位。"
+        "summary": "设置小数位、舍入方式和千分位。",
+        "nameEn": "Number Format",
+        "summaryEn": "Set decimal places, rounding, and digit grouping."
       },
       {
         "id": "timestamp",
         "name": "时间戳",
-        "summary": "Unix 秒、毫秒与日期时间互转。"
+        "summary": "Unix 秒、毫秒与日期时间互转。",
+        "nameEn": "Timestamp",
+        "summaryEn": "Convert Unix seconds or milliseconds to and from dates."
       },
       {
         "id": "unit-convert",
         "name": "单位转换",
-        "summary": "文件大小、时长和速率换算。"
+        "summary": "文件大小、时长和速率换算。",
+        "nameEn": "Unit Converter",
+        "summaryEn": "Convert file sizes, durations, and rates."
       }
-    ]
+    ],
+    "nameEn": "Time & Numbers"
   },
   {
     "name": "Web 与网络",
@@ -175,49 +237,68 @@
       {
         "id": "cookie",
         "name": "Cookie",
-        "summary": "解析 Cookie 和 Set-Cookie 字段。"
+        "summary": "解析 Cookie 和 Set-Cookie 字段。",
+        "nameEn": "Cookie",
+        "summaryEn": "Parse Cookie and Set-Cookie headers."
       },
       {
         "id": "curl-convert",
         "name": "cURL 转换",
-        "summary": "将 cURL 命令转换为 fetch 代码或 JSON。"
+        "summary": "将 cURL 命令转换为 fetch 代码或 JSON。",
+        "nameEn": "cURL Converter",
+        "summaryEn": "Convert cURL commands to fetch code or JSON."
       },
       {
         "id": "dns",
         "name": "DNS 查询",
-        "summary": "查询 A、AAAA、CNAME、MX、TXT 等 DNS 记录。"
+        "summary": "查询 A、AAAA、CNAME、MX、TXT 等 DNS 记录。",
+        "nameEn": "DNS Lookup",
+        "summaryEn": "Look up A, AAAA, CNAME, MX, TXT, and other DNS records."
       },
       {
         "id": "http-client",
         "name": "HTTP 调试",
-        "summary": "发送 HTTP 请求，查看响应正文、状态码、请求耗时与响应头。"
+        "summary": "发送 HTTP 请求，查看响应正文、状态码、请求耗时与响应头。",
+        "nameEn": "HTTP Client",
+        "summaryEn": "Send HTTP requests and inspect the body, status, timing, and response headers."
       },
       {
         "id": "http-status",
         "name": "HTTP 状态码",
-        "summary": "查询 HTTP 状态码的名称和含义。"
+        "summary": "查询 HTTP 状态码的名称和含义。",
+        "nameEn": "HTTP Status Codes",
+        "summaryEn": "Look up HTTP status code names and meanings."
       },
       {
         "id": "mime-types",
         "name": "MIME 类型",
-        "summary": "查询扩展名与 MIME 类型。"
+        "summary": "查询扩展名与 MIME 类型。",
+        "nameEn": "MIME Types",
+        "summaryEn": "Look up file extensions and MIME types."
       },
       {
         "id": "query-string",
         "name": "查询参数",
-        "summary": "解析、生成和排序查询参数，保留重复键与空值。"
+        "summary": "解析、生成和排序查询参数，保留重复键与空值。",
+        "nameEn": "Query String",
+        "summaryEn": "Parse, build, and sort query parameters while preserving duplicate keys and empty values."
       },
       {
         "id": "url-parser",
         "name": "URL 解析",
-        "summary": "查看 URL 的协议、主机、端口、路径、查询和片段。"
+        "summary": "查看 URL 的协议、主机、端口、路径、查询和片段。",
+        "nameEn": "URL Parser",
+        "summaryEn": "Inspect a URL's scheme, host, port, path, query, and fragment."
       },
       {
         "id": "websocket",
         "name": "WebSocket 调试",
-        "summary": "连接 WebSocket 服务，发送消息并查看收发记录。"
+        "summary": "连接 WebSocket 服务，发送消息并查看收发记录。",
+        "nameEn": "WebSocket Client",
+        "summaryEn": "Connect to WebSocket services, send messages, and inspect message history."
       }
-    ]
+    ],
+    "nameEn": "Web & Network"
   },
   {
     "name": "前端样式",
@@ -225,19 +306,26 @@
       {
         "id": "color",
         "name": "颜色转换",
-        "summary": "转换 HEX、RGB、HSL 颜色值与透明度。"
+        "summary": "转换 HEX、RGB、HSL 颜色值与透明度。",
+        "nameEn": "Color Converter",
+        "summaryEn": "Convert HEX, RGB, HSL, and alpha values."
       },
       {
         "id": "contrast",
         "name": "颜色对比度",
-        "summary": "计算前景色与背景色的对比度，查看 WCAG AA / AAA 结果。"
+        "summary": "计算前景色与背景色的对比度，查看 WCAG AA / AAA 结果。",
+        "nameEn": "Color Contrast",
+        "summaryEn": "Calculate foreground/background contrast and check WCAG AA / AAA results."
       },
       {
         "id": "css-unit",
         "name": "CSS 单位",
-        "summary": "在 px、rem、em、vw 和 vh 之间换算。"
+        "summary": "在 px、rem、em、vw 和 vh 之间换算。",
+        "nameEn": "CSS Units",
+        "summaryEn": "Convert between px, rem, em, vw, and vh."
       }
-    ]
+    ],
+    "nameEn": "Frontend Styles"
   },
   {
     "name": "代码与图形",
@@ -245,43 +333,60 @@
       {
         "id": "code-format",
         "name": "代码格式化",
-        "summary": "格式化 JavaScript、TypeScript、HTML、CSS 和 SQL。"
+        "summary": "格式化 JavaScript、TypeScript、HTML、CSS 和 SQL。",
+        "nameEn": "Code Formatter",
+        "summaryEn": "Format JavaScript, TypeScript, HTML, CSS, and SQL."
       },
       {
         "id": "code-minify",
         "name": "代码压缩",
-        "summary": "压缩 JavaScript、CSS 和 HTML。"
+        "summary": "压缩 JavaScript、CSS 和 HTML。",
+        "nameEn": "Code Minifier",
+        "summaryEn": "Minify JavaScript, CSS, and HTML."
       },
       {
         "id": "favicon",
         "name": "网站图标",
-        "summary": "从图片生成多尺寸 PNG 和 ICO 网站图标。"
+        "summary": "从图片生成多尺寸 PNG 和 ICO 网站图标。",
+        "nameEn": "Favicon",
+        "summaryEn": "Generate PNG and ICO website icons in multiple sizes."
       },
       {
         "id": "image-compress",
         "name": "图片压缩",
-        "summary": "调整 JPEG 质量，或按目标体积压缩图片。"
+        "summary": "调整 JPEG 质量，或按目标体积压缩图片。",
+        "nameEn": "Image Compression",
+        "summaryEn": "Adjust JPEG quality or compress toward a target file size."
       },
       {
         "id": "image-convert",
         "name": "图片格式转换",
-        "summary": "在 PNG、JPEG 和 HEIC 格式之间转换。"
+        "summary": "在 PNG、JPEG 和 HEIC 格式之间转换。",
+        "nameEn": "Image Converter",
+        "summaryEn": "Convert images between PNG, JPEG, and HEIC."
       },
       {
         "id": "image-metadata",
         "name": "图片信息",
-        "summary": "查看图片尺寸、EXIF 和色彩信息，或移除元数据。"
+        "summary": "查看图片尺寸、EXIF 和色彩信息，或移除元数据。",
+        "nameEn": "Image Metadata",
+        "summaryEn": "Inspect dimensions, EXIF, and color information, or remove metadata."
       },
       {
         "id": "image-resize",
         "name": "图片尺寸",
-        "summary": "等比缩放、填充画布或居中裁剪图片。"
+        "summary": "等比缩放、填充画布或居中裁剪图片。",
+        "nameEn": "Image Resize",
+        "summaryEn": "Scale proportionally, fit onto a canvas, or crop from the center."
       },
       {
         "id": "svg",
         "name": "SVG 工作台",
-        "summary": "优化 SVG 源码并预览图形。"
+        "summary": "优化 SVG 源码并预览图形。",
+        "nameEn": "SVG Workspace",
+        "summaryEn": "Optimize SVG source and preview the graphic."
       }
-    ]
+    ],
+    "nameEn": "Code & Graphics"
   }
 ]

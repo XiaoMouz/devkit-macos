@@ -1,5 +1,7 @@
 # DevKit 使用教程
 
+**简体中文** · [English](en/README.md)
+
 [在线使用手册](https://luolayo.github.io/devkit-macos/)
 
 - [安装与第一步](getting-started.md)

@@ -32,6 +32,7 @@ jobs:
           cache-dependency-path: docs/package-lock.json
       - uses: actions/configure-pages@v5
       - run: npm ci --prefix docs --ignore-scripts
+      - run: npm test --prefix docs
       - run: npm run build --prefix docs
       - uses: actions/upload-pages-artifact@v3
         with:

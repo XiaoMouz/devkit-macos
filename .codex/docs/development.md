@@ -42,19 +42,16 @@ CLI 集成覆盖包内执行、软链接调用、解析器资源、文件和 JSO
 
 ## 用户文档站
 
-`docs/` 是 VitePress 中文手册，部署到 `https://luolayo.github.io/devkit-macos/`。首页、任务指南、48 个工具参考和截图均在此维护；`.vitepress/tool-catalog.json` 维护侧栏分类。新增工具或参数变化时同步对应工具页和目录。
+`docs/` 是中英文 VitePress 手册，中文位于根路径，英文位于 `/en/`。公开教程、首页演示和截图在这里维护；页面结构、组件职责、双语同步与动效约束见[文档站维护](documentation-site.md)。
 
 ```sh
 npm ci --prefix docs --ignore-scripts
 npm run dev --prefix docs
+npm test --prefix docs
 npm run build --prefix docs
 ```
 
-依赖锁定在 `docs/package-lock.json`。VitePress 1.6 使用兼容的 Vite 6.4.3 override，避开其默认 Vite 5 依赖的已知漏洞；升级后重新验证构建和预览。构建会检查内部 Markdown 链接；额外检查截图、下载地址、搜索和手机布局。
-
-`.github/workflows/docs.yml` 在 main 的文档变更后构建并部署 GitHub Pages，仓库 Pages source 使用 GitHub Actions。构建产物、node_modules 和缓存不入库。截图只来自 Xcode 当前 Run 的应用，使用可公开样例；面向用户的正式截图保存在 `docs/public/images/`，临时验收证据保存在 `build/`。
-
-官网和根 README 聚焦功能、安装与使用，下载链接指向 Releases 的 latest 入口，不固定具体版本号；版本号只在版本说明和对应 Release 中出现。不展示签名公司、Developer ID、公证票据、自用/预览版、本机/本地处理等标签及内部验收记录。工具页保留操作、示例、参数和必要限制，删去重复的通用前言、宣传口号及不影响使用的实现说明；共用操作集中在相应指南中。
+依赖与版本以 `docs/package.json` 和锁文件为准。`.github/workflows/docs.yml` 在 main 的文档变更后先测试、构建，再部署 GitHub Pages。缓存和构建产物不入库；日常本地验证不需要推送或部署。
 
 ## 翻译资源
 

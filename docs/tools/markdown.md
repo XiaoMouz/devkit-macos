@@ -12,7 +12,7 @@ CLI：`markdown`
 
 输入：
 
-```text
+````text
 # DevKit
 
 - 编码转换
@@ -21,7 +21,7 @@ CLI：`markdown`
 ```js
 const hello = "world";
 ```
-```
+````
 
 ## CLI 调用
 
