@@ -45,7 +45,7 @@ struct SettingsView: View {
           Label(L10n.tr("Tools: \(ToolRegistry.all.count)"), systemImage: "square.grid.2x2")
           Label(L10n.tr("Local Processing"), systemImage: "lock.shield")
         }.font(.callout).foregroundStyle(.secondary).padding(.top, 4)
-        Text("0.1.0 · macOS 26+").font(.caption).foregroundStyle(.tertiary)
+        Text("0.2.0 · macOS 26+").font(.caption).foregroundStyle(.tertiary)
       }.frame(maxWidth: .infinity, maxHeight: .infinity).tabItem { Label(L10n.tr("About"), systemImage: "info.circle") }
     }.frame(width: 800, height: 610)
       .onChange(of: language) { _, value in

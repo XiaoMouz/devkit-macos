@@ -1,5 +1,15 @@
 # 版本说明
 
+## v0.2.0
+
+支持 macOS 26 及以上。[GitHub Release](https://github.com/luolayo/devkit-macos/releases/tag/v0.2.0) 提供 Apple Silicon / Intel 通用包与 SHA-256 校验文件。
+
+- 新增简体中文和英文界面，可跟随系统或在设置中选择语言；窗口与菜单即时更新，保留当前工作和已有结果。
+- Spotlight 命令支持中文操作词，命令示例随应用语言切换；英文命令、原有简写和旧版保存的自定义别名继续兼容。
+- Spotlight 首次使用、快捷短语和排错说明集中到统一帮助入口。快捷短语由系统 Spotlight 管理，应用内不再提供别名编辑和快捷短语备忘。
+- 源码开发使用独立的 DevKit Debug 应用、偏好设置和 Spotlight 索引，避免与正式版冲突。
+- 上线中英文使用手册、工具教程和交互式产品演示。
+
 ## v0.1.0
 
 支持 macOS 26 及以上。[GitHub Release](https://github.com/luolayo/devkit-macos/releases/tag/v0.1.0) 提供 Apple Silicon / Intel 通用包与 SHA-256 校验文件。

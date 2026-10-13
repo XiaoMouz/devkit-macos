@@ -515,7 +515,7 @@
         }
       }
     },
-    "0.1.0 · macOS 26+": {
+    "0.2.0 · macOS 26+": {
       "extractionState": "manual",
       "shouldTranslate": false
     },

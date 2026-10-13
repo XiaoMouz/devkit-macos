@@ -79,7 +79,7 @@ def generated_catalog(catalogs, shortcuts):
     if not shortcuts:
         # Native framework interpolation and product/encoding labels are literal
         # passthrough values. Xcode may harvest them even with Swift extraction off.
-        for key in ('%@', 'DevKit', 'UTF-8', '0.1.0 · macOS 26+'):
+        for key in ('%@', 'DevKit', 'UTF-8', '0.2.0 · macOS 26+'):
             strings[key] = {'extractionState': 'manual', 'shouldTranslate': False}
     return json.dumps({'sourceLanguage': 'en', 'strings': dict(sorted(strings.items())), 'version': '1.0'},
                       ensure_ascii=False, indent=2) + '\n'
