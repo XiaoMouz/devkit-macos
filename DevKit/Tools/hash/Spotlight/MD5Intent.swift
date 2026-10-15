@@ -8,6 +8,8 @@ struct MD5Intent: AppIntent {
   @Parameter(title: "Input") var text: String
   static var parameterSummary: some ParameterSummary { Summary("MD5 Digest \(\.$text)") }
   func perform() async throws -> some IntentResult & ReturnsValue<String> & ShowsSnippetIntent {
+    let activity = await BackgroundActivity.begin()
+    defer { activity.finish() }
     var options = HashTool.Options()
     options.algorithm = "MD5"
     let value = try await SpotlightExecution.run(HashTool.self, text: text, options: options)

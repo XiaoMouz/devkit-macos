@@ -876,6 +876,23 @@
         }
       }
     },
+    "Active Spotlight Tasks": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active Spotlight Tasks"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在执行的 Spotlight 任务"
+          }
+        }
+      }
+    },
     "Actual Digest": {
       "extractionState": "manual",
       "localizations": {
@@ -1573,6 +1590,23 @@
         }
       }
     },
+    "Background Activity": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Background Activity"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "后台活动"
+          }
+        }
+      }
+    },
     "Background Color": {
       "extractionState": "manual",
       "localizations": {
@@ -2096,6 +2130,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "CLI 与 AI"
+          }
+        }
+      }
+    },
+    "CLI commands exit when finished. Workers stop within 25 seconds and exit if their parent app or command exits.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CLI commands exit when finished. Workers stop within 25 seconds and exit if their parent app or command exits."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CLI 命令完成后即退出。处理进程最多运行 25 秒，并会在所属应用或命令退出时结束。"
           }
         }
       }
@@ -5844,6 +5895,23 @@
         }
       }
     },
+    "DevKit does not install a persistent background service. Temporary Spotlight and CLI tasks do not appear in System Settings → Login Items & Extensions → Allow in the Background.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DevKit does not install a persistent background service. Temporary Spotlight and CLI tasks do not appear in System Settings → Login Items & Extensions → Allow in the Background."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DevKit 不安装常驻后台服务。临时执行的 Spotlight 和 CLI 任务不会列在系统设置的“登录项与扩展 → 允许在后台”中。"
+          }
+        }
+      }
+    },
     "DevKit · {0} tools": {
       "extractionState": "manual",
       "localizations": {
@@ -7965,6 +8033,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "查找…"
+          }
+        }
+      }
+    },
+    "Finished. DevKit will quit after 15 seconds of inactivity.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finished. DevKit will quit after 15 seconds of inactivity."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "任务已结束。空闲 15 秒后 DevKit 将自动退出。"
           }
         }
       }
@@ -13749,6 +13834,23 @@
         }
       }
     },
+    "Open DevKit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open DevKit"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开 DevKit"
+          }
+        }
+      }
+    },
     "Open Input in New Window": {
       "extractionState": "manual",
       "localizations": {
@@ -18917,6 +19019,23 @@
         }
       }
     },
+    "Spotlight tasks running: {0}": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spotlight tasks running: {0}"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在执行 Spotlight 任务：{0}"
+          }
+        }
+      }
+    },
     "Start Date": {
       "extractionState": "manual",
       "localizations": {
@@ -23099,6 +23218,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "窗口与布局"
+          }
+        }
+      }
+    },
+    "With no open windows, DevKit quits 15 seconds after its last Spotlight task. Hidden and minimized windows stay open. The menu bar shows activity while no windows are open.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "With no open windows, DevKit quits 15 seconds after its last Spotlight task. Hidden and minimized windows stay open. The menu bar shows activity while no windows are open."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有打开的窗口时，DevKit 会在最后一个 Spotlight 任务结束 15 秒后退出。隐藏和最小化的窗口会保留。无窗口期间，菜单栏会显示后台活动状态。"
           }
         }
       }

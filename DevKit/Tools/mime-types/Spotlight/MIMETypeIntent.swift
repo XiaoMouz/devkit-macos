@@ -8,6 +8,8 @@ struct MIMETypeIntent: AppIntent {
   @Parameter(title: "Input") var text: String
   static var parameterSummary: some ParameterSummary { Summary("MIME Type Lookup \(\.$text)") }
   func perform() async throws -> some IntentResult & ReturnsValue<String> & ShowsSnippetIntent {
+    let activity = await BackgroundActivity.begin()
+    defer { activity.finish() }
     let options = MimeTypesTool.Options()
 
     let value = try await SpotlightExecution.run(MimeTypesTool.self, text: text, options: options)

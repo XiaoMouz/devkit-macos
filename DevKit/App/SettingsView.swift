@@ -33,6 +33,7 @@ struct SettingsView: View {
           Slider(value: $fontSize, in: 11...22, step: 1) { Text(L10n.tr("Font Size \(Int(fontSize))")) }
           Toggle(L10n.tr("Wrap Lines"), isOn: $wrap)
         }
+        BackgroundActivitySettings()
       }.formStyle(.grouped).tabItem { Label(L10n.tr("General"), systemImage: "gearshape") }
       SpotlightSettingsView().tabItem { Label("Spotlight", systemImage: "magnifyingglass") }
       AutomationSettingsView().tabItem { Label(L10n.tr("CLI & AI"), systemImage: "terminal") }

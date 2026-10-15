@@ -8,6 +8,8 @@ struct HTTPStatusIntent: AppIntent {
   @Parameter(title: "Input") var text: String
   static var parameterSummary: some ParameterSummary { Summary("HTTP Status Lookup \(\.$text)") }
   func perform() async throws -> some IntentResult & ReturnsValue<String> & ShowsSnippetIntent {
+    let activity = await BackgroundActivity.begin()
+    defer { activity.finish() }
     let options = HttpStatusTool.Options()
 
     let value = try await SpotlightExecution.run(HttpStatusTool.self, text: text, options: options)

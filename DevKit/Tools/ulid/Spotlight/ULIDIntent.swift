@@ -8,6 +8,8 @@ struct ULIDIntent: AppIntent {
 
   static var parameterSummary: some ParameterSummary { Summary("Generate ULID") }
   func perform() async throws -> some IntentResult & ReturnsValue<String> & ShowsSnippetIntent {
+    let activity = await BackgroundActivity.begin()
+    defer { activity.finish() }
     var options = UlidTool.Options()
     options.count = 1
     let value = try await SpotlightExecution.run(UlidTool.self, text: "", options: options)

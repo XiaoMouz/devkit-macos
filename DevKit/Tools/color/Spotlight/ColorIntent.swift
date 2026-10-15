@@ -8,6 +8,8 @@ struct ColorIntent: AppIntent {
   @Parameter(title: "Input") var text: String
   static var parameterSummary: some ParameterSummary { Summary("Convert Color \(\.$text)") }
   func perform() async throws -> some IntentResult & ReturnsValue<String> & ShowsSnippetIntent {
+    let activity = await BackgroundActivity.begin()
+    defer { activity.finish() }
     let options = ColorTool.Options()
 
     let value = try await SpotlightExecution.run(ColorTool.self, text: text, options: options)

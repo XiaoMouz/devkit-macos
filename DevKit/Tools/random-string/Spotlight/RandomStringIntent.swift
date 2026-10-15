@@ -8,6 +8,8 @@ struct RandomStringIntent: AppIntent {
   @Parameter(title: "Length", default: 24) var length: Int
   static var parameterSummary: some ParameterSummary { Summary("Generate a \(\.$length)-character random string") }
   func perform() async throws -> some IntentResult & ReturnsValue<String> & ShowsSnippetIntent {
+    let activity = await BackgroundActivity.begin()
+    defer { activity.finish() }
     var options = RandomStringTool.Options()
     options.count = 1
     options.length = length

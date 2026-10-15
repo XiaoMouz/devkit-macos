@@ -8,6 +8,8 @@ struct JWTDecodeIntent: AppIntent {
   @Parameter(title: "Input") var text: String
   static var parameterSummary: some ParameterSummary { Summary("Parse JWT \(\.$text)") }
   func perform() async throws -> some IntentResult & ReturnsValue<String> & ShowsSnippetIntent {
+    let activity = await BackgroundActivity.begin()
+    defer { activity.finish() }
     let options = JwtTool.Options()
 
     let value = try await SpotlightExecution.run(JwtTool.self, text: text, options: options)

@@ -4,11 +4,12 @@ import SwiftUI
 
 @main
 struct DevKitApp: App {
+  @StateObject private var lifetime = ApplicationLifetime.shared
   @AppStorage("appearance") private var appearance = "system"
   @NSApplicationDelegateAdaptor(DevKitApplicationDelegate.self) private var delegate
   init() { signal(SIGPIPE, SIG_IGN) }
   var body: some Scene {
-    WindowGroup {
+    WindowGroup(id: "main") {
       MainWindow()
         .environment(\.locale, L10n.locale)
         .onChange(of: appearance, initial: true) { _, value in AppAppearance.apply(value) }
@@ -25,6 +26,11 @@ struct DevKitApp: App {
     .environment(\.locale, L10n.locale)
     Settings { SettingsView().environment(\.locale, L10n.locale) }
       .environment(\.locale, L10n.locale)
+    MenuBarExtra(isInserted: Binding(get: { lifetime.showsBackgroundStatus }, set: { _ in })) {
+      BackgroundActivityMenu()
+    } label: {
+      Label("DevKit", systemImage: lifetime.activeTaskCount > 0 ? "gearshape.2" : "clock")
+    }
   }
 }
 
@@ -36,8 +42,7 @@ struct DevKitApp: App {
   }
   func applicationDidFinishLaunching(_ notification: Notification) {
     NativeMenuLocalization.shared.start()
-    SpotlightSettingsStore.shared.refresh()
-    AppUpdater.shared.start()
+    ApplicationLifetime.shared.start()
   }
 }
 

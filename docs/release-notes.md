@@ -1,5 +1,14 @@
 # 版本说明
 
+## v0.2.2
+
+- Spotlight 临时任务在无窗口时显示菜单栏状态；任务结束后空闲 15 秒自动退出，隐藏或最小化的工作窗口继续保留。
+- CLI 取消和父进程退出时及时结束 worker，避免遗留后台处理进程。
+- 仅由 Spotlight 无窗口唤起时，不启动应用更新检查或索引同步。
+- 通用设置新增后台活动说明和当前 Spotlight 任务数量。
+
+v0.2.1 用户可在应用菜单选择「检查更新…」，下载后重启安装。本版支持 macOS 26 及以上，提供 [Apple Silicon / Intel 通用包](https://github.com/luolayo/devkit-macos/releases/tag/v0.2.2)。
+
 ## v0.2.1
 
 支持 macOS 26 及以上。[GitHub Release](https://github.com/luolayo/devkit-macos/releases/tag/v0.2.1) 提供 Apple Silicon / Intel 通用包与 SHA-256 校验文件。

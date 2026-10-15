@@ -8,6 +8,8 @@ struct UUIDIntent: AppIntent {
 
   static var parameterSummary: some ParameterSummary { Summary("Generate UUID") }
   func perform() async throws -> some IntentResult & ReturnsValue<String> & ShowsSnippetIntent {
+    let activity = await BackgroundActivity.begin()
+    defer { activity.finish() }
     var options = UuidTool.Options()
     options.count = 1
     let value = try await SpotlightExecution.run(UuidTool.self, text: "", options: options)

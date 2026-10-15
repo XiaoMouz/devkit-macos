@@ -42,6 +42,7 @@
 		7F018F1FD0073396440FA657 /* AppUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 425D8EF7FB5A92C3A583F3F4 /* AppUpdater.swift */; };
 		81102DF1B6A99E255B41010F /* RasterPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22CD1103A4DF5C759F0ACFE4 /* RasterPreview.swift */; };
 		815FAC235BFCA82D129DD62B /* ToolChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDC99B3BEC0A0849561AF9ED /* ToolChrome.swift */; };
+		8223106255E4CB43E2324CDA /* BackgroundActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1B6AB9182A32EBD74210C7C /* BackgroundActivityView.swift */; };
 		82CAAB45A6A69FBDEF0E91A3 /* ResultSnippet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C073BE278198051E34CF79AE /* ResultSnippet.swift */; };
 		871BDCD101CC05DE7859ADAB /* AutomationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF898DCAE3C8FEDE48BB4ADC /* AutomationSettingsView.swift */; };
 		88134937CB6DD5B0D94A22DB /* ToolSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77C79A8AACC0D84D794EBFA6 /* ToolSession.swift */; };
@@ -51,6 +52,7 @@
 		95B35E032621E23ABE241EAA /* CLIMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CCCDF9F16E5E5FCBAE70DCF /* CLIMain.swift */; };
 		9C356C978A64D200CD23EB10 /* ScenarioInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC892DEBD413424D28C2A61 /* ScenarioInput.swift */; };
 		A228262ADFC87368430D7722 /* CodeEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AB268D94E04651508BD93BD /* CodeEditor.swift */; };
+		A6C60021B2A8BB20E9C4DED3 /* ApplicationLifetime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B016AA7A532B4A55DC2D7BF /* ApplicationLifetime.swift */; };
 		AEBF9B5600E6BEDB49B1D201 /* Clipboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3556719D8345C5BEE5A7A310 /* Clipboard.swift */; };
 		B718202278033A3B71D8047C /* URLEncodeIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A2E05C4D1C025205B239311 /* URLEncodeIntent.swift */; };
 		B72CA7BE78A9C89B4218C097 /* ULIDIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A921C10EF36ADFADDBC9A7E7 /* ULIDIntent.swift */; };
@@ -104,6 +106,7 @@
 		2257D582B7D6A1565F7EE2CD /* DetachedWorkspaceWindows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetachedWorkspaceWindows.swift; sourceTree = "<group>"; };
 		22CD1103A4DF5C759F0ACFE4 /* RasterPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RasterPreview.swift; sourceTree = "<group>"; };
 		25F807B4DB6992B24C425A68 /* Base64Intents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Base64Intents.swift; sourceTree = "<group>"; };
+		2B016AA7A532B4A55DC2D7BF /* ApplicationLifetime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationLifetime.swift; sourceTree = "<group>"; };
 		3008BCD5006AEF406AFAE0C2 /* URLDecodeIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLDecodeIntent.swift; sourceTree = "<group>"; };
 		352F425ADC2B73D531C33BAF /* AppAppearance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppAppearance.swift; sourceTree = "<group>"; };
 		3556719D8345C5BEE5A7A310 /* Clipboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard.swift; sourceTree = "<group>"; };
@@ -145,6 +148,7 @@
 		A921C10EF36ADFADDBC9A7E7 /* ULIDIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ULIDIntent.swift; sourceTree = "<group>"; };
 		A9FBCAA91D65B3F4253E869C /* ToolWorkspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolWorkspace.swift; sourceTree = "<group>"; };
 		AAEAA469A4C87FBB7439F6FA /* ResultReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultReportView.swift; sourceTree = "<group>"; };
+		B1B6AB9182A32EBD74210C7C /* BackgroundActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundActivityView.swift; sourceTree = "<group>"; };
 		B1CA8134DA3AC641106BAC9B /* WorkspaceColumns.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceColumns.swift; sourceTree = "<group>"; };
 		B9304776B0B0F2CB0B480ED4 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
 		BDC99B3BEC0A0849561AF9ED /* ToolChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolChrome.swift; sourceTree = "<group>"; };
@@ -477,8 +481,10 @@
 			isa = PBXGroup;
 			children = (
 				352F425ADC2B73D531C33BAF /* AppAppearance.swift */,
+				2B016AA7A532B4A55DC2D7BF /* ApplicationLifetime.swift */,
 				425D8EF7FB5A92C3A583F3F4 /* AppUpdater.swift */,
 				EF898DCAE3C8FEDE48BB4ADC /* AutomationSettingsView.swift */,
+				B1B6AB9182A32EBD74210C7C /* BackgroundActivityView.swift */,
 				2257D582B7D6A1565F7EE2CD /* DetachedWorkspaceWindows.swift */,
 				7169039307C6842EA79FAD88 /* DevKitApp.swift */,
 				E3F328A6ED97BBD577BB46F6 /* MainWindow.swift */,
@@ -858,7 +864,9 @@
 			files = (
 				2A324F4747AD44CF98930AE4 /* AppAppearance.swift in Sources */,
 				7F018F1FD0073396440FA657 /* AppUpdater.swift in Sources */,
+				A6C60021B2A8BB20E9C4DED3 /* ApplicationLifetime.swift in Sources */,
 				871BDCD101CC05DE7859ADAB /* AutomationSettingsView.swift in Sources */,
+				8223106255E4CB43E2324CDA /* BackgroundActivityView.swift in Sources */,
 				64B564A81829B82B82BADB1C /* Base64Intents.swift in Sources */,
 				242C04A97E37C235978CEE4A /* CSSUnitIntent.swift in Sources */,
 				AEBF9B5600E6BEDB49B1D201 /* Clipboard.swift in Sources */,

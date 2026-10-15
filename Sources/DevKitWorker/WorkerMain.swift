@@ -5,7 +5,16 @@ import Foundation
 @main
 struct WorkerMain {
   static func main() async {
+    // A killed CLI or a quitting app must not leave its worker processing silently.
+    let parent = getppid()
+    guard parent > 1 else { return }
+    let parentExit = DispatchSource.makeProcessSource(identifier: parent, eventMask: .exit, queue: .global())
+    parentExit.setEventHandler { @Sendable in _exit(1) }
+    parentExit.resume()
+    defer { parentExit.cancel() }
+    guard getppid() == parent else { return }
     // A hard stop also covers synchronous parsers that do not cooperate with Task cancellation.
+    signal(SIGALRM, SIG_DFL)
     alarm(25)
     var cpu = rlimit(rlim_cur: 15, rlim_max: 15)
     setrlimit(RLIMIT_CPU, &cpu)

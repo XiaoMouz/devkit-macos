@@ -6,10 +6,23 @@ import Foundation
 struct CLIMain {
   static func main() async {
     signal(SIGPIPE, SIG_IGN)
+    let control = WorkerProcessControl()
+    // Install handlers before reading stdin or launching a worker, closing the launch race.
+    let signals = [SIGINT, SIGTERM, SIGHUP].map { number -> DispatchSourceSignal in
+      signal(number, SIG_IGN)
+      let source = DispatchSource.makeSignalSource(signal: number, queue: .global())
+      source.setEventHandler { @Sendable in
+        control.stop()
+        exit(128 + number)
+      }
+      source.resume()
+      return source
+    }
+    defer { signals.forEach { $0.cancel() }; control.stop() }
     let result = await DevKitCommandLine.run(arguments: Array(CommandLine.arguments.dropFirst()),
       isInputTerminal: isatty(STDIN_FILENO) != 0,
       readInput: { try DevKitCommandLine.read(.standardInput, limit: DevKitCommandLine.requestLimit) },
-      execute: { request in try await Task.detached { try execute(request) }.value })
+      execute: { request in try await Task.detached { try execute(request, control: control) }.value })
     do {
       try FileHandle.standardOutput.write(contentsOf: result.stdout)
       try FileHandle.standardError.write(contentsOf: result.stderr)
@@ -17,7 +30,7 @@ struct CLIMain {
     } catch { exit(1) }
   }
 
-  private static func execute(_ request: WorkerRequest) throws -> ToolOutput {
+  private static func execute(_ request: WorkerRequest, control: WorkerProcessControl) throws -> ToolOutput {
     // Resolve the executable itself, including when invoked through ~/.local/bin/devkit.
     guard let executable = Bundle.main.executableURL?.resolvingSymlinksInPath() else {
       throw ToolFailure(L10n.tr("Could not locate the CLI."), code: "resource")
@@ -35,23 +48,11 @@ struct CLIMain {
     process.standardInput = input; process.standardOutput = output
     process.standardError = FileHandle.nullDevice
     let payload = try JSONEncoder().encode(request)
-    try process.run()
-    // Keep cancellation attached to the one worker owned by this CLI invocation.
-    signal(SIGINT, SIG_IGN); signal(SIGTERM, SIG_IGN)
-    let sources = [SIGINT, SIGTERM].map { number -> DispatchSourceSignal in
-      let source = DispatchSource.makeSignalSource(signal: number, queue: .global())
-      source.setEventHandler {
-        if process.isRunning { kill(process.processIdentifier, SIGKILL) }
-        exit(128 + number)
-      }
-      source.resume()
-      return source
-    }
+    try control.start(process)
     defer {
-      sources.forEach { $0.cancel() }
       try? input.fileHandleForWriting.close()
       try? output.fileHandleForReading.close()
-      if process.isRunning { kill(process.processIdentifier, SIGKILL) }
+      control.stop()
     }
     DispatchQueue.global().async {
       try? input.fileHandleForWriting.write(contentsOf: payload)

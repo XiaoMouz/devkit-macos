@@ -8,6 +8,8 @@ struct URLParserIntent: AppIntent {
   @Parameter(title: "Input") var text: String
   static var parameterSummary: some ParameterSummary { Summary("Parse URL \(\.$text)") }
   func perform() async throws -> some IntentResult & ReturnsValue<String> & ShowsSnippetIntent {
+    let activity = await BackgroundActivity.begin()
+    defer { activity.finish() }
     let options = UrlParserTool.Options()
 
     let value = try await SpotlightExecution.run(UrlParserTool.self, text: text, options: options)

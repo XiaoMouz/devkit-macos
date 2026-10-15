@@ -8,6 +8,8 @@ struct NumberFormatIntent: AppIntent {
   @Parameter(title: "Input") var text: String
   static var parameterSummary: some ParameterSummary { Summary("Format Number \(\.$text)") }
   func perform() async throws -> some IntentResult & ReturnsValue<String> & ShowsSnippetIntent {
+    let activity = await BackgroundActivity.begin()
+    defer { activity.finish() }
     let options = NumberFormatTool.Options()
 
     let value = try await SpotlightExecution.run(

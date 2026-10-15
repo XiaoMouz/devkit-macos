@@ -15,7 +15,9 @@ struct ResultSnippetIntent: SnippetIntent {
     self.copied = copied
   }
   func perform() async throws -> some IntentResult & ShowsSnippetView {
-    .result(view: ResultSnippetView(text: text, tool: tool, copied: copied))
+    let activity = await BackgroundActivity.begin()
+    defer { activity.finish() }
+    return .result(view: ResultSnippetView(text: text, tool: tool, copied: copied))
   }
 }
 struct CopyResultIntent: AppIntent {
@@ -30,6 +32,8 @@ struct CopyResultIntent: AppIntent {
     self.tool = tool
   }
   @MainActor func perform() async throws -> some IntentResult & ShowsSnippetIntent {
+    let activity = await BackgroundActivity.begin()
+    defer { activity.finish() }
     guard Clipboard.copy(text) else { throw ToolFailure(L10n.tr("Could not copy. Please try again.")) }
     return .result(snippetIntent: ResultSnippetIntent(text: text, tool: tool, copied: true))
   }

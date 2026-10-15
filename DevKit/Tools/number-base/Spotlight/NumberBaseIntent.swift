@@ -8,6 +8,8 @@ struct NumberBaseIntent: AppIntent {
   @Parameter(title: "Input") var text: String
   static var parameterSummary: some ParameterSummary { Summary("Decimal to Hexadecimal \(\.$text)") }
   func perform() async throws -> some IntentResult & ReturnsValue<String> & ShowsSnippetIntent {
+    let activity = await BackgroundActivity.begin()
+    defer { activity.finish() }
     let options = NumberBaseTool.Options()
 
     let value = try await SpotlightExecution.run(NumberBaseTool.self, text: text, options: options)

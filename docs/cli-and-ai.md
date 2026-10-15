@@ -79,6 +79,8 @@ devkit run http-client --text 'https://example.com' --allow-network
 
 ## 结果与错误
 
+CLI 不会打开或常驻主应用，命令完成后立即退出。单次处理最多运行 25 秒；按 `Ctrl+C`、关闭终端，或结束 CLI 进程时，所属处理进程也会结束。通过管道传入内容时，需要输入端发送 EOF 才会开始处理；等待输入期间也可以取消。
+
 结果写入 stdout，错误写入 stderr。
 
 `--format human` 显式选择默认排版。`--format text` 仅用于 `run`，精确输出 `output.text`，不添加尾部换行，适合管道和重定向保存。

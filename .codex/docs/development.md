@@ -16,7 +16,7 @@ Debug 产物为 `DevKit Debug.app`（`app.devkit.macos.debug`），Release 为 `
 
 ## 应用内更新与发布 Feed
 
-直接分发的 Release 使用 Sparkle 2.10.0（Xcode Swift Package 依赖，版本固定）。`AppUpdater` 在应用启动后启动唯一的更新会话，在应用运行期间默认每天检查并后台下载。完成验证和准备后在窗口底部、应用菜单和「设置 → 更新」提供重启安装入口。也可以正常退出，由 Sparkle 安装已准备好的更新。Debug 不启动更新器，不连接正式 Feed，也不替换 Xcode 产物。用户关闭自动检查/下载后的偏好由 Sparkle 保存，启动时不重置。
+直接分发的 Release 使用 Sparkle 2.10.0（Xcode Swift Package 依赖，版本固定）。`AppUpdater` 在本次进程首次打开用户界面后启动唯一的更新会话，在应用运行期间默认每天检查并后台下载；仅由 Spotlight 无窗口调起时不启动更新器。完成验证和准备后在窗口底部、应用菜单和「设置 → 更新」提供重启安装入口。也可以正常退出，由 Sparkle 安装已准备好的更新。Debug 不启动更新器，不连接正式 Feed，也不替换 Xcode 产物。用户关闭自动检查/下载后的偏好由 Sparkle 保存，启动时不重置。
 
 `DevKit/Resources/Info.plist` 中的 `SUFeedURL` 指向 main 分支根目录的 `appcast.xml`；更新包仍放在 GitHub Releases。Feed 随 main 分支文件更新生效，不依赖文档站部署。Feed 条目由 Sparkle 官方工具根据实际导出附件生成，包含构建号、最低系统、下载地址、字节数和 EdDSA 签名；不要填写假版本或占位签名。v0.2.0 及更早版本没有更新器，需要手动安装 v0.2.1 一次。
 

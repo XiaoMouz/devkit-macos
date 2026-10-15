@@ -18,6 +18,8 @@ struct Base64CommandIntent: AppIntent {
   @Parameter(title: "Command", description: "encode hello / decode aGVsbG8=") var command: String
   static var parameterSummary: some ParameterSummary { Summary("Base64 Command \(\.$command)") }
   func perform() async throws -> some IntentResult & ReturnsValue<String> & ShowsSnippetIntent {
+    let activity = await BackgroundActivity.begin()
+    defer { activity.finish() }
     let request = try SpotlightCommand.parse(command, toolID: "base64", preferences: .load())
     let value = try await SpotlightExecution.run(request)
     return .result(value: value, snippetIntent: ResultSnippetIntent(text: value, tool: "Base64"))
@@ -35,6 +37,8 @@ struct Base64GuidedIntent: AppIntent {
     Summary("Base64 \(\.$operation) \(\.$text)")
   }
   func perform() async throws -> some IntentResult & ReturnsValue<String> & ShowsSnippetIntent {
+    let activity = await BackgroundActivity.begin()
+    defer { activity.finish() }
     var options = Base64Tool.Options()
     options.operation = operation.rawValue
     let value = try await SpotlightExecution.run(Base64Tool.self, text: text, options: options)
@@ -48,6 +52,8 @@ struct Base64EncodeIntent: AppIntent {
   @Parameter(title: "Text") var text: String
   static var parameterSummary: some ParameterSummary { Summary("Base64 Encode \(\.$text)") }
   func perform() async throws -> some IntentResult & ReturnsValue<String> & ShowsSnippetIntent {
+    let activity = await BackgroundActivity.begin()
+    defer { activity.finish() }
     let value = try await SpotlightExecution.run(Base64Tool.self, text: text)
     return .result(value: value, snippetIntent: ResultSnippetIntent(text: value, tool: L10n.tr("Base64 Encode")))
   }
@@ -59,6 +65,8 @@ struct Base64DecodeIntent: AppIntent {
   @Parameter(title: "Text") var text: String
   static var parameterSummary: some ParameterSummary { Summary("Base64 Decode \(\.$text)") }
   func perform() async throws -> some IntentResult & ReturnsValue<String> & ShowsSnippetIntent {
+    let activity = await BackgroundActivity.begin()
+    defer { activity.finish() }
     var options = Base64Tool.Options()
     options.operation = "decode"
     let value = try await SpotlightExecution.run(Base64Tool.self, text: text, options: options)

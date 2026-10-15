@@ -8,6 +8,8 @@ struct CSSUnitIntent: AppIntent {
   @Parameter(title: "Input") var text: String
   static var parameterSummary: some ParameterSummary { Summary("px to rem \(\.$text)") }
   func perform() async throws -> some IntentResult & ReturnsValue<String> & ShowsSnippetIntent {
+    let activity = await BackgroundActivity.begin()
+    defer { activity.finish() }
     let options = CssUnitTool.Options()
 
     let value = try await SpotlightExecution.run(CssUnitTool.self, text: text, options: options)

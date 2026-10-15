@@ -8,6 +8,8 @@ struct UniqueLinesIntent: AppIntent {
   @Parameter(title: "Input") var text: String
   static var parameterSummary: some ParameterSummary { Summary("Remove Duplicate Lines \(\.$text)") }
   func perform() async throws -> some IntentResult & ReturnsValue<String> & ShowsSnippetIntent {
+    let activity = await BackgroundActivity.begin()
+    defer { activity.finish() }
     let options = TextLinesTool.Options()
 
     let value = try await SpotlightExecution.run(TextLinesTool.self, text: text, options: options)

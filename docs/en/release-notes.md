@@ -1,5 +1,14 @@
 # Release notes
 
+## v0.2.2
+
+- Show temporary Spotlight activity in the menu bar and quit after 15 idle seconds with no open windows. Hidden and minimized workspaces remain open.
+- End workers promptly when a CLI command is cancelled or its parent process exits.
+- Skip update checks and index synchronization for Spotlight-only background launches.
+- Add background activity information and the active Spotlight task count to General settings.
+
+Users on v0.2.1 can choose **Check for Updates…**, then restart to install. Requires macOS 26 or later; the [GitHub Release](https://github.com/luolayo/devkit-macos/releases/tag/v0.2.2) includes a universal Apple Silicon / Intel package.
+
 ## v0.2.1
 
 Supports macOS 26 or later. The [GitHub Release](https://github.com/luolayo/devkit-macos/releases/tag/v0.2.1) includes a universal Apple Silicon / Intel package and a SHA-256 checksum file.

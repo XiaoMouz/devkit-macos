@@ -8,6 +8,8 @@ struct URLEncodeIntent: AppIntent {
   @Parameter(title: "Input") var text: String
   static var parameterSummary: some ParameterSummary { Summary("URL Encode \(\.$text)") }
   func perform() async throws -> some IntentResult & ReturnsValue<String> & ShowsSnippetIntent {
+    let activity = await BackgroundActivity.begin()
+    defer { activity.finish() }
     let options = UrlCodecTool.Options()
 
     let value = try await SpotlightExecution.run(UrlCodecTool.self, text: text, options: options)

@@ -8,6 +8,8 @@ struct NanoIDIntent: AppIntent {
 
   static var parameterSummary: some ParameterSummary { Summary("Generate Nano ID") }
   func perform() async throws -> some IntentResult & ReturnsValue<String> & ShowsSnippetIntent {
+    let activity = await BackgroundActivity.begin()
+    defer { activity.finish() }
     var options = NanoidTool.Options()
     options.count = 1
     let value = try await SpotlightExecution.run(NanoidTool.self, text: "", options: options)

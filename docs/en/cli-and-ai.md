@@ -79,6 +79,8 @@ Pass tokens and keys through stdin or request files to keep them out of shell hi
 
 ## Results and errors
 
+The CLI does not launch or keep the main app running. Commands exit when finished, and each worker has a 25-second execution limit. Pressing `Ctrl+C`, closing the terminal, or ending the CLI process also ends its worker. Piped input waits for EOF before processing; you can cancel while it is waiting.
+
 Results go to stdout; errors go to stderr.
 
 `--format human` explicitly selects the default human-readable layout. `--format text` is available only for `run`: it outputs exactly `output.text`, with no added trailing newline, for piping or redirection.

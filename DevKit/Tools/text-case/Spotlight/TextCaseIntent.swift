@@ -8,6 +8,8 @@ struct TextCaseIntent: AppIntent {
   @Parameter(title: "Input") var text: String
   static var parameterSummary: some ParameterSummary { Summary("Convert to camelCase \(\.$text)") }
   func perform() async throws -> some IntentResult & ReturnsValue<String> & ShowsSnippetIntent {
+    let activity = await BackgroundActivity.begin()
+    defer { activity.finish() }
     let options = TextCaseTool.Options()
 
     let value = try await SpotlightExecution.run(TextCaseTool.self, text: text, options: options)

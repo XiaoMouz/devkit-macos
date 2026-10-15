@@ -2,28 +2,9 @@ import Darwin
 import DevKitCore
 import Foundation
 
-final class WorkerControl: @unchecked Sendable {
-  private let lock = NSLock()
-  private var process: Process?
-  private var stopped = false
-  func start(_ process: Process) throws {
-    try lock.withLock {
-      if stopped { throw CancellationError() }
-      self.process = process
-      try process.run()
-    }
-  }
-  func stop() {
-    lock.withLock {
-      stopped = true
-      if let process, process.isRunning { kill(process.processIdentifier, SIGKILL) }
-      process = nil
-    }
-  }
-}
 enum WorkerRunner {
   static func run(_ request: WorkerRequest) async throws -> ToolOutput {
-    let control = WorkerControl()
+    let control = WorkerProcessControl()
     let language = L10n.language
     return try await withTaskCancellationHandler {
       try await Task.detached(priority: .userInitiated) {

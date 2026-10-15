@@ -41,6 +41,12 @@ Existing abbreviations such as `b64 dec aGVsbG8=` remain supported. Custom comma
 
 The app includes English and Simplified Chinese. Adding translation resources also makes the language's operation words available to command parsing. Commands in supported languages remain usable after switching languages, including when system-cached action descriptions have not updated yet.
 
+## Background activity and quitting
+
+Spotlight can temporarily launch DevKit. With no open windows, a menu bar item shows task activity and offers **Open DevKit** and **Quit DevKit**. DevKit quits after 15 idle seconds following the last task. Hidden and minimized workspaces remain open. A Spotlight-only launch does not start update checks or index synchronization.
+
+**System Settings → Login Items & Extensions → Allow in the Background** manages registered login items and background services. DevKit's temporary tasks do not register a persistent service, so they do not appear there. **Settings → General → Background Activity** explains this policy and shows the current Spotlight task count.
+
 ## Disable and troubleshoot
 
 Disabling a tool removes its index and prevents execution, although the system may still display registered action names. Clearing the index and disabling tools affects only DevKit. If an action card does not appear, check signing, tool switches, and the action entry before resyncing. Try the same operation in the main window to check the input itself.

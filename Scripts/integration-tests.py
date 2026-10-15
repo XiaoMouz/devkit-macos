@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import socket
 import socketserver
+import signal
 import struct
 import subprocess
 import sys
@@ -273,6 +274,11 @@ class CLIIntegration(unittest.TestCase):
             self.assertEqual(json.loads(result.stderr)['error']['code'], 'timeout')
 
     def test_cli_cancel_terminates_worker_connection(self):
+        for stop_signal in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP, signal.SIGKILL):
+            with self.subTest(signal=stop_signal):
+                self.assert_cli_exit_closes_worker(stop_signal)
+
+    def assert_cli_exit_closes_worker(self, stop_signal):
         connected, disconnected = threading.Event(), threading.Event()
         class WaitingHandler(socketserver.BaseRequestHandler):
             def handle(self):
@@ -294,12 +300,27 @@ class CLIIntegration(unittest.TestCase):
                                    stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         try:
             self.assertTrue(connected.wait(5))
-            process.terminate()
+            process.send_signal(stop_signal)
             process.communicate(timeout=3)
-            self.assertEqual(process.returncode, 143)
+            self.assertEqual(process.returncode, -signal.SIGKILL if stop_signal == signal.SIGKILL else 128 + stop_signal)
             self.assertTrue(disconnected.wait(2), 'worker connection survived CLI cancellation')
         finally:
             if process.poll() is None: process.kill(); process.communicate()
             server.shutdown(); server.server_close()
+
+    def test_cli_can_be_cancelled_while_waiting_for_input(self):
+        for stop_signal in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
+            with self.subTest(signal=stop_signal):
+                process = subprocess.Popen([str(CLI), 'run', 'base64'], stdin=subprocess.PIPE,
+                                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                try:
+                    time.sleep(.3)
+                    self.assertIsNone(process.poll())
+                    process.send_signal(stop_signal)
+                    process.wait(timeout=3)
+                    self.assertEqual(process.returncode, 128 + stop_signal)
+                finally:
+                    if process.poll() is None: process.kill()
+                    process.communicate(timeout=3)
 
 if __name__=='__main__': unittest.main(verbosity=2)

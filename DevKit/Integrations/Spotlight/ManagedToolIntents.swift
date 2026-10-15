@@ -26,12 +26,20 @@ struct SpotlightToolAction: AppEntity, IndexedEntity {
   }
 }
 struct SpotlightToolActionQuery: EntityStringQuery {
-  func suggestedEntities() async throws -> [SpotlightToolAction] { available() }
+  func suggestedEntities() async throws -> [SpotlightToolAction] {
+    let activity = await BackgroundActivity.begin()
+    defer { activity.finish() }
+    return available()
+  }
   func entities(for identifiers: [String]) async throws -> [SpotlightToolAction] {
-    available().filter { identifiers.contains($0.id) }
+    let activity = await BackgroundActivity.begin()
+    defer { activity.finish() }
+    return available().filter { identifiers.contains($0.id) }
   }
   func entities(matching string: String) async throws -> [SpotlightToolAction] {
-    available().filter { ($0.name + " " + $0.toolID + " " + $0.aliases.joined(separator: " ")).localizedStandardContains(string) }
+    let activity = await BackgroundActivity.begin()
+    defer { activity.finish() }
+    return available().filter { ($0.name + " " + $0.toolID + " " + $0.aliases.joined(separator: " ")).localizedStandardContains(string) }
   }
   private func available() -> [SpotlightToolAction] {
     let preferences = SpotlightPreferences.load()
@@ -45,6 +53,8 @@ struct DevKitCommandIntent: AppIntent {
   @Parameter(title: "Command") var command: String
   static var parameterSummary: some ParameterSummary { Summary("DevKit Command \(\.$command)") }
   func perform() async throws -> some IntentResult & ReturnsValue<String> & ShowsSnippetIntent {
+    let activity = await BackgroundActivity.begin()
+    defer { activity.finish() }
     let request = try SpotlightCommand.parse(command, preferences: .load())
     let value = try await SpotlightExecution.run(request)
     return .result(value: value, snippetIntent: ResultSnippetIntent(text: value, tool: ToolRegistry.find(request.id)?.metadata.name ?? request.id))
@@ -58,6 +68,8 @@ struct DevKitToolIntent: AppIntent {
   @Parameter(title: "Text or Count", default: "") var text: String
   static var parameterSummary: some ParameterSummary { Summary("Process \(\.$text) with \(\.$action)") }
   func perform() async throws -> some IntentResult & ReturnsValue<String> & ShowsSnippetIntent {
+    let activity = await BackgroundActivity.begin()
+    defer { activity.finish() }
     let preferences = SpotlightPreferences.load()
     try require(preferences.allows(action.toolID), L10n.tr("This tool’s Spotlight action is disabled. Enable it in DevKit settings."))
     guard let selected = SpotlightCatalog.actions.first(where: { $0.id == action.id && $0.toolID == action.toolID }) else { throw ToolFailure(L10n.tr("This tool action is no longer available. Select it again.")) }
