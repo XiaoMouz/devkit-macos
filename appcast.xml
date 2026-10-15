@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>DevKit</title>
+        <link>https://github.com/luolayo/devkit-macos</link>
+        <description>DevKit stable updates</description>
+        <language>en</language>
+        <item>
+            <title>0.2.1</title>
+            <pubDate>Thu, 15 Oct 2026 11:38:22 +0800</pubDate>
+            <sparkle:fullReleaseNotesLink>https://luolayo.github.io/devkit-macos/release-notes.html</sparkle:fullReleaseNotesLink>
+            <sparkle:version>5</sparkle:version>
+            <sparkle:shortVersionString>0.2.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/luolayo/devkit-macos/releases/download/v0.2.1/DevKit-v0.2.1-macOS-universal.zip" length="8648164" type="application/octet-stream" sparkle:edSignature="de/8Z05toQW5xcPKigSe+y1NxSXgAJrMnGL3SxAUckB/Gu8Swx4QAApUPXRqv87GcMxypb/eTGOZnA2dOY50Bw=="/>
+        </item>
+    </channel>
+</rss>

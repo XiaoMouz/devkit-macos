@@ -30,6 +30,7 @@ struct MainWindow: View {
       detail
     }
     .frame(minWidth: 900, minHeight: 580)
+    .safeAreaInset(edge: .bottom, spacing: 0) { UpdateReadyBanner() }
     // A distinct base layer lets the floating sidebar and content panes read as
     // elevated, instead of merging with a window background of the same tone.
     .containerBackground(Color(nsColor: .workspaceBase), for: .window)

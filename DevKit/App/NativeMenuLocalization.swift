@@ -145,6 +145,7 @@ import Observation
 
   static let headings = ["File", "Edit", "View", "Tools", "Window", "Help"]
   static let standardTitles = [
+    "Check for Updates…", "Restart to Update…",
     "Search Tools", "Run", "Copy Full Result", "Show Input", "Show Result", "Toggle Sidebar", "Toggle Inspector",
     "About DevKit", "Settings…", "Services", "Hide DevKit", "Hide Others", "Show All", "Quit DevKit",
     "New Window", "New Tab", "Close", "Close All", "Open…", "Open Recent", "Save…", "Save As…", "Revert to Saved", "Print…",

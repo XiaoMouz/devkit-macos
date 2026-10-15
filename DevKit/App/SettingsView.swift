@@ -36,6 +36,7 @@ struct SettingsView: View {
       }.formStyle(.grouped).tabItem { Label(L10n.tr("General"), systemImage: "gearshape") }
       SpotlightSettingsView().tabItem { Label("Spotlight", systemImage: "magnifyingglass") }
       AutomationSettingsView().tabItem { Label(L10n.tr("CLI & AI"), systemImage: "terminal") }
+      UpdateSettingsView().tabItem { Label(L10n.tr("Updates"), systemImage: "arrow.down.circle") }
       VStack(spacing: 12) {
         Image(nsImage: NSApp.applicationIconImage).resizable().scaledToFit().frame(width: 96, height: 96)
           .accessibilityHidden(true)
@@ -45,7 +46,7 @@ struct SettingsView: View {
           Label(L10n.tr("Tools: \(ToolRegistry.all.count)"), systemImage: "square.grid.2x2")
           Label(L10n.tr("Local Processing"), systemImage: "lock.shield")
         }.font(.callout).foregroundStyle(.secondary).padding(.top, 4)
-        Text("0.2.0 · macOS 26+").font(.caption).foregroundStyle(.tertiary)
+        Text(verbatim: "\(AppUpdater.version) · macOS 26+").font(.caption).foregroundStyle(.tertiary)
       }.frame(maxWidth: .infinity, maxHeight: .infinity).tabItem { Label(L10n.tr("About"), systemImage: "info.circle") }
     }.frame(width: 800, height: 610)
       .onChange(of: language) { _, value in

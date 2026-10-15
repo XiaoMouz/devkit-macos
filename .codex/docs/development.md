@@ -14,6 +14,33 @@ Debug 产物为 `DevKit Debug.app`（`app.devkit.macos.debug`），Release 为 `
 
 `project.yml` 是工程结构来源，仅在结构变化时使用 XcodeGen 同步；生成前检查工作区，避免覆盖未提交工程修改。应用图标源为 `DevKit/Resources/AppIcon.icon`，使用 Icon Composer 编辑，由 Xcode 编译。
 
+## 应用内更新与发布 Feed
+
+直接分发的 Release 使用 Sparkle 2.10.0（Xcode Swift Package 依赖，版本固定）。`AppUpdater` 在应用启动后启动唯一的更新会话，在应用运行期间默认每天检查并后台下载。完成验证和准备后在窗口底部、应用菜单和「设置 → 更新」提供重启安装入口。也可以正常退出，由 Sparkle 安装已准备好的更新。Debug 不启动更新器，不连接正式 Feed，也不替换 Xcode 产物。用户关闭自动检查/下载后的偏好由 Sparkle 保存，启动时不重置。
+
+`DevKit/Resources/Info.plist` 中的 `SUFeedURL` 指向 main 分支根目录的 `appcast.xml`；更新包仍放在 GitHub Releases。Feed 随 main 分支文件更新生效，不依赖文档站部署。Feed 条目由 Sparkle 官方工具根据实际导出附件生成，包含构建号、最低系统、下载地址、字节数和 EdDSA 签名；不要填写假版本或占位签名。v0.2.0 及更早版本没有更新器，需要手动安装 v0.2.1 一次。
+
+更新包在解压前校验 EdDSA 签名。`SUPublicEDKey` 是可提交的公钥；对应私钥保存在 macOS 登录钥匙串，Sparkle account 为 `app.devkit.macos`，不属于 Apple 签名证书，不能替换 `Signing.local.xcconfig`。妥善备份私钥；不要把私钥、导出文件或钥匙串内容放入仓库、日志和 CI。使用 [Sparkle 官方工具](https://sparkle-project.org/documentation/) 的 `generate_keys --account app.devkit.macos -p` 只查看公钥，发布前与 Info.plist 比对。换机应导入已备份密钥，不重新生成并覆盖公钥；启用解压前验证后，ZIP 更新不能用于丢失旧私钥的密钥轮换。
+
+每次发布：
+
+1. 增加 `CFBundleVersion`（必须严格递增），同步用户可见的 `CFBundleShortVersionString`。在 Xcode `Product → Archive` 和 Organizer 中完成 Developer ID 签名、公证与导出，保持正式 Bundle ID。
+2. 用 Finder 压缩 Organizer 导出的 `DevKit.app`，使用稳定的附件名（如 `DevKit-vX.Y.Z-macOS-universal.zip`），将最终 ZIP 放入专用于本次发布的目录。不要修改签名后的应用或重新构建另一份 App。
+3. 将现有 `appcast.xml` 复制到该目录。使用与工程同版本的 Sparkle 官方 `generate_appcast` 为现有导出附件生成 EdDSA 签名与 Feed（这是更新元数据生成，不是 App 构建或重签名）：
+
+   ```sh
+   /path/to/Sparkle/bin/generate_appcast \
+     --account app.devkit.macos \
+     --download-url-prefix https://github.com/luolayo/devkit-macos/releases/download/vX.Y.Z/ \
+     --maximum-deltas 0 \
+     /path/to/release-feed-directory
+   ```
+
+4. 检查生成条目的 build/version、最低系统版本、架构、附件 HTTPS 地址、字节数和 `sparkle:edSignature`。初期只分发完整包，关闭 delta 生成。保留历史条目的附件地址，不将历史版本重定向到最新 Release。完成后将生成的 Feed 替换仓库根 `appcast.xml`。
+5. **实际上传仍需用户明确要求发布**。先上传完全相同的 ZIP，再将 Feed 发布到 main；确认公开 Feed 与附件可访问。不要发布指向草稿 Release、404 或重新压缩附件的条目。
+
+正式上线前需在已安装的较旧正式版本上验证下载、签名拒绝、重启替换、退出安装、网络错误重试、设置持久化以及 CLI 链接仍有效。完整升级验收涉及正式安装版本，需在明确授权的发布验收中完成；日常 Debug 仅验收界面、禁用状态与编译，不能声称已验证实际替换。
+
 ## 核心与会话测试
 
 ```sh

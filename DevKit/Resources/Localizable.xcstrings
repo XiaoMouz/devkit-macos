@@ -1522,6 +1522,57 @@
         }
       }
     },
+    "Automatic Updates": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic Updates"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自动更新"
+          }
+        }
+      }
+    },
+    "Automatically check for updates": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatically check for updates"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自动检查更新"
+          }
+        }
+      }
+    },
+    "Automatically download updates": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatically download updates"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自动下载更新"
+          }
+        }
+      }
+    },
     "Background Color": {
       "extractionState": "manual",
       "localizations": {
@@ -2572,6 +2623,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "键入时检查拼写"
+          }
+        }
+      }
+    },
+    "Check for Updates…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check for Updates…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "检查更新…"
           }
         }
       }
@@ -5194,6 +5262,23 @@
         }
       }
     },
+    "Current Version": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current Version"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前版本"
+          }
+        }
+      }
+    },
     "Customize Toolbar…": {
       "extractionState": "manual",
       "localizations": {
@@ -5738,6 +5823,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "DevKit 工具操作"
+          }
+        }
+      }
+    },
+    "DevKit checks daily and downloads updates in the background. Install a ready update by restarting, or when you next quit the app.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DevKit checks daily and downloads updates in the background. Install a ready update by restarting, or when you next quit the app."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DevKit 每天检查更新并在后台下载。更新就绪后可重启安装，也会在下次退出应用时安装。"
           }
         }
       }
@@ -7200,6 +7302,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "导出移除元数据的 PNG"
+          }
+        }
+      }
+    },
+    "Export anything you want to keep before restarting. Current inputs and results will not be restored.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export anything you want to keep before restarting. Current inputs and results will not be restored."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重启前请导出需要保留的内容。当前输入和结果不会在重启后恢复。"
           }
         }
       }
@@ -11348,6 +11467,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "大内容仅显示部分预览；复制或导出可获取完整文本。"
+          }
+        }
+      }
+    },
+    "Later": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Later"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "稍后"
           }
         }
       }
@@ -16571,6 +16707,40 @@
         }
       }
     },
+    "Restart and Install": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restart and Install"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重启并安装"
+          }
+        }
+      }
+    },
+    "Restart to Update…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restart to Update…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重启更新…"
+          }
+        }
+      }
+    },
     "Restore Default Configuration": {
       "extractionState": "manual",
       "localizations": {
@@ -18403,6 +18573,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "下划线"
+          }
+        }
+      }
+    },
+    "Software Update": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Software Update"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "软件更新"
           }
         }
       }
@@ -20481,6 +20668,23 @@
         }
       }
     },
+    "The updater could not start: {0}": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The updater could not start: {0}"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新器无法启动：{0}"
+          }
+        }
+      }
+    },
     "The worker did not return a valid result.": {
       "extractionState": "manual",
       "localizations": {
@@ -22032,6 +22236,57 @@
         }
       }
     },
+    "Update checks connect to GitHub. Tool inputs and results are never included, and system profiling is disabled.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update checks connect to GitHub. Tool inputs and results are never included, and system profiling is disabled."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "检查更新会连接 GitHub，不包含工具输入和结果，且不发送系统统计信息。"
+          }
+        }
+      }
+    },
+    "Updates": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updates"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新"
+          }
+        }
+      }
+    },
+    "Updates are available in the installed release of DevKit. Debug builds are updated through Xcode.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updates are available in the installed release of DevKit. Debug builds are updated through Xcode."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已安装的 DevKit 正式版支持应用内更新。Debug 版本通过 Xcode 更新。"
+          }
+        }
+      }
+    },
     "Updating the DevKit index…": {
       "extractionState": "manual",
       "localizations": {
@@ -22538,6 +22793,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "版本"
+          }
+        }
+      }
+    },
+    "Version {0} is ready to install.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version {0} is ready to install."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "版本 {0} 已准备好安装。"
           }
         }
       }

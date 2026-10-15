@@ -1,5 +1,15 @@
 # 版本说明
 
+## v0.2.1
+
+支持 macOS 26 及以上。[GitHub Release](https://github.com/luolayo/devkit-macos/releases/tag/v0.2.1) 提供 Apple Silicon / Intel 通用包与 SHA-256 校验文件。
+
+- 新增应用内更新：自动检查、后台下载、签名校验，更新就绪后可重启安装或在退出时安装。
+- 新增「设置 → 更新」与应用菜单「检查更新…」，可分别关闭自动检查和自动下载。
+- 重启前提醒导出当前输入和结果；偏好设置继续保留。Debug 不接入正式更新通道。
+
+v0.2.0 及更早版本需要手动安装本版一次。安装后可在应用内获取后续更新。
+
 ## v0.2.0
 
 支持 macOS 26 及以上。[GitHub Release](https://github.com/luolayo/devkit-macos/releases/tag/v0.2.0) 提供 Apple Silicon / Intel 通用包与 SHA-256 校验文件。

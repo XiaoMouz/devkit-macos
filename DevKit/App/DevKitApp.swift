@@ -20,6 +20,7 @@ struct DevKitApp: App {
       SidebarCommands()
       InspectorCommands()
       DevKitCommands()
+      CommandGroup(after: .appInfo) { UpdateActionButton() }
     }
     .environment(\.locale, L10n.locale)
     Settings { SettingsView().environment(\.locale, L10n.locale) }
@@ -36,6 +37,7 @@ struct DevKitApp: App {
   func applicationDidFinishLaunching(_ notification: Notification) {
     NativeMenuLocalization.shared.start()
     SpotlightSettingsStore.shared.refresh()
+    AppUpdater.shared.start()
   }
 }
 

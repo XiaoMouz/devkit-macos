@@ -20,6 +20,8 @@ devkit run json --input-file input.json --format text > output.json
 
 HTTP and DNS send requests when you run the tool. WebSocket exchanges messages after connecting. CLI network tools require `--allow-network`; see [Network debugging](guides/network.md).
 
+Releases with the built-in updater check GitHub daily and download updates from GitHub Releases in the background. Requests contain normal HTTP connection information, such as your IP address and User-Agent, but never tool inputs or results. System profiling is disabled. Turn off automatic checking and downloading in **Settings → Updates**. Choosing **Check for Updates…** manually still connects to GitHub.
+
 ## Tokens and keys
 
 Pass tokens and keys through stdin or a request file to keep them out of shell history. Replace real credentials with sample data when reporting an issue.

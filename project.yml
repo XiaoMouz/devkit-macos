@@ -17,6 +17,9 @@ settings:
 packages:
   DevKitCore:
     path: .
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    exactVersion: 2.10.0
 targets:
   DevKitCLI:
     type: tool
@@ -46,6 +49,8 @@ targets:
     platform: macOS
     sources: [DevKit]
     dependencies:
+      - package: Sparkle
+        product: Sparkle
       - package: DevKitCore
         product: DevKitCore
       - target: DevKitWorker

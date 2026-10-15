@@ -20,6 +20,8 @@ devkit run json --input-file input.json --format text > output.json
 
 HTTP 和 DNS 在点击执行后发送请求，WebSocket 在连接后收发消息。CLI 调用网络工具需要 `--allow-network`，详见[网络调试](guides/network.md)。
 
+带应用内更新功能的正式版默认每天向 GitHub 检查新版本，并从 GitHub Releases 后台下载更新。请求包含正常 HTTP 连接信息（如 IP 地址和 User-Agent），不包含工具输入或结果，也不发送系统统计信息。在「设置 → 更新」可以关闭自动检查和自动下载。手动选择「检查更新…」仍会联网。
+
 ## 令牌与密钥
 
 在命令行处理令牌或密钥时，使用 stdin 或请求文件，避免写入 Shell 历史。反馈问题时，请用示例数据替换真实凭据。

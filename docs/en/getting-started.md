@@ -8,7 +8,11 @@ Requires macOS 26 or later.
 2. Extract it, move `DevKit.app` to Applications, and open it.
 3. To use the command line, install it in **Settings → CLI & AI**. See the [CLI guide](cli-and-ai.md).
 
-To upgrade, quit the app and replace it in the same location with the new version.
+Releases with the built-in updater check for updates and download them in the background. Once an update has been downloaded and verified, choose **Restart to Update…** to install it. You can also quit normally and use the new version on your next launch, without dragging another app into Applications.
+
+Choose **Check for Updates…** in the app menu for a manual check, or change automatic checking and downloading in **Settings → Updates**. Export any inputs and results you want to keep before restarting.
+
+If your older version has no **Check for Updates…** command, install a version with the updater from Releases once. First-time installation still follows the steps above.
 
 DevKit follows the system language by default. To choose English or Simplified Chinese, see [Choose a language](shortcuts.md#choose-a-language).
 

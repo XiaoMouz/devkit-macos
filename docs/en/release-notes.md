@@ -1,5 +1,15 @@
 # Release notes
 
+## v0.2.1
+
+Supports macOS 26 or later. The [GitHub Release](https://github.com/luolayo/devkit-macos/releases/tag/v0.2.1) includes a universal Apple Silicon / Intel package and a SHA-256 checksum file.
+
+- Added in-app updates with automatic checking, background downloads, signature verification, and installation on restart or quit.
+- Added **Settings → Updates** and **Check for Updates…** in the app menu, with separate automatic checking and downloading controls.
+- Restarting reminds you to export current inputs and results. Preferences are retained, and Debug builds do not use the release update channel.
+
+Install this version manually once when upgrading from v0.2.0 or earlier. Future updates can then be installed from within the app.
+
 ## v0.2.0
 
 Supports macOS 26 or later. The [GitHub Release](https://github.com/luolayo/devkit-macos/releases/tag/v0.2.0) includes a universal Apple Silicon / Intel package and a SHA-256 checksum file.
